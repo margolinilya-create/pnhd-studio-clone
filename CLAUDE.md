@@ -415,7 +415,28 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=<берётся из Supabase Dashboard → Settin
 
 ---
 
-## 15. Tooling reference
+## 15. Admin panel (WIP — branch `feat/admin-foundation`)
+
+Внутренний кабинет для управления каталогом/блогом/галереей/лидами. **Не в main**. Фаундейшен на ветке `feat/admin-foundation`. Когда будет готов — слиётся.
+
+| Документ | Назначение |
+|---|---|
+| [docs/superpowers/specs/2026-05-27-admin-panel-design.md](docs/superpowers/specs/2026-05-27-admin-panel-design.md) | Design spec (459 строк) — scope, tech-decisions, UI |
+| [docs/superpowers/plans/2026-05-27-admin-foundation.md](docs/superpowers/plans/2026-05-27-admin-foundation.md) | Implementation plan (1258 строк) — пошаговая разбивка |
+| [docs/superpowers/notes/2026-05-27-admin-bootstrap.md](docs/superpowers/notes/2026-05-27-admin-bootstrap.md) | Bootstrap первого админа (Supabase Auth → admin_users) |
+
+Что уже на ветке:
+- Миграции 5–8: `admin_users` table + `is_admin()` helper + admin RLS на content tables + storage buckets + misc columns (SEO + leads.status)
+- Supabase Auth wired: [src/lib/supabase/auth-server.ts](src/lib/supabase/auth-server.ts), [src/lib/supabase/auth-browser.ts](src/lib/supabase/auth-browser.ts), [src/lib/supabase/middleware-client.ts](src/lib/supabase/middleware-client.ts), [src/lib/supabase/admin-server.ts](src/lib/supabase/admin-server.ts)
+- Edge middleware [src/middleware.ts](src/middleware.ts) — гейтит `/admin/*` через cookie-session
+- `requireAdmin()` guard [src/app/admin/_lib/require-admin.ts](src/app/admin/_lib/require-admin.ts)
+- Dep `@supabase/ssr` добавлен
+
+Требует **новый env**: `SUPABASE_SERVICE_ROLE_KEY` (server-only, без `NEXT_PUBLIC_`) — нужен админскому клиенту для bypass RLS при write-операциях.
+
+---
+
+## 16. Tooling reference
 
 - **MCP инструменты**:
   - Supabase MCP — `list_projects`, `list_tables`, `apply_migration`, `execute_sql`, `deploy_edge_function`, `get_logs`
