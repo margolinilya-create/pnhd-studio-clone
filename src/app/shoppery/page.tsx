@@ -5,7 +5,7 @@ import MarkupScript from "@/components/shared-components/markup-script/markup-sc
 import FaqSection from '@/components/pages-components/main-page/faq-screen/faq-screen';
 import {SITE_INFO} from "@/app/constants";
 import {IProduct} from "@/app/utils/types";
-import {getShopData} from "@/app/utils/constants";
+import { getAllProducts } from "@/lib/queries/products";
 import ProductCardsBlock from "@/components/pages-components/shop-page/product-cards-block/product-cards-block";
 
 export const metadata: Metadata = {
@@ -15,7 +15,7 @@ export const metadata: Metadata = {
 };
 
 const Page: React.FC = async () => {
-    const shopData: Array<IProduct> = await getShopData({type: 'totebag'});
+    const shopData: Array<IProduct> = await getAllProducts({type: 'totebag'});
     const slug = 'shoppery';
     const h1 = 'Печать принтов на шоппер';
     const jsonLdBreadcrumbList = {

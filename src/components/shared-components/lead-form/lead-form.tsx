@@ -27,10 +27,9 @@ const LeadForm: React.FC = () => {
 
     const submitHandler = async (e: FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-        //const cookie: {[n: string]: string} = getCookie(document.cookie);
-
-        const roistat = 'n/a';
-        createLead({roistat, name, phone: phone.replaceAll(' ', '')});
+        // TODO(supabase-migration): подключить Edge Function для приёма лидов + Telegram-уведомление.
+        // В клоне отправка отключена, чтобы не плодить запросы к недоступному pnhdstudioapi.ru.
+        alert('Форма работает в демо-режиме клона. Данные не отправляются.');
         dispatch(leadActions.resetLeadData());
     }
 

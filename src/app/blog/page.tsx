@@ -3,9 +3,7 @@ import styles from './page.module.scss';
 import classnames from 'classnames/bind';
 import Link from 'next/link';
 import Image from 'next/image';
-import testPic from '../../../public/changelog.jpg';
-import {getPosts} from '../utils/constants';
-import {apiBaseUrl} from '../utils/constants';
+import { getAllPosts } from '@/lib/queries/blog';
 import {Metadata} from 'next';
 import button_arrow_right from "../../../public/button_arrow_right.svg";
 import ArticleTagButton from "@/components/pages-components/blog/article-tag/article-tag";
@@ -31,8 +29,8 @@ export async function generateMetadata(): Promise<Metadata> {
 
 
 const Blog = async () => {
-    let {posts} = await getPosts();
-    posts = posts.sort((a, b) => (b.post_id - a.post_id))
+    let {posts} = await getAllPosts();
+    posts = posts.slice().sort((a, b) => (b.post_id - a.post_id))
 
     let postTags: Array<string> = [];
     let txtThumbToPost: Array<string> = [];

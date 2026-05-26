@@ -31,6 +31,18 @@ const nextConfig = {
                 hostname: 'pnhdstudioapi.ru',
                 pathname: '/**',
             },
+            // Supabase Storage public objects
+            {
+                protocol: 'https',
+                hostname: '*.supabase.co',
+                pathname: '/storage/v1/object/public/**',
+            },
+            // Placeholder-картинки в сид-данных
+            {
+                protocol: 'https',
+                hostname: 'placehold.co',
+                pathname: '/**',
+            },
         ],
     },
 };

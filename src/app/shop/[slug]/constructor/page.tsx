@@ -33,6 +33,21 @@ const Constructor = () => {
 
     return (
         <>
+            <div style={{
+                background: '#fff4e5',
+                border: '1px solid #ffb74d',
+                color: '#663c00',
+                padding: '12px 16px',
+                margin: '12px',
+                borderRadius: 8,
+                fontFamily: 'Neue_machina, sans-serif',
+                fontSize: 14,
+                lineHeight: 1.4,
+            }}>
+                <strong>Демо-режим клона.</strong> Конструктор показывается, но загрузка изображений
+                и сохранение в корзину пока недоступны — Supabase Storage и Edge Functions подключим
+                следующей итерацией.
+            </div>
             <section className={styles.screen}>
                 <div className={styles.mockup_container}>
                     <div className={styles.stage_container}>

@@ -82,18 +82,8 @@ const CheckoutPage: React.FC = () => {
 
     const formSubmitHandler = async (e: FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-        setIsDisabled(true);
-        //const cookie: {[n: string]: string} = getCookie(document.cookie);
-        const roistat = 'n/a';
-        const order = checkoutOrderObjectCreateFunc(cart, roistat);
-        await createOrder(order);
-        //@ts-ignore
-        //dispatch(cartActions.setPaymentURL(await response.data.paymentUrl))
-
-        dispatch(cartActions.resetCart());
-        sessionStorage.setItem('order', '');
-        dispatch(cartActions.resetCart());
-        window.location.replace('/thanks?from=checkout');
+        // TODO(supabase-migration): подключить Edge Function `create-order` + платёжный шлюз (YooKassa/Robokassa).
+        alert('Чекаут в демо-режиме клона. Заказ не оформляется, платёжный шлюз и CDEK ещё не подключены.');
     }
 
     const switchHandler = (e: ChangeEvent<HTMLInputElement>) => {
@@ -115,9 +105,8 @@ const CheckoutPage: React.FC = () => {
 
     const promocodeFormSubmitHandler = async (e: any) => {
         e.preventDefault();
-        const response = await validatePromocode({ user_promocode });
-        //@ts-ignore
-        response.data.promocode.length > 0 && dispatch(cartActions.setValidPromocode(response.data.promocode[0]))
+        // TODO(supabase-migration): таблица `promocodes` + Edge Function `validate-promocode`.
+        alert('Промокоды в демо-режиме клона недоступны.');
     }
 
     return (

@@ -1,9 +1,9 @@
 import React from 'react';
+import { notFound } from 'next/navigation';
 import styles from './page.module.scss';
 import classNames from 'classnames/bind';
 import Image from 'next/image';
-import testPic from '../../../../public/changelog.jpg';
-import {apiBaseUrl, getPosts} from '@/app/utils/constants';
+import { getAllPostSlugs, getPostBySlug } from '@/lib/queries/blog';
 import {SITE_INFO} from "@/app/constants";
 import {Metadata} from "next";
 
@@ -21,17 +21,14 @@ export async function generateMetadata({params}: {
 }
 
 export const generateStaticParams = async () => {
-    const {posts} = await getPosts();
-
-    return posts.map((item) => {
-        return {post: item.slug}
-    })
+    const slugs = await getAllPostSlugs();
+    return slugs.map((slug) => ({ post: slug }));
 }
 export const dynamicParams = false;
 
 const PostPage = async ({params}: { params: { post: string } }) => {
-    const {posts} = await getPosts();
-    const post = posts.filter((post) => post.slug === params.post)[0];
+    const post = await getPostBySlug(params.post);
+    if (!post) notFound();
 
     return (
         <>

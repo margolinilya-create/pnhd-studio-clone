@@ -1,5 +1,6 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import { apiBaseUrl } from "@/app/utils/constants";
+import { fetchGalleryImages } from "@/lib/queries/gallery";
 import {
   IUploadPrintResponse,
   ICdekCitySearchResponse,
@@ -108,13 +109,15 @@ export const api = createApi({
       })
     }),
     getGalleryImages: builder.query<Array<{id: string, src: string, alt: string}>, void>({
-      query: () => ({
-        url: '/api/gallery/',
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      }),
+      // Supabase-backed: см. src/lib/queries/gallery.ts
+      queryFn: async () => {
+        try {
+          const data = await fetchGalleryImages();
+          return { data };
+        } catch (error) {
+          return { error: { status: 'CUSTOM_ERROR', error: String(error) } as any };
+        }
+      },
     }),
     promocodeValidation: builder.mutation<unknown, {user_promocode: string}>({
       query: (data) => ({
