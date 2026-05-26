@@ -52,53 +52,58 @@ const SizeGrid: React.FC<Props> = ({
           ]
             .filter(Boolean)
             .join(' ');
+          const ariaLabel = out
+            ? `${s.name} — нет в наличии`
+            : `Добавить размер ${s.name}, осталось ${remaining} из ${s.qty}, выбрано ${n}`;
           return (
-            <button
-              key={s.name}
-              type="button"
-              className={tileClass}
-              disabled={out}
-              onClick={() => onIncrement(s.name, s.qty)}
-            >
-              <div className={styles.vbTop}>
-                <span className={styles.vbLabel}>{s.name}</span>
-                {n > 0 ? (
-                  <span className={styles.vbCount}>
-                    <span
-                      role="button"
-                      tabIndex={0}
-                      className={styles.vbMinus}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onDecrement(s.name);
-                      }}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                          e.stopPropagation();
-                          onDecrement(s.name);
-                        }
-                      }}
-                    >
-                      −
+            <div key={s.name} className={tileClass} aria-disabled={out}>
+              <button
+                type="button"
+                className={styles.vbTileButton}
+                disabled={out}
+                onClick={() => onIncrement(s.name, s.qty)}
+                aria-label={ariaLabel}
+              >
+                <div className={styles.vbTop}>
+                  <span className={styles.vbLabel}>{s.name}</span>
+                  {n > 0 ? (
+                    <span className={styles.vbCount} aria-hidden="true">
+                      <b>{n}</b>
                     </span>
-                    <b>{n}</b>
-                  </span>
-                ) : (
-                  !out && <span className={styles.vbAdd}>+</span>
-                )}
-              </div>
-              <div className={styles.vbStockRow}>
-                <span className={styles.vbStockNum}>
-                  {out ? 'нет в наличии' : `осталось ${remaining}`}
-                </span>
-                {!out && <span className={styles.vbStockTotal}>из {s.qty}</span>}
-              </div>
-              {!out && (
-                <div className={styles.vbBar}>
-                  <div className={styles.vbBarFill} style={{ width: `${pct}%` }} />
+                  ) : (
+                    !out && (
+                      <span className={styles.vbAdd} aria-hidden="true">
+                        +
+                      </span>
+                    )
+                  )}
                 </div>
+                <div className={styles.vbStockRow}>
+                  <span className={styles.vbStockNum}>
+                    {out ? 'нет в наличии' : `осталось ${remaining}`}
+                  </span>
+                  {!out && <span className={styles.vbStockTotal}>из {s.qty}</span>}
+                </div>
+                {!out && (
+                  <div className={styles.vbBar} aria-hidden="true">
+                    <div className={styles.vbBarFill} style={{ width: `${pct}%` }} />
+                  </div>
+                )}
+              </button>
+              {n > 0 && (
+                <button
+                  type="button"
+                  className={styles.vbMinus}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDecrement(s.name);
+                  }}
+                  aria-label={`Убрать одну единицу размера ${s.name}`}
+                >
+                  −
+                </button>
               )}
-            </button>
+            </div>
           );
         })}
       </div>

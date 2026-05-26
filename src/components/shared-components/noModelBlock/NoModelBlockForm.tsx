@@ -26,16 +26,18 @@ const NoModelBlockForm = () => {
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [comment, setComment] = useState('');
-  const [isAgreed, setIsAgreed] = useState(true);
-  const [createLead, { isUninitialized, isSuccess, isError, reset }] = useCreateLeadMutation();
+  const [isAgreed, setIsAgreed] = useState(false);
+  const [createLead, { isSuccess, isError, isLoading, reset }] = useCreateLeadMutation();
 
   useEffect(() => {
+    if (!isSuccess) return;
     const t = setTimeout(() => reset(), 2000);
     return () => clearTimeout(t);
   }, [isSuccess, reset]);
 
   const submitHandler = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (isLoading || !isAgreed) return;
     try {
       await createLead({
         source: 'shop-no-model',
@@ -111,13 +113,13 @@ const NoModelBlockForm = () => {
         sx={muiFieldSx}
         onChange={(ev: ChangeEvent<HTMLInputElement>) => setComment(ev.target.value)}
       />
-      {isUninitialized && (
+      {!isSuccess && (
         <button
           type="submit"
-          disabled={!isAgreed}
+          disabled={!isAgreed || isLoading}
           className={styles.submitOrder}
         >
-          Оформить заказ
+          {isLoading ? 'Отправляем…' : isError ? 'Попробовать ещё раз' : 'Оформить заказ'}
         </button>
       )}
       <FormControlLabel
@@ -142,7 +144,11 @@ const NoModelBlockForm = () => {
         }
       />
       {isSuccess && <p className={styles.formStatus}>Заявка отправлена!</p>}
-      {isError && <p className={styles.formStatus}>Что-то пошло не так :/</p>}
+      {isError && (
+        <p className={styles.formStatus} role="alert">
+          Что-то пошло не так. Попробуйте ещё раз.
+        </p>
+      )}
     </form>
   );
 };

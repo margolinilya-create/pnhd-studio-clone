@@ -18,7 +18,7 @@ const LeadForm: React.FC<{ source?: LeadSource }> = ({ source = 'popup' }) => {
 
     const dispatch = useAppDispatch();
     const { name, phone, isAgreedWithPrivacyPolicy } = useAppSelector(store => store.leads);
-    const [ createLead, { isUninitialized, isSuccess, isError, isLoading, reset} ] = useCreateLeadMutation();
+    const [ createLead, { isSuccess, isError, isLoading, reset} ] = useCreateLeadMutation();
 
     useEffect(() => {
         if (!isSuccess) return;
@@ -28,6 +28,8 @@ const LeadForm: React.FC<{ source?: LeadSource }> = ({ source = 'popup' }) => {
 
     const submitHandler = async (e: FormEvent<HTMLFormElement>) => {
         e.preventDefault();
+        if (isLoading) return;
+        if (!isAgreedWithPrivacyPolicy) return;
         try {
             await createLead({
                 name: name.trim(),
@@ -106,9 +108,17 @@ const LeadForm: React.FC<{ source?: LeadSource }> = ({ source = 'popup' }) => {
                             }}
                             label={<p style={{ margin: 0, padding: 0, fontFamily: 'Neue_machina', fontSize: '14px', lineHeight: '14px'}}>Согласен с <Link target="_blank" style={{color: 'black'}} href='/privacy'>политикой конфиденциальности</Link></p>}
                          />
-                         {isUninitialized && <button type='submit' disabled={!isAgreedWithPrivacyPolicy || isLoading} className={styles.form_submitButton}>{isLoading ? 'Отправляем…' : 'проконсультироваться'}</button>}
+                         {!isSuccess && (
+                           <button
+                             type='submit'
+                             disabled={!isAgreedWithPrivacyPolicy || isLoading}
+                             className={styles.form_submitButton}
+                           >
+                             {isLoading ? 'Отправляем…' : isError ? 'Попробовать ещё раз' : 'проконсультироваться'}
+                           </button>
+                         )}
                          {isSuccess && <p className={styles.form_statusText}>Заявка отправлена!</p>}
-                         {isError && <p className={styles.form_statusText}>Что-то пошло не так :/</p>}
+                         {isError && <p className={styles.form_statusText} role='alert'>Что-то пошло не так. Попробуйте ещё раз.</p>}
                     </form>
     )
 }

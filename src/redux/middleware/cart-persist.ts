@@ -6,6 +6,8 @@ export const CART_STORAGE_KEY = 'order_v2';
 export const cartPersistMiddleware = createListenerMiddleware();
 
 cartPersistMiddleware.startListening({
+  // Намеренно НЕ слушаем restoreCart: иначе сразу после гидрации
+  // переписываем sessionStorage тем же значением.
   matcher: isAnyOf(
     cartActions.addToCart,
     cartActions.setPrintLocation,
@@ -14,7 +16,6 @@ cartPersistMiddleware.startListening({
     cartActions.clearAllPrints,
     cartActions.deleteItemFromCart,
     cartActions.resetCart,
-    cartActions.restoreCart,
   ),
   effect: (_action, listenerApi) => {
     if (typeof window === 'undefined') return;

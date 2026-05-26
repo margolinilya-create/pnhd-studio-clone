@@ -31,22 +31,40 @@ const CartIcon: React.FC = () => {
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    const restoredOrder = window.sessionStorage.getItem(CART_STORAGE_KEY);
-    if (!restoredOrder) return;
+    // Drop legacy v1 key (pre-printConfig shape) — оставлять PII в sessionStorage не надо.
+    window.sessionStorage.removeItem('order');
+
+    const stored = window.sessionStorage.getItem(CART_STORAGE_KEY);
+    if (!stored) {
+      dispatch(cartActions.markHydrated());
+      return;
+    }
     try {
-      const parsedOrder: Array<ICartOrderElement> = JSON.parse(restoredOrder);
-      if (Array.isArray(parsedOrder)) {
-        const isValidShape = parsedOrder.every(
-          (entry) => entry && typeof entry === 'object' && 'printConfig' in entry,
-        );
-        if (isValidShape) {
-          dispatch(cartActions.restoreCart(parsedOrder));
-        } else {
-          window.sessionStorage.removeItem(CART_STORAGE_KEY);
-        }
+      const parsed: unknown = JSON.parse(stored);
+      const valid =
+        Array.isArray(parsed) &&
+        parsed.every((entry) => {
+          if (!entry || typeof entry !== 'object') return false;
+          const e = entry as Record<string, unknown>;
+          if (typeof e.itemCartId !== 'string' || !e.item) return false;
+          const pc = e.printConfig as Record<string, unknown> | undefined;
+          return (
+            !!pc &&
+            typeof pc.location === 'string' &&
+            ['none', 'front', 'back', 'sleeve', 'both'].includes(pc.location) &&
+            typeof pc.files === 'object' &&
+            pc.files !== null
+          );
+        });
+      if (valid) {
+        dispatch(cartActions.restoreCart(parsed as Array<ICartOrderElement>));
+      } else {
+        window.sessionStorage.removeItem(CART_STORAGE_KEY);
+        dispatch(cartActions.markHydrated());
       }
     } catch {
       window.sessionStorage.removeItem(CART_STORAGE_KEY);
+      dispatch(cartActions.markHydrated());
     }
   }, [dispatch]);
 

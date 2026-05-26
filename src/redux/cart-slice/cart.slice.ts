@@ -11,7 +11,8 @@ import {
 } from '@/app/utils/types';
 
 interface IInitialState {
-  order?: Array<ICartOrderElement>;
+  order: Array<ICartOrderElement>;
+  isHydrated: boolean;
   userData: {
     name: string;
     surname: string;
@@ -47,6 +48,7 @@ export type TCartState = IInitialState;
 
 const initialState: IInitialState = {
   order: [],
+  isHydrated: false,
   userData: {
     name: '',
     surname: '',
@@ -116,6 +118,12 @@ const cartSlice = createSlice({
       state.order?.forEach((elem) => {
         if (elem.itemCartId === itemCartId) {
           delete elem.printConfig.files[side];
+          // Если все файлы убрали — нормализуем location в 'none', иначе checkout-payload
+          // отправит "С двух сторон" без файлов и менеджер запутается.
+          const filesLeft = Object.keys(elem.printConfig.files).length;
+          if (filesLeft === 0) {
+            elem.printConfig.location = 'none';
+          }
         }
       });
     },
@@ -166,10 +174,14 @@ const cartSlice = createSlice({
       state.paymentUrl = action.payload;
     },
     resetCart: () => {
-      return { ...initialState };
+      return { ...initialState, isHydrated: true };
     },
     restoreCart: (state, action: PayloadAction<Array<ICartOrderElement>>) => {
       state.order = action.payload;
+      state.isHydrated = true;
+    },
+    markHydrated: (state) => {
+      state.isHydrated = true;
     },
     setUserPromocode: (state, action: PayloadAction<string>) => {
       state.user_promocode = action.payload;

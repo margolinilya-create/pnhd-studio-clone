@@ -2,6 +2,7 @@ import { IPrintFileRef } from '@/app/utils/types';
 import { getSupabaseClient } from '@/lib/supabase/client';
 
 const BUCKET = 'user-uploads';
+const PATH_PREFIX = 'prints'; // соответствует storage.objects RLS policy
 
 function sanitizeFilename(name: string): string {
   return name
@@ -11,16 +12,23 @@ function sanitizeFilename(name: string): string {
     .slice(0, 80);
 }
 
+function isAllowedMime(file: File): boolean {
+  return ['image/png', 'image/jpeg', 'image/webp'].includes(file.type);
+}
+
 export async function uploadPrintFile(file: File): Promise<IPrintFileRef> {
   if (typeof window === 'undefined') {
     throw new Error('uploadPrintFile must be called in the browser');
+  }
+  if (!isAllowedMime(file)) {
+    throw new Error('Поддерживаются только PNG, JPG и WEBP');
   }
   const supabase = getSupabaseClient();
   const id =
     typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
       ? crypto.randomUUID()
       : `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
-  const path = `${id}-${sanitizeFilename(file.name)}`;
+  const path = `${PATH_PREFIX}/${id}-${sanitizeFilename(file.name)}`;
 
   const { error } = await supabase.storage.from(BUCKET).upload(path, file, {
     cacheControl: '3600',

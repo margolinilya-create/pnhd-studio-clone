@@ -3,28 +3,8 @@
 import React from 'react';
 import styles from './product-info.module.css';
 import UploadSlot from './upload-slot';
-import {
-  IPrintConfig,
-  IPrintFileRef,
-  TPrintLocation,
-  TPrintSide,
-} from '@/app/utils/types';
-
-const PRINT_OPTIONS: Array<{ id: TPrintLocation; label: string }> = [
-  { id: 'none', label: 'Без принта' },
-  { id: 'front', label: 'На груди' },
-  { id: 'back', label: 'На спине' },
-  { id: 'sleeve', label: 'На рукаве' },
-  { id: 'both', label: 'С двух сторон' },
-];
-
-const SIDES_FOR: Record<TPrintLocation, TPrintSide[]> = {
-  none: [],
-  front: ['front'],
-  back: ['back'],
-  sleeve: ['sleeve'],
-  both: ['front', 'back'],
-};
+import { IPrintConfig, IPrintFileRef, TPrintLocation, TPrintSide } from '@/app/utils/types';
+import { PRINT_OPTIONS, SIDES_FOR_LOCATION } from './print-config';
 
 type Props = {
   printConfig: IPrintConfig;
@@ -39,7 +19,7 @@ const PrintSelector: React.FC<Props> = ({
   onUpload,
   onClearFile,
 }) => {
-  const sides = SIDES_FOR[printConfig.location];
+  const sides = SIDES_FOR_LOCATION[printConfig.location];
   return (
     <div className={styles.printSection}>
       <div className={styles.sizesHead}>

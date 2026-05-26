@@ -11,7 +11,8 @@ const SIDE_LABEL: Record<TPrintSide, string> = {
 };
 
 const MAX_BYTES = 20 * 1024 * 1024;
-const ACCEPT = 'image/png,image/jpeg,image/svg+xml';
+const ACCEPT = 'image/png,image/jpeg,image/webp';
+const ACCEPTED_MIME = ['image/png', 'image/jpeg', 'image/webp'] as const;
 
 type Props = {
   side: TPrintSide;
@@ -22,15 +23,21 @@ type Props = {
 
 const UploadSlot: React.FC<Props> = ({ side, file, onUpload, onClear }) => {
   const inputRef = useRef<HTMLInputElement>(null);
+  const dragCounterRef = useRef(0);
   const [isDrag, setIsDrag] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const openPicker = () => {
+    if (file || isLoading) return;
+    inputRef.current?.click();
+  };
+
   const handleFile = async (raw?: File | null) => {
     setError(null);
     if (!raw) return;
-    if (!raw.type.startsWith('image/')) {
-      setError('Поддерживаются только изображения');
+    if (!(ACCEPTED_MIME as readonly string[]).includes(raw.type)) {
+      setError('Только PNG, JPG или WEBP');
       return;
     }
     if (raw.size > MAX_BYTES) {
@@ -41,7 +48,7 @@ const UploadSlot: React.FC<Props> = ({ side, file, onUpload, onClear }) => {
     try {
       await onUpload(raw);
     } catch (e) {
-      setError('Не удалось загрузить. Попробуйте ещё раз.');
+      setError(e instanceof Error ? e.message : 'Не удалось загрузить');
     } finally {
       setIsLoading(false);
     }
@@ -56,17 +63,39 @@ const UploadSlot: React.FC<Props> = ({ side, file, onUpload, onClear }) => {
     .filter(Boolean)
     .join(' ');
 
+  const interactive = !file && !isLoading;
+
   return (
     <div
       className={classes}
-      onClick={() => !file && !isLoading && inputRef.current?.click()}
+      role={interactive ? 'button' : undefined}
+      tabIndex={interactive ? 0 : -1}
+      aria-label={interactive ? `Загрузить файл для печати (${SIDE_LABEL[side]})` : undefined}
+      onClick={openPicker}
+      onKeyDown={(e) => {
+        if (!interactive) return;
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          openPicker();
+        }
+      }}
+      onDragEnter={(e) => {
+        e.preventDefault();
+        if (isLoading) return;
+        dragCounterRef.current += 1;
+        setIsDrag(true);
+      }}
       onDragOver={(e) => {
         e.preventDefault();
-        if (!isLoading) setIsDrag(true);
       }}
-      onDragLeave={() => setIsDrag(false)}
+      onDragLeave={(e) => {
+        e.preventDefault();
+        dragCounterRef.current = Math.max(0, dragCounterRef.current - 1);
+        if (dragCounterRef.current === 0) setIsDrag(false);
+      }}
       onDrop={(e) => {
         e.preventDefault();
+        dragCounterRef.current = 0;
         setIsDrag(false);
         if (isLoading) return;
         handleFile(e.dataTransfer.files?.[0]);
@@ -118,8 +147,12 @@ const UploadSlot: React.FC<Props> = ({ side, file, onUpload, onClear }) => {
           <div className={styles.uploadHint}>
             {isLoading ? 'Загрузка…' : 'Перетащи файл или нажми'}
           </div>
-          <div className={styles.uploadFormats}>PNG · JPG · SVG · до 20 МБ</div>
-          {error && <div className={styles.uploadError}>{error}</div>}
+          <div className={styles.uploadFormats}>PNG · JPG · WEBP · до 20 МБ</div>
+          {error && (
+            <div className={styles.uploadError} role="alert">
+              {error}
+            </div>
+          )}
         </>
       )}
     </div>

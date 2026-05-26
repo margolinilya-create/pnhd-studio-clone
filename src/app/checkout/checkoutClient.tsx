@@ -48,9 +48,9 @@ const CheckoutPage: React.FC = () => {
     const [ submitButtonDisabled, setSubmitButtonDisabled ] = useState<boolean>(false)
     const dispatch = useAppDispatch();
     const router = useRouter();
-    const { isDelivery, order, deliveryParams, paymentUrl, user_promocode, validPromoCode } = useAppSelector(store => store.cart);
+    const { isDelivery, order, isHydrated, deliveryParams, paymentUrl, user_promocode, validPromoCode } = useAppSelector(store => store.cart);
     const cart = useAppSelector(store => store.cart);
-    const totalOrderPrice = cartSummaryFunc(order!);
+    const totalOrderPrice = cartSummaryFunc(order ?? []);
     const [ createOrder, { isLoading, isSuccess} ] = useCreateOrderMutation();
     const [ validatePromocode, { isLoading: isPromocodeLoading, isSuccess: isPromocodeValidationSuccess, reset } ] = usePromocodeValidationMutation();
 
@@ -66,8 +66,11 @@ const CheckoutPage: React.FC = () => {
     }, [])
 
     useEffect(() => {
-        !order || order.length === 0 && router.replace('/shop');
-    }, [order])
+        if (!isHydrated) return;
+        if ((order ?? []).length === 0) {
+            router.replace('/shop');
+        }
+    }, [isHydrated, order, router]);
 
     const checkDeliveryValidayion = (): boolean => {
         let result = true;

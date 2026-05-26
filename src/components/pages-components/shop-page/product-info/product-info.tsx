@@ -17,6 +17,7 @@ import { useAppDispatch } from '@/redux/redux-hooks';
 import { actions as cartActions } from '@/redux/cart-slice/cart.slice';
 import { useRouter } from 'next/navigation';
 import { uploadPrintFile } from '@/lib/storage/upload-print';
+import { SIDES_FOR_LOCATION } from './print-config';
 
 const formatRub = (n: number) => new Intl.NumberFormat('ru-RU').format(n) + ' ₽';
 
@@ -147,14 +148,6 @@ const ProductInfo: React.FC<{ item: IProduct }> = ({ item }) => {
       </div>
     </div>
   );
-};
-
-const SIDES_FOR_LOCATION: Record<TPrintLocation, TPrintSide[]> = {
-  none: [],
-  front: ['front'],
-  back: ['back'],
-  sleeve: ['sleeve'],
-  both: ['front', 'back'],
 };
 
 function isPrintReady(printConfig: IPrintConfig, allowsPrint: boolean): boolean {
