@@ -1,0 +1,491 @@
+.box {
+  --acid: #c0ff1a;
+  --acid-deep: #aef000;
+  --bg-soft: #f5f5f5;
+  --ink: #0e0e0e;
+  --ink-2: #1a1a1a;
+  --muted: #8a8a8a;
+  --line-soft: #e6e6e6;
+  --disabled-bg: #efefef;
+  --disabled-ink: #b5b5b5;
+  --radius-pill: 999px;
+  --radius-card: 14px;
+  --bw: 1.75px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  color: var(--ink);
+  width: 100%;
+  max-width: 560px;
+}
+
+.head {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.title {
+  font-weight: 800;
+  font-size: 32px;
+  line-height: 1.05;
+  letter-spacing: -0.01em;
+  margin: 0;
+}
+.price {
+  font-weight: 800;
+  font-size: 26px;
+  letter-spacing: -0.01em;
+  margin: 0;
+}
+.desc {
+  font-weight: 500;
+  font-size: 15px;
+  line-height: 1.45;
+  color: var(--ink);
+  margin: 0;
+}
+.sizeGuide {
+  align-self: flex-start;
+  background: transparent;
+  color: var(--ink);
+  border: var(--bw) solid var(--ink);
+  border-radius: var(--radius-pill);
+  padding: 11px 22px;
+  font-family: inherit;
+  font-weight: 800;
+  font-size: 13px;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  text-transform: uppercase;
+  text-decoration: none;
+  display: inline-block;
+}
+.sizeGuide:hover {
+  background: var(--ink);
+  color: #fff;
+}
+
+.sizesHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+.sizesEyebrow {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.sizesClear {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  background: transparent;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  font-family: inherit;
+}
+.sizesClear:hover { color: var(--ink); }
+
+/* Variant B size tiles ------------------------------------------- */
+.vbGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+.vbTile {
+  position: relative;
+  aspect-ratio: 1 / 0.95;
+  border: var(--bw) solid var(--ink);
+  background: #fff;
+  border-radius: var(--radius-card);
+  padding: 14px 14px 30px;
+  cursor: pointer;
+  font-family: inherit;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  overflow: hidden;
+  transition: transform .08s ease, background .15s ease, box-shadow .15s ease;
+}
+.vbTile:hover:not(:disabled) {
+  background: #fafafa;
+  transform: translateY(-1px);
+}
+.vbTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.vbLabel {
+  font-weight: 800;
+  font-size: 26px;
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+.vbAdd {
+  font-weight: 700;
+  font-size: 22px;
+  color: var(--muted);
+  line-height: 1;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--bg-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.vbCount {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--ink);
+  color: #fff;
+  border-radius: var(--radius-pill);
+  padding: 4px 10px 4px 4px;
+  font-weight: 800;
+  font-size: 14px;
+}
+.vbMinus {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #fff;
+  color: var(--ink);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1;
+  border: 0;
+  cursor: pointer;
+  font-family: inherit;
+  padding: 0;
+}
+.vbStockRow {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  margin-top: 12px;
+}
+.vbStockNum {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink);
+}
+.vbStockTotal {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--muted);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.vbBar {
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  height: 6px;
+  background: #f0f0f0;
+}
+.vbBarFill {
+  height: 100%;
+  background: var(--acid);
+  transition: width .25s ease;
+}
+
+.vbTile.isActive {
+  background: var(--acid);
+  box-shadow: 0 4px 0 0 var(--ink);
+}
+.vbTile.isActive .vbBar { background: rgba(0,0,0,.18); }
+.vbTile.isActive .vbBarFill { background: var(--ink); }
+.vbTile.isActive .vbStockTotal { color: rgba(0,0,0,.55); }
+
+.vbTile.isOut {
+  background: var(--disabled-bg);
+  border-color: #d6d6d6;
+  color: var(--disabled-ink);
+  cursor: not-allowed;
+}
+.vbTile.isOut .vbLabel {
+  position: relative;
+  color: var(--disabled-ink);
+}
+.vbTile.isOut .vbLabel::after {
+  content: "";
+  position: absolute;
+  left: -4px; right: -4px;
+  top: 50%;
+  height: 2px;
+  background: var(--disabled-ink);
+  transform: rotate(-12deg);
+}
+.vbTile.isOut .vbStockNum,
+.vbTile.isOut .vbStockTotal { color: var(--disabled-ink); }
+
+/* Print selector ------------------------------------------------ */
+.printSection {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.printHint {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.printOptions {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+}
+.printChip {
+  font-family: inherit;
+  font-weight: 800;
+  font-size: 12px;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  border: var(--bw) solid var(--ink);
+  background: #fff;
+  color: var(--ink);
+  border-radius: var(--radius-pill);
+  padding: 13px 6px;
+  cursor: pointer;
+  transition: transform .08s ease, background .15s ease, box-shadow .15s ease;
+  line-height: 1.1;
+  text-align: center;
+}
+.printChip:hover { background: #fafafa; }
+.printChip:active { transform: translateY(1px); }
+.printChip.isActive {
+  background: var(--acid);
+  box-shadow: 0 4px 0 0 var(--ink);
+}
+
+/* Upload slot grid --------------------------------------------- */
+.uploadGrid {
+  display: grid;
+  gap: 10px;
+}
+.uploadGridCols1 { grid-template-columns: 1fr; }
+.uploadGridCols2 { grid-template-columns: 1fr 1fr; }
+
+.uploadSlot {
+  position: relative;
+  border: 2px dashed var(--ink);
+  border-radius: var(--radius-card);
+  background: var(--bg-soft);
+  padding: 22px 18px;
+  min-height: 140px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 4px;
+  cursor: pointer;
+  transition: background .15s ease, border-color .15s ease, transform .08s ease;
+}
+.uploadSlot:hover { background: #efefef; }
+.uploadSlot.isDrag {
+  background: var(--acid);
+  border-color: var(--ink);
+  border-style: solid;
+}
+.uploadSlot.isLoading {
+  cursor: progress;
+  opacity: 0.75;
+}
+.uploadArrow {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: var(--ink);
+  color: var(--acid);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 6px;
+}
+.uploadSide {
+  font-weight: 800;
+  font-size: 14px;
+  letter-spacing: 0;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+.uploadHint {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink-2);
+}
+.uploadFormats {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-top: 4px;
+}
+.uploadError {
+  font-size: 12px;
+  font-weight: 600;
+  color: #c0392b;
+  margin-top: 4px;
+}
+
+.uploadSlot.hasFile {
+  border-style: solid;
+  border-color: var(--ink);
+  background: #fff;
+  flex-direction: row;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 50px 14px 14px;
+}
+.uploadThumb {
+  width: 80px;
+  height: 80px;
+  object-fit: cover;
+  border-radius: 10px;
+  background: #f0f0f0;
+  flex-shrink: 0;
+  border: 1px solid var(--line-soft);
+}
+.uploadMeta {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  flex: 1;
+}
+.uploadFilename {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.uploadClear {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: var(--bw) solid var(--ink);
+  background: #fff;
+  font-family: inherit;
+  font-size: 18px;
+  font-weight: 800;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+.uploadClear:hover { background: var(--ink); color: #fff; }
+
+.printNote {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: #f5f5f5;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.45;
+  color: var(--ink-2);
+}
+.printNoteIcon {
+  flex-shrink: 0;
+  color: var(--ink);
+  margin-top: 1px;
+  display: inline-flex;
+}
+
+/* CTA row ------------------------------------------------------ */
+.ctaRow {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.hrThin {
+  height: 1px;
+  background: var(--line-soft);
+  margin: 4px 0 0;
+}
+.totals {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 4px 2px 2px;
+}
+.totalsLabel {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.totalsAmount {
+  font-weight: 800;
+  font-size: 22px;
+  letter-spacing: -0.01em;
+}
+.countChip {
+  display: inline-flex;
+  align-items: center;
+  background: var(--acid);
+  border: var(--bw) solid var(--ink);
+  border-radius: var(--radius-pill);
+  padding: 2px 10px;
+  margin-right: 8px;
+  font-size: 14px;
+  letter-spacing: 0;
+}
+.btnCart {
+  font-family: inherit;
+  font-weight: 800;
+  font-size: 14px;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  border-radius: var(--radius-pill);
+  padding: 16px 22px;
+  cursor: pointer;
+  border: var(--bw) solid var(--ink);
+  background: var(--ink);
+  color: #fff;
+  transition: transform .08s ease, background .15s ease;
+  width: 100%;
+}
+.btnCart:hover:not(:disabled) { background: #000; }
+.btnCart:active:not(:disabled) { transform: translateY(1px); }
+.btnCart:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+@media (max-width: 768px) {
+  .vbGrid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  .printOptions {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .title { font-size: 26px; }
+  .price { font-size: 22px; }
+}

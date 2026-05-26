@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import styles from "./page.module.css";
 import { getAllProductSlugs, getProductBySlug } from "@/lib/queries/products";
 import Photos from "@/components/pages-components/shop-page/product-photos/product-photos";
-import ProductDescription from "@/components/pages-components/shop-page/product-description/product-description";
+import ProductInfo from "@/components/pages-components/shop-page/product-info/product-info";
 import {Metadata} from 'next'
 import { CDN_URL } from "@/app/utils/constants";
 import {SITE_INFO} from "@/app/constants";
@@ -62,7 +62,7 @@ const ProductPage: React.FC<{
                     )
                 })}
             </div>
-            <ProductDescription item={item} />
+            <ProductInfo item={item} />
         </section>
     );
 };
