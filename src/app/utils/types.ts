@@ -30,39 +30,24 @@ export interface IProduct {
   sizes: Array<{ name: string; qty: number; userQty?: number }>;
   friends: string;
 }
-export interface IPrintFile {
-  file?: { name: string, url: string, width: number, height: number, message?: string },
-  stageParams?: TParams,
-  cartParams?: { price: number, format: string, size: string, place: string, },
-  preview?: string,
+export type TPrintLocation = 'none' | 'front' | 'back' | 'sleeve' | 'both';
+export type TPrintSide = 'front' | 'back' | 'sleeve';
+
+export interface IPrintFileRef {
+  url: string;
+  filename: string;
+  sizeBytes: number;
 }
-export interface IStageParams { x: number, y: number, width: number, height: number, rotation: number };
+
+export interface IPrintConfig {
+  location: TPrintLocation;
+  files: Partial<Record<TPrintSide, IPrintFileRef>>;
+}
 
 export interface ICartOrderElement {
-  itemCartId: string, item: IProduct, isItemWithPrint: boolean, prints?: {
-    front: IPrintFile, back: IPrintFile, lsleeve: IPrintFile, rsleeve: IPrintFile
-  }
-}
-export interface ITotalPrintPriceFunc {
-  front_file?: IPrintFile,
-  back_file?: IPrintFile,
-  lsleeve_file?: IPrintFile,
-  rsleeve_file?: IPrintFile,
-}
-export interface IUploadPrintResponse {
-  data: {
-    message: string,
-    url: string,
-    name: string,
-    width: number,
-    height: number
-  }
-}
-export interface IInitialPrintParams {
-  name: string,
-  url: string,
-  width: number,
-  height: number
+  itemCartId: string;
+  item: IProduct;
+  printConfig: IPrintConfig;
 }
 export interface ICdekCitySearchResponse {
   city: string,
@@ -158,23 +143,6 @@ export interface IOrderBody {
   weight: string,
   width: string,}>,
   roistat: string,
-}
-
-export type TParams = {
-  
-    url: string | undefined,
-    decalRotation: Array<number>,
-    decalPosition: Array<number>,
-    deltaX: number,
-    deltaY: number,
-    deltaZ: number,
-    decalScale: Array<number>,
-    pivotVisibility: boolean,
-    pivotRotation: Array<number>,
-    pivotPosition: Array<number>,
-    pivotScale: number,
-    dragAxis: Array<boolean>,
-    meshRotation?: Array<number>,
 }
 
 export type TOptionsData = {

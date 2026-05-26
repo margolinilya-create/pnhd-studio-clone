@@ -1,145 +1,129 @@
-import { ICartOrderElement, IPrintFile, ICdekCitySearchResponse, ICdekPointsResponse, TUserOrderItem, IOrderBody } from "./types"
-import { TCartState } from "@/redux/cart-slice/cart.slice";
+import {
+  ICartOrderElement,
+  IPrintConfig,
+  IPrintFileRef,
+  TPrintSide,
+  TPrintLocation,
+  TUserOrderItem,
+  IOrderBody,
+} from './types';
+import { TCartState } from '@/redux/cart-slice/cart.slice';
 import { v4 as uuidv4 } from 'uuid';
 
-export const getPreviewArrFunc = (prints: {
-    front: IPrintFile, back: IPrintFile, lsleeve: IPrintFile, rsleeve: IPrintFile 
-}): Array<IPrintFile> => {
-    const previewArr = [];
+const SIDES_FOR_LOCATION: Record<TPrintLocation, TPrintSide[]> = {
+  none: [],
+  front: ['front'],
+  back: ['back'],
+  sleeve: ['sleeve'],
+  both: ['front', 'back'],
+};
 
-    prints?.front?.preview && previewArr.push(prints.front);
-    prints?.back?.preview && previewArr.push(prints.back);
-    prints?.lsleeve?.preview && previewArr.push(prints.lsleeve);
-    prints?.rsleeve?.preview && previewArr.push(prints.rsleeve);
+export const getActiveSides = (printConfig: IPrintConfig | undefined): TPrintSide[] => {
+  if (!printConfig) return [];
+  return SIDES_FOR_LOCATION[printConfig.location] ?? [];
+};
 
-    return previewArr;
-}
+export const getPrintFilesArray = (
+  printConfig: IPrintConfig | undefined,
+): Array<{ side: TPrintSide; file: IPrintFileRef }> => {
+  if (!printConfig) return [];
+  const sides = getActiveSides(printConfig);
+  return sides
+    .map((side) => ({ side, file: printConfig.files[side] }))
+    .filter((entry): entry is { side: TPrintSide; file: IPrintFileRef } => Boolean(entry.file));
+};
 
+export const ruPrintPlace = (side: TPrintSide): string => {
+  if (side === 'front') return 'Грудь';
+  if (side === 'back') return 'Спина';
+  if (side === 'sleeve') return 'Рукав';
+  return '';
+};
 
-export const ruPrintPlace = (format: string): string => {
-    
-    const ruFormat = format === 'front' ? 'Грудь'
-    : format === 'back' ? 'Спина'
-    : format === 'lsleeve' ? 'Л. рукав'
-    : format === 'rsleeve' ? 'П. рукав' : '';
-
-    return ruFormat;
-}
-
+export const ruPrintLocation = (location: TPrintLocation): string => {
+  if (location === 'none') return 'без принта';
+  if (location === 'front') return 'принт спереди';
+  if (location === 'back') return 'принт сзади';
+  if (location === 'sleeve') return 'принт на рукаве';
+  if (location === 'both') return 'принт с двух сторон';
+  return '';
+};
 
 export const cartSummaryFunc = (order: Array<ICartOrderElement>): number => {
-    const totalCartPrice = order?.reduce((acc, elem) => {
-        const itemQty = elem.item.sizes.reduce((sizesAcc, size) => sizesAcc + size.userQty!, 0);
-        const textileTotalPrice = itemQty * elem.item.price;
-        const printsToArr = getPreviewArrFunc(elem.prints!);
-        const printsTotalPrice = printsToArr.reduce((printsAcc, print) => printsAcc + print.cartParams?.price!, 0) * itemQty;
+  if (!order) return 0;
+  return order.reduce((acc, elem) => {
+    const itemQty = elem.item.sizes.reduce((sizesAcc, size) => sizesAcc + (size.userQty ?? 0), 0);
+    return acc + itemQty * elem.item.price;
+  }, 0);
+};
 
-        return acc + textileTotalPrice + printsTotalPrice;
-    }, 0)
+export const packagesWeightCalcFunc = (
+  order: Array<ICartOrderElement>,
+): Array<{ weight: number }> => {
+  return order.map((elem) => {
+    const qty = elem.item.sizes.reduce((acc, curr) => acc + (curr.userQty ?? 0), 0);
+    return {
+      weight: elem.item.shippingParams.weight * qty,
+    };
+  });
+};
 
-    return totalCartPrice;
-}
+export const checkoutOrderObjectCreateFunc = (cart: TCartState, roistat: string): IOrderBody => {
+  const { order, validPromoCode, deliveryParams, userData, isDelivery } = cart;
+  const orderTotalPrice = cartSummaryFunc(order ?? []);
 
-export const packagesWeightCalcFunc = (order: Array<ICartOrderElement>): Array<{weight: number}> => {
-    const orderWeightArr = order.map((elem) => {
-        const qty = elem.item.sizes.reduce((acc, curr) => (acc + curr.userQty!), 0)
-        return {
-            weight: elem.item.shippingParams.weight * qty
-        }
-    })
+  const data: IOrderBody = {
+    order_total_price: orderTotalPrice,
+    order_discounted_price: validPromoCode.name
+      ? orderTotalPrice * validPromoCode.discount_ratio
+      : orderTotalPrice,
+    order_promocode: validPromoCode,
+    owner_name: `${userData.surname} ${userData.name}`,
+    owner_phone: userData.phone.substring(1, userData.phone.length),
+    owner_email: userData.email,
+    order_key: uuidv4(),
+    items: [],
+    isShipping: isDelivery,
+    shipping_city: deliveryParams.validCityTo,
+    shipping_point: deliveryParams.validDeliveryPoint,
+    shipping_price: deliveryParams.deliveryPrice,
+    packages: [],
+    roistat,
+  };
 
-    return orderWeightArr;
-}
-export const checkoutOrderObjectCreateFunc = (cart: TCartState, roistat: string) => {
+  order?.forEach((elem) => {
+    const itemQty = elem.item.sizes.reduce((acc, { userQty }) => acc + (userQty ?? 0), 0);
+    const sizesString = elem.item.sizes
+      .filter((s) => (s.userQty ?? 0) > 0)
+      .map((s) => `,размер:${s.name}`)
+      .join('') + '.';
 
-    const { order, validPromoCode, deliveryParams, userData, isDelivery } = cart;
+    const printDescription = (side: TPrintSide, title: string): string => {
+      const file = elem.printConfig?.files[side];
+      return file ? `${title}. Файл: ${file.url}` : '';
+    };
 
-    const orderTotalPrice = cartSummaryFunc(order!);
+    const itemToAdd: TUserOrderItem = {
+      ...elem.item,
+      textile: elem.item.name.concat(sizesString),
+      item_price: itemQty * elem.item.price,
+      printPrice: 0,
+      qty: elem.item.sizes,
+      qtyAll: itemQty,
+      front_print: printDescription('front', 'Печать на груди'),
+      back_print: printDescription('back', 'Печать на спине'),
+      lsleeve_print: printDescription('sleeve', 'Печать на рукаве'),
+      rsleeve_print: '',
+    };
 
-    let data: IOrderBody = {
-        order_total_price: orderTotalPrice,
-        order_discounted_price: validPromoCode.name ? orderTotalPrice * validPromoCode.discount_ratio : orderTotalPrice,
-        order_promocode: validPromoCode,
-        owner_name: `${userData.surname} ${userData.name}`,
-        owner_phone: userData.phone.substring(1, userData.phone.length),
-        owner_email: userData.email,
-        order_key: uuidv4(),
-        items: [],
-        isShipping: isDelivery,
-        shipping_city: deliveryParams.validCityTo,
-        shipping_point: deliveryParams.validDeliveryPoint,
-        shipping_price: deliveryParams.deliveryPrice,
-        packages: [],
-        roistat
-      };
+    data.items.push(itemToAdd);
+    data.packages.push({
+      height: '10',
+      length: '10',
+      weight: '1000',
+      width: '10',
+    });
+  });
 
-    order?.forEach((elem) => {
-        let itemToAdd: TUserOrderItem = elem.item;
-        //@ts-ignore
-        const sizesToString = () => {
-            let sizeString = '';
-            elem.item.sizes.forEach((size) => {
-                if (size.userQty! > 0) {
-                    sizeString += `,размер:${size.name}`;
-                }
-            })
-
-            sizeString += '.';
-            return sizeString;
-        }
-        const stringSizes = sizesToString();
-        const itemQty = elem.item.sizes.reduce((acc, { userQty }) => (acc + userQty!), 0); 
-        
-        const printPriceF = (): number => {
-            let price = 0;
-                price = elem.prints?.front?.cartParams ?  price + elem.prints.front.cartParams.price : price + 0;
-                price = elem.prints?.back?.cartParams ?  price + elem.prints.back.cartParams.price : price + 0;
-                price = elem.prints?.lsleeve?.cartParams ?  price + elem.prints.lsleeve.cartParams.price : price + 0;
-                price = elem.prints?.rsleeve?.cartParams ?  price + elem.prints.rsleeve.cartParams.price : price + 0;
-            return price;
-        }
-
-        const printToStringF = (print: IPrintFile | undefined, title: string) => {
-            if (print) {
-                return `${title}. Файл: ${print.file?.url}, Превью: ${print.preview}; Размер: ${print.cartParams?.size}`;
-            } else {
-                return '';
-            }
-        } 
-        const printPrice = printPriceF() * itemQty;
-        //console.log(printPrice);
-            itemToAdd = {
-                ...itemToAdd,
-                textile: elem.item.name.concat(stringSizes),
-                item_price: printPrice + (itemQty * elem.item.price),
-                printPrice: printPrice,
-                qty: elem.item.sizes,
-                qtyAll: itemQty,
-                front_print: printToStringF(elem.prints?.front, 'Печать на груди'),
-                back_print: printToStringF(elem.prints?.back, 'Печать на спине'),
-                lsleeve_print: printToStringF(elem.prints?.lsleeve, 'Печать на левом рукаве'),
-                rsleeve_print: printToStringF(elem.prints?.rsleeve, 'Печать на правом рукаве'),
-            }
-            data.items.push(itemToAdd)
-            data.packages.push({
-                height: '10',
-                length: '10',
-                weight: '1000',
-                width: '10',
-              });
-    })  
-
-
-    return data;
-
-}
-
-/**
- * допы
- * item_price - полноя стоимость айтема
- * printPrice - стоимость принтов айтема
- * qty - то же что и sizes (выбранные размеры)
- * qtyAll - общее количество текстиля
- * back_print, front_print и тд - строка с кратким описанием печати
- * textile - название и размеры
- */
+  return data;
+};

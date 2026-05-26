@@ -8,6 +8,7 @@ import cartIcon from "../../../../public/cart_icon.svg";
 import { usePathname } from "next/navigation";
 import { useAppDispatch } from "@/redux/redux-hooks";
 import { actions as cartActions } from "@/redux/cart-slice/cart.slice";
+import { CART_STORAGE_KEY } from "@/redux/middleware/cart-persist";
 import { ICartOrderElement } from "@/app/utils/types";
 import { useRouter } from "next/navigation";
 
@@ -20,8 +21,7 @@ const CartIcon: React.FC = () => {
     order &&
     order.length > 0 &&
     pathname !== "/cart" &&
-    pathname !== "/checkout" &&
-    !pathname.includes("constructor")
+    pathname !== "/checkout"
       ? styles.cartIcon
       : styles.cartIcon__disabled;
 
@@ -30,12 +30,25 @@ const CartIcon: React.FC = () => {
   // }, [paymentUrl])
 
   useEffect(() => {
-    const restoredOrder = sessionStorage.getItem('order');
-    const parsedOrder: Array<ICartOrderElement> = restoredOrder && JSON.parse(restoredOrder!);
-    if (parsedOrder) {
-      dispatch(cartActions.restoreCart(parsedOrder))
+    if (typeof window === 'undefined') return;
+    const restoredOrder = window.sessionStorage.getItem(CART_STORAGE_KEY);
+    if (!restoredOrder) return;
+    try {
+      const parsedOrder: Array<ICartOrderElement> = JSON.parse(restoredOrder);
+      if (Array.isArray(parsedOrder)) {
+        const isValidShape = parsedOrder.every(
+          (entry) => entry && typeof entry === 'object' && 'printConfig' in entry,
+        );
+        if (isValidShape) {
+          dispatch(cartActions.restoreCart(parsedOrder));
+        } else {
+          window.sessionStorage.removeItem(CART_STORAGE_KEY);
+        }
+      }
+    } catch {
+      window.sessionStorage.removeItem(CART_STORAGE_KEY);
     }
-  }, [])
+  }, [dispatch]);
 
   return (
     <div className={containerStyles}>
