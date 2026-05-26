@@ -7,30 +7,37 @@ import { MuiTelInput } from 'mui-tel-input'
 import FormControlLabel from '@mui/material/FormControlLabel';
 import Checkbox from '@mui/material/Checkbox';
 import { actions as leadActions } from "@/redux/lead-slice/lead.slice";
-import { useCreateLeadMutation } from "@/api/api";
+import { useCreateLeadMutation, type LeadSource } from "@/api/api";
+import { getRoistatVisit } from "@/lib/analytics/roistat";
 import Link from "next/link";
 import Image from "next/image";
 import RU_FLAG from '../../../../public/ru_flag.webp';
 
 
-
-const LeadForm: React.FC = () => {
+const LeadForm: React.FC<{ source?: LeadSource }> = ({ source = 'popup' }) => {
 
     const dispatch = useAppDispatch();
     const { name, phone, isAgreedWithPrivacyPolicy } = useAppSelector(store => store.leads);
-    const [ createLead, { isUninitialized, isSuccess, isError, reset} ] = useCreateLeadMutation();
+    const [ createLead, { isUninitialized, isSuccess, isError, isLoading, reset} ] = useCreateLeadMutation();
 
     useEffect(() => {
-        const timeout = setTimeout(() => { reset() }, 2000);
+        if (!isSuccess) return;
+        const timeout = setTimeout(() => { reset(); dispatch(leadActions.resetLeadData()); }, 2000);
         return () => { clearTimeout(timeout) };
-    }, [isSuccess])
+    }, [isSuccess, reset, dispatch])
 
     const submitHandler = async (e: FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-        // TODO(supabase-migration): подключить Edge Function для приёма лидов + Telegram-уведомление.
-        // В клоне отправка отключена, чтобы не плодить запросы к недоступному pnhdstudioapi.ru.
-        alert('Форма работает в демо-режиме клона. Данные не отправляются.');
-        dispatch(leadActions.resetLeadData());
+        try {
+            await createLead({
+                name: name.trim(),
+                phone: phone.replaceAll(' ', ''),
+                source,
+                roistat_visit: getRoistatVisit() || undefined,
+            }).unwrap();
+        } catch {
+            /* статус отрисует RTK mutation */
+        }
     }
 
     return (
@@ -99,7 +106,7 @@ const LeadForm: React.FC = () => {
                             }}
                             label={<p style={{ margin: 0, padding: 0, fontFamily: 'Neue_machina', fontSize: '14px', lineHeight: '14px'}}>Согласен с <Link target="_blank" style={{color: 'black'}} href='/privacy'>политикой конфиденциальности</Link></p>}
                          />
-                         {isUninitialized && <button type='submit' disabled={!isAgreedWithPrivacyPolicy} className={styles.form_submitButton}>проконсультироваться</button>}
+                         {isUninitialized && <button type='submit' disabled={!isAgreedWithPrivacyPolicy || isLoading} className={styles.form_submitButton}>{isLoading ? 'Отправляем…' : 'проконсультироваться'}</button>}
                          {isSuccess && <p className={styles.form_statusText}>Заявка отправлена!</p>}
                          {isError && <p className={styles.form_statusText}>Что-то пошло не так :/</p>}
                     </form>

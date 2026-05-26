@@ -36,7 +36,7 @@ const Footer: React.FC = () => {
 
             <div className={styles.footer_columnTwo}>
                 <div className={styles.columnTwo_formWrapper}>
-                    <LeadForm />
+                    <LeadForm source="footer" />
                 </div>
 
                 <div className={styles.columnTwo_logoWrapper}>

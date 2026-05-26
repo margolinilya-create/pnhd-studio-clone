@@ -1,25 +1,34 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import { apiBaseUrl } from "@/app/utils/constants";
-import { fetchGalleryImages } from "@/lib/queries/gallery";
+import { getSupabaseClient } from "@/lib/supabase/client";
 import {
-  IUploadPrintResponse,
   ICdekCitySearchResponse,
   ICdekPointsResponse,
   ICdekPriceResponse,
   IOrderBody,
 } from "@/app/utils/types";
 
+export type LeadSource =
+  | 'footer'
+  | 'popup'
+  | 'shop-no-model'
+  | 'product-page'
+  | 'methods-consultation';
+
+export interface ICreateLeadPayload {
+  name: string;
+  phone: string;
+  email?: string;
+  comment?: string;
+  reference_url?: string;
+  source: LeadSource;
+  roistat_visit?: string;
+}
+
 export const api = createApi({
   reducerPath: "api",
   baseQuery: fetchBaseQuery({ baseUrl: apiBaseUrl }),
   endpoints: (builder) => ({
-    uploadPrintImage: builder.mutation<IUploadPrintResponse, FormData>({
-      query: (data) => ({
-        url: "/api/uploads/",
-        method: "POST",
-        body: data,
-      }),
-    }),
     getCdekCitiesData: builder.query<Array<ICdekCitySearchResponse>, string>({
       query: (data) => ({
         url: `/api/shipping/cities?city=${data}`,
@@ -87,35 +96,40 @@ export const api = createApi({
         },
       }),
     }),
-    createLead: builder.mutation<
-      { message: string },
-      {
-        name: string;
-        phone: string;
-        roistat: string;
-        email?: string;
-        comment?: string;
-        reference_url?: string;
-      }
-    >({
-      query: (data) => ({
-        url: '/api/leads/',
-        method: 'POST',
-        body: JSON.stringify(data),
-        headers: {
-          'Content-Type': 'application/json',
-          'Content-length': '',
-        },
-      })
-    }),
-    getGalleryImages: builder.query<Array<{id: string, src: string, alt: string}>, void>({
-      // Supabase-backed: см. src/lib/queries/gallery.ts
-      queryFn: async () => {
+    createLead: builder.mutation<{ leadId: string }, ICreateLeadPayload>({
+      // Edge Function `create-lead`: пишет в public.leads + опц. шлёт в Bitrix24.
+      queryFn: async (payload) => {
         try {
-          const data = await fetchGalleryImages();
-          return { data };
-        } catch (error) {
-          return { error: { status: 'CUSTOM_ERROR', error: String(error) } as any };
+          const supabase = getSupabaseClient();
+          const { data, error } = await supabase.functions.invoke<{
+            ok: boolean;
+            leadId?: string;
+            error?: string;
+          }>('create-lead', { body: payload });
+          if (error) {
+            return {
+              error: {
+                status: 'CUSTOM_ERROR',
+                error: error.message,
+              } as any,
+            };
+          }
+          if (!data?.ok || !data.leadId) {
+            return {
+              error: {
+                status: 'CUSTOM_ERROR',
+                error: data?.error ?? 'create_lead_failed',
+              } as any,
+            };
+          }
+          return { data: { leadId: data.leadId } };
+        } catch (e) {
+          return {
+            error: {
+              status: 'CUSTOM_ERROR',
+              error: e instanceof Error ? e.message : String(e),
+            } as any,
+          };
         }
       },
     }),
@@ -131,15 +145,13 @@ export const api = createApi({
       })
     }),
 
-  }),  
+  }),
 });
 
 export const {
-  useUploadPrintImageMutation,
   useGetCdekCitiesDataQuery,
   useGetCdekPointsQuery,
   useGetCdekDeliveryPriceQuery,
-  useGetGalleryImagesQuery,
   useCreateOrderMutation,
   useCreateLeadMutation,
   usePromocodeValidationMutation,

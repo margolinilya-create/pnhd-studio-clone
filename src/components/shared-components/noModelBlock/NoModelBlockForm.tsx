@@ -1,6 +1,6 @@
 'use client';
 
-import React, { ChangeEvent, FormEvent, useEffect, useRef, useState } from 'react';
+import React, { ChangeEvent, FormEvent, useEffect, useState } from 'react';
 import styles from './NoModelBlock.module.css';
 import TextField from '@mui/material/TextField';
 import { MuiTelInput } from 'mui-tel-input';
@@ -8,11 +8,9 @@ import FormControlLabel from '@mui/material/FormControlLabel';
 import Checkbox from '@mui/material/Checkbox';
 import Link from 'next/link';
 import Image from 'next/image';
-import { v4 as uuidv4 } from 'uuid';
 import RU_FLAG from '../../../../public/ru_flag.webp';
-import { photoProcessing } from '@/app/utils/constructor-utils';
-import { IUploadPrintResponse } from '@/app/utils/types';
-import { useCreateLeadMutation, useUploadPrintImageMutation } from '@/api/api';
+import { useCreateLeadMutation } from '@/api/api';
+import { getRoistatVisit } from '@/lib/analytics/roistat';
 
 const muiFieldSx = {
   '& .MuiInputLabel-root': { fontFamily: 'Neue_machina' },
@@ -23,76 +21,34 @@ const muiFieldSx = {
   '& .MuiOutlinedInput-root': { fontFamily: 'Neue_machina' },
 } as const;
 
-function TshirtIcon() {
-  return (
-    <svg className={styles.uploadIconSvg} viewBox="0 0 48 48" fill="none" aria-hidden>
-      <path
-        d="M14 10 10 16v6h4v18h20V22h4v-6l-4-6-5 3h-10l-5-3Z"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
 const NoModelBlockForm = () => {
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [comment, setComment] = useState('');
-  const [referenceFile, setReferenceFile] = useState<File | null>(null);
   const [isAgreed, setIsAgreed] = useState(true);
   const [createLead, { isUninitialized, isSuccess, isError, reset }] = useCreateLeadMutation();
-  const [uploadPrint, { isLoading: isUploading }] = useUploadPrintImageMutation();
 
   useEffect(() => {
     const t = setTimeout(() => reset(), 2000);
     return () => clearTimeout(t);
   }, [isSuccess, reset]);
 
-  const onFileChange = (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const processed = photoProcessing(file);
-    setReferenceFile(processed || null);
-    if (!processed) {
-      e.target.value = '';
-    }
-  };
-
   const submitHandler = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const roistat = 'n/a';
-    let reference_url: string | undefined;
-
-    if (referenceFile) {
-      const data = new FormData();
-      data.append('files', referenceFile, `${uuidv4()}_${referenceFile.name}`);
-      try {
-        const uploaded = (await uploadPrint(data).unwrap()) as IUploadPrintResponse;
-        reference_url = uploaded?.data?.url;
-      } catch {
-        reference_url = undefined;
-      }
-    }
-
     try {
       await createLead({
-        roistat,
-        name,
+        source: 'shop-no-model',
+        name: name.trim(),
         phone: phone.replaceAll(' ', ''),
         ...(email.trim() ? { email: email.trim() } : {}),
         ...(comment.trim() ? { comment: comment.trim() } : {}),
-        ...(reference_url ? { reference_url } : {}),
+        roistat_visit: getRoistatVisit() || undefined,
       }).unwrap();
       setName('');
       setPhone('');
       setEmail('');
       setComment('');
-      setReferenceFile(null);
-      if (fileInputRef.current) fileInputRef.current.value = '';
     } catch {
       /* статус покажет RTK mutation */
     }
@@ -143,28 +99,6 @@ const NoModelBlockForm = () => {
         sx={muiFieldSx}
         onChange={(ev: ChangeEvent<HTMLInputElement>) => setEmail(ev.target.value)}
       />
-      {/* <div className={styles.uploadBlock}>
-        <div className={styles.uploadIconWrap} aria-hidden>
-          <TshirtIcon />
-        </div>
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/png,image/jpeg"
-          className={styles.uploadInput}
-          onChange={onFileChange}
-        />
-        <button
-          type="button"
-          className={styles.uploadButton}
-          onClick={() => fileInputRef.current?.click()}
-        >
-          ЗАГРУЗИТЬ РЕФЕРЕНС
-        </button>
-        {referenceFile && (
-          <span className={styles.uploadFileName}>{referenceFile.name}</span>
-        )}
-      </div> */}
       <TextField
         id="custom-order-comment"
         fullWidth
@@ -180,7 +114,7 @@ const NoModelBlockForm = () => {
       {isUninitialized && (
         <button
           type="submit"
-          disabled={!isAgreed || isUploading}
+          disabled={!isAgreed}
           className={styles.submitOrder}
         >
           Оформить заказ
