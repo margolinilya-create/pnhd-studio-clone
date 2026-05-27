@@ -31,8 +31,9 @@ const CartIcon: React.FC = () => {
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    // Drop legacy v1 key (pre-printConfig shape) — оставлять PII в sessionStorage не надо.
+    // Drop legacy v1/v2 keys (pre-printConfig + pre-path schema).
     window.sessionStorage.removeItem('order');
+    window.sessionStorage.removeItem('order_v2');
 
     const stored = window.sessionStorage.getItem(CART_STORAGE_KEY);
     if (!stored) {
