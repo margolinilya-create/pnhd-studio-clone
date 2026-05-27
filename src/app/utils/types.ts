@@ -37,6 +37,7 @@ export interface IPrintFileRef {
   url: string;
   filename: string;
   sizeBytes: number;
+  path: string;  // путь внутри bucket `user-uploads` для последующего storage.remove()
 }
 
 export interface IPrintConfig {
