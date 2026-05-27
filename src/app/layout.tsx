@@ -50,7 +50,7 @@ export default function RootLayout({
         <ReduxProvider>
           <body className={inter.className}>
             {children}
-            {process.env.NODE_ENV === "development" && <Agentation />}
+            <Agentation />
           </body>
         </ReduxProvider>
       </html>
@@ -110,7 +110,7 @@ export default function RootLayout({
           `}
           </Script>
           <Script type="text/javascript" async src="https://app.uiscom.ru/static/cs.min.js?k=79obNG5YrzIplUgKXZYSiPbK7agWm7Dk"></Script>
-          {process.env.NODE_ENV === "development" && <Agentation />}
+          <Agentation />
         </body>
       </ReduxProvider>
     </html>
