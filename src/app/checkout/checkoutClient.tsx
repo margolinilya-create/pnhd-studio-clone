@@ -1,38 +1,20 @@
 "use client";
-import React, { ChangeEvent, FormEvent, useEffect, useState, FormEventHandler } from "react";
-import styles from "./page.module.css";
-import FormGroup from "@mui/material/FormGroup";
-import FormControlLabel from "@mui/material/FormControlLabel";
-import Switch from "@mui/material/Switch";
-import { useAppSelector, useAppDispatch } from "@/redux/redux-hooks";
-import { actions as cartActions } from "@/redux/cart-slice/cart.slice";
-import MainUserData from "@/components/pages-components/checkout-page/main-user-data/main-user-data";
-import DeliveryData from "@/components/pages-components/checkout-page/delivery-data/delivery-data";
-import { cartSummaryFunc } from "../utils/cart-utils";
-import { checkoutOrderObjectCreateFunc } from "../utils/cart-utils";
-import { useCreateOrderMutation, usePromocodeValidationMutation } from "@/api/api";
-import { useRouter } from "next/navigation";
-import { getCookie } from "../utils/constants";
-import TextField from "@mui/material/TextField";
-import rightArrow from '../../../public/button_arrow_right.svg';
-import Image from "next/image";
+import React, { FormEvent, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import TextField from "@mui/material/TextField";
+import Button from "@mui/material/Button";
+import FormControlLabel from "@mui/material/FormControlLabel";
+import Checkbox from "@mui/material/Checkbox";
+import Alert from "@mui/material/Alert";
+import { MuiTelInput } from "mui-tel-input";
 
-
-const switchSx = {
-    '& .MuiSwitch-switchBase.Mui-checked': {
-        color: 'rgb(153,255,0)',
-        '&:hover': {
-            backgroundColor: 'rgba(153,255,0,.1)',
-        },
-    },
-    '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
-        backgroundColor: 'rgba(153,255,0,.9)',
-    },
-};
-const switchLabelSx = {
-    "& .MuiTypography-root": { fontFamily: "Neue_machina" },
-};
+import styles from "./page.module.css";
+import { useAppDispatch, useAppSelector } from "@/redux/redux-hooks";
+import { actions as cartActions } from "@/redux/cart-slice/cart.slice";
+import { cartSummaryFunc } from "../utils/cart-utils";
+import { useCreateLeadMutation, ILeadAttachment } from "@/api/api";
+import { getRoistatVisit } from "@/lib/analytics/roistat";
 
 const textFieldSx = {
     "& .MuiInputLabel-root": { fontFamily: "Neue_machina" },
@@ -42,124 +24,233 @@ const textFieldSx = {
     },
 };
 
-
 const CheckoutPage: React.FC = () => {
-    const [ isDisabled, setIsDisabled ] = useState<boolean>(false)
-    const [ submitButtonDisabled, setSubmitButtonDisabled ] = useState<boolean>(false)
-    const dispatch = useAppDispatch();
     const router = useRouter();
-    const { isDelivery, order, isHydrated, deliveryParams, paymentUrl, user_promocode, validPromoCode } = useAppSelector(store => store.cart);
-    const cart = useAppSelector(store => store.cart);
+    const dispatch = useAppDispatch();
+    const { order, isHydrated } = useAppSelector((store) => store.cart);
     const totalOrderPrice = cartSummaryFunc(order ?? []);
-    const [ createOrder, { isLoading, isSuccess} ] = useCreateOrderMutation();
-    const [ validatePromocode, { isLoading: isPromocodeLoading, isSuccess: isPromocodeValidationSuccess, reset } ] = usePromocodeValidationMutation();
 
+    const [name, setName] = useState("");
+    const [phone, setPhone] = useState("");
+    const [city, setCity] = useState("");
+    const [email, setEmail] = useState("");
+    const [comment, setComment] = useState("");
+    const [consent, setConsent] = useState(false);
+    const [submitError, setSubmitError] = useState<string | null>(null);
 
-    useEffect(() => {
+    const [createLead, { isLoading }] = useCreateLeadMutation();
 
-        return () => {
-            dispatch(cartActions.setDelivery(false));
-            dispatch(cartActions.resetValidCity());
-            dispatch(cartActions.resetValidDeliveryPoint());
-            dispatch(cartActions.setCdekCitySearchUserQuery(''));
-        }
-    }, [])
-
+    // Редиректим в /shop, если корзина пуста (после гидрации).
     useEffect(() => {
         if (!isHydrated) return;
         if ((order ?? []).length === 0) {
-            router.replace('/shop');
+            router.replace("/shop");
         }
     }, [isHydrated, order, router]);
 
-    const checkDeliveryValidayion = (): boolean => {
-        let result = true;
-        if (!isDelivery) {result = true}
-        if (isDelivery) {
-            if (!deliveryParams.validCityTo || !deliveryParams.validDeliveryPoint) {result = false}
+    const attachments: ILeadAttachment[] = useMemo(() => {
+        const out: ILeadAttachment[] = [];
+        for (const elem of order ?? []) {
+            for (const [side, file] of Object.entries(elem.printConfig?.files ?? {})) {
+                if (file?.url) {
+                    out.push({
+                        side: `${elem.item.name} / ${side}`,
+                        url: file.url,
+                        filename: file.filename,
+                    });
+                }
+            }
         }
-        return result;
-    }
+        return out;
+    }, [order]);
 
+    const orderSummaryText = useMemo(() => {
+        const lines: string[] = [];
+        for (const elem of order ?? []) {
+            const qty = elem.item.sizes.reduce((acc, s) => acc + (s.userQty ?? 0), 0);
+            const sizesText = elem.item.sizes
+                .filter((s) => (s.userQty ?? 0) > 0)
+                .map((s) => `${s.name}×${s.userQty}`)
+                .join(", ");
+            const printText =
+                elem.printConfig?.location && elem.printConfig.location !== "none"
+                    ? ` [принт: ${elem.printConfig.location}]`
+                    : "";
+            lines.push(
+                `• ${elem.item.name} — ${qty} шт. (${sizesText})${printText} — ${elem.item.price * qty} ₽`,
+            );
+        }
+        lines.push(`Итого: ${totalOrderPrice} ₽`);
+        return lines.join("\n");
+    }, [order, totalOrderPrice]);
 
+    const isValid =
+        name.trim().length > 0 &&
+        phone.replace(/\D/g, "").length >= 7 &&
+        city.trim().length > 0 &&
+        consent;
 
-    const formSubmitHandler = async (e: FormEvent<HTMLFormElement>) => {
+    const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-        // TODO(supabase-migration): подключить Edge Function `create-order` + платёжный шлюз (YooKassa/Robokassa).
-        alert('Чекаут в демо-режиме клона. Заказ не оформляется, платёжный шлюз и CDEK ещё не подключены.');
-    }
+        if (!isValid || isLoading) return;
+        setSubmitError(null);
 
-    const switchHandler = (e: ChangeEvent<HTMLInputElement>) => {
-        dispatch(cartActions.setDelivery(e.target.checked))
-        if (!e.target.checked) {
-            dispatch(cartActions.resetValidCity())
-            dispatch(cartActions.resetValidDeliveryPoint())
-            dispatch(cartActions.setCdekCitySearchUserQuery(''));
+        const fullComment = [
+            comment.trim() ? `Комментарий: ${comment.trim()}` : "",
+            `Город доставки: ${city.trim()}`,
+            "",
+            "Состав заказа:",
+            orderSummaryText,
+        ]
+            .filter(Boolean)
+            .join("\n");
+
+        try {
+            const result = await createLead({
+                name: name.trim(),
+                phone: phone.trim(),
+                email: email.trim() || undefined,
+                comment: fullComment,
+                source: "checkout",
+                roistat_visit: getRoistatVisit() || undefined,
+                attachments: attachments.length > 0 ? attachments : undefined,
+            }).unwrap();
+
+            if (result?.leadId) {
+                dispatch(cartActions.resetCart());
+                router.push("/thanks");
+            }
+        } catch (err) {
+            const errAny = err as { error?: string; data?: { error?: string } };
+            setSubmitError(
+                errAny?.data?.error ??
+                    errAny?.error ??
+                    "Не удалось отправить заявку. Попробуйте ещё раз или свяжитесь по телефону.",
+            );
         }
-    }
+    };
 
-    const promocodeChangeHandler = (e: ChangeEvent<HTMLInputElement>) => {
-        dispatch(cartActions.setUserPromocode(e.target.value));
-        if (!e.target.value) {
-            dispatch(cartActions.resetValidPromocode());
-            reset();
-        }
-    }
-
-    const promocodeFormSubmitHandler = async (e: any) => {
-        e.preventDefault();
-        // TODO(supabase-migration): таблица `promocodes` + Edge Function `validate-promocode`.
-        alert('Промокоды в демо-режиме клона недоступны.');
+    if (!isHydrated || (order ?? []).length === 0) {
+        return null;
     }
 
     return (
-        <section className={styles.checkout}>
-            <h1>Оформление покупки</h1>
-            <form className={styles.checkout_form} id='checkout' onSubmit={formSubmitHandler}>
-                <MainUserData />
-                <FormGroup>
-                    <FormControlLabel
-                        sx={switchLabelSx}
-                        control={
-                            <Switch
-                                sx={switchSx}
-                                id='delivery'
-                                checked={isDelivery}
-                                onChange={switchHandler}
-                            />
-                        }
-                        label="Доставка"
-                    />
-                </FormGroup>
-                {isDelivery && <DeliveryData />}
-            </form>
-            <div className={styles.checkout_priceWrapper}>
-                <form className={styles.promocode_form} onSubmit={promocodeFormSubmitHandler}>
-                    <TextField
-                        id="promocode"
-                        label="Промокод"
-                        fullWidth
-                        autoComplete="off"
-                        sx={textFieldSx}
-                        size="small"
-                        onChange={promocodeChangeHandler}
-                        value={user_promocode}
-                    />
+        <div className={styles.checkoutWrapper}>
+            <h1 className={styles.checkoutTitle}>Оформление заявки</h1>
 
-                    <button type='submit' className={styles.promocode_button} disabled={isPromocodeLoading || isPromocodeValidationSuccess}>
-                        <Image src={rightArrow} alt='стрелка вправо' />
-                    </button>
-                </form>
-                <p className={styles.checkout_priceText}>Итого по заказу: {totalOrderPrice} Р.</p>
-                <p className={styles.checkout_priceText}>Доставка: {deliveryParams.deliveryPrice} Р.</p>
-                {deliveryParams.validCityTo && deliveryParams.validCityTo.city && <p className={styles.checkout_priceText}>Доставка в: {deliveryParams.validCityTo.city}</p>}
-                {deliveryParams.validDeliveryPoint && deliveryParams.validDeliveryPoint.name && <p className={styles.checkout_priceText}>Пункт выдачи: {deliveryParams.validDeliveryPoint.name}</p>}
-                <p className={styles.checkout_finalPriceText} style={validPromoCode.name ? { textDecoration: 'line-through rgb(153,255,0)'} : {}}>= {totalOrderPrice + deliveryParams.deliveryPrice} Р.</p>
-                {validPromoCode.name && validPromoCode.discount_ratio && <p className={styles.checkout_finalPriceText} style={{ fontSize: '18px' }}>= {(totalOrderPrice * validPromoCode.discount_ratio) + deliveryParams.deliveryPrice} Р.</p>}
-                <button type='submit' form='checkout' className={styles.form_submitButton} disabled={isDisabled || !checkDeliveryValidayion()}>{isDisabled ? 'Загрузка...':'Заказать'}</button>
-                <p className={styles.privacy}>Оформляя заказ вы соглашаетесь с <Link target="_blank" style={{color: 'black'}} href='/privacy'>политикой конфиденциальности</Link></p>
-            </div>
-        </section>
+            <section className={styles.orderSummary}>
+                <h2 className={styles.summaryTitle}>Ваш заказ</h2>
+                <ul className={styles.summaryList}>
+                    {(order ?? []).map((elem) => {
+                        const qty = elem.item.sizes.reduce((acc, s) => acc + (s.userQty ?? 0), 0);
+                        const sizesText = elem.item.sizes
+                            .filter((s) => (s.userQty ?? 0) > 0)
+                            .map((s) => `${s.name}×${s.userQty}`)
+                            .join(", ");
+                        return (
+                            <li key={elem.itemCartId} className={styles.summaryItem}>
+                                <Link href={`/shop/${elem.item.slug}`} className={styles.summaryItemLink}>
+                                    {elem.item.name}
+                                </Link>
+                                <span className={styles.summaryItemMeta}>
+                                    {qty} шт. ({sizesText}) — {elem.item.price * qty} ₽
+                                </span>
+                                {elem.printConfig?.location && elem.printConfig.location !== "none" && (
+                                    <span className={styles.summaryItemPrint}>
+                                        Принт: {elem.printConfig.location}
+                                    </span>
+                                )}
+                            </li>
+                        );
+                    })}
+                </ul>
+                <p className={styles.summaryTotal}>Итого: {totalOrderPrice} ₽</p>
+                <p className={styles.summaryHint}>
+                    Стоимость печати рассчитается менеджером по вашему макету. Финальная цена будет согласована
+                    перед оплатой.
+                </p>
+            </section>
+
+            <form className={styles.leadForm} onSubmit={handleSubmit} noValidate>
+                <TextField
+                    required
+                    fullWidth
+                    label="Имя"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    sx={textFieldSx}
+                    inputProps={{ maxLength: 100 }}
+                />
+                <MuiTelInput
+                    required
+                    fullWidth
+                    label="Телефон"
+                    defaultCountry="RU"
+                    value={phone}
+                    onChange={setPhone}
+                    sx={textFieldSx}
+                />
+                <TextField
+                    required
+                    fullWidth
+                    label="Город доставки"
+                    value={city}
+                    onChange={(e) => setCity(e.target.value)}
+                    sx={textFieldSx}
+                    inputProps={{ maxLength: 100 }}
+                />
+                <TextField
+                    fullWidth
+                    type="email"
+                    label="Email (необязательно)"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    sx={textFieldSx}
+                    inputProps={{ maxLength: 200 }}
+                />
+                <TextField
+                    fullWidth
+                    multiline
+                    minRows={3}
+                    label="Комментарий (необязательно)"
+                    value={comment}
+                    onChange={(e) => setComment(e.target.value)}
+                    sx={textFieldSx}
+                    inputProps={{ maxLength: 2000 }}
+                />
+                <FormControlLabel
+                    control={
+                        <Checkbox
+                            checked={consent}
+                            onChange={(e) => setConsent(e.target.checked)}
+                            required
+                            sx={{ color: 'rgb(57,57,57)', '&.Mui-checked': { color: 'rgb(57,57,57)' } }}
+                        />
+                    }
+                    label={
+                        <span style={{ fontFamily: 'Neue_machina', fontSize: 13 }}>
+                            Согласен с обработкой персональных данных в соответствии с{" "}
+                            <Link href="/privacy" style={{ textDecoration: 'underline' }}>политикой конфиденциальности</Link>
+                        </span>
+                    }
+                />
+
+                {submitError && <Alert severity="error">{submitError}</Alert>}
+
+                <Button
+                    type="submit"
+                    variant="contained"
+                    disabled={!isValid || isLoading}
+                    className={styles.submitBtn}
+                >
+                    {isLoading ? "Отправляем…" : "Оформить заявку"}
+                </Button>
+
+                <p className={styles.submitHint}>
+                    Менеджер свяжется в течение 30 минут для согласования макета, итоговой цены и условий доставки.
+                </p>
+            </form>
+        </div>
     );
 };
 

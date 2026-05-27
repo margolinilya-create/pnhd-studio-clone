@@ -41,4 +41,38 @@
     font-family: 'Neue_machina';
     font-size: 16px;
     font-weight: 200;
+    line-height: 22px;
+}
+
+.text a {
+    color: black;
+    text-decoration: underline;
+}
+
+.actions {
+    display: flex;
+    gap: 16px;
+    margin-top: 12px;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.linkBtn,
+.linkBtnPrimary {
+    font-family: 'Neue_machina', sans-serif;
+    font-size: 13px;
+    font-weight: 800;
+    text-transform: uppercase;
+    text-decoration: none;
+    border-radius: 6px;
+    padding: 10px 20px;
+    color: black;
+}
+
+.linkBtn {
+    border: 1px solid black;
+}
+
+.linkBtnPrimary {
+    background-color: rgb(153, 255, 0);
 }
