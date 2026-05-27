@@ -1,8 +1,12 @@
 'use client';
 
 import React, { useMemo, useState } from 'react';
-import Link from 'next/link';
 import { v4 as uuidv4 } from 'uuid';
+import Dialog from '@mui/material/Dialog';
+import DialogTitle from '@mui/material/DialogTitle';
+import DialogContent from '@mui/material/DialogContent';
+import IconButton from '@mui/material/IconButton';
+import CloseIcon from '@mui/icons-material/Close';
 import styles from './product-info.module.css';
 import SizeGrid from './size-grid';
 import PrintSelector from './print-selector';
@@ -17,7 +21,8 @@ import { useAppDispatch } from '@/redux/redux-hooks';
 import { actions as cartActions } from '@/redux/cart-slice/cart.slice';
 import { useRouter } from 'next/navigation';
 import { uploadPrintFile } from '@/lib/storage/upload-print';
-import { SIDES_FOR_LOCATION } from './print-config';
+import { SIDES_FOR_LOCATION, PRINT_PRICE_TABLE } from './print-config';
+import PrintPreview from './print-preview';
 
 const formatRub = (n: number) => new Intl.NumberFormat('ru-RU').format(n) + ' ₽';
 
@@ -36,6 +41,7 @@ const ProductInfo: React.FC<{ item: IProduct }> = ({ item }) => {
     location: 'none',
     files: {},
   });
+  const [sizeGuideOpen, setSizeGuideOpen] = useState(false);
 
   const total = useMemo(
     () => Object.values(qty).reduce((a, b) => a + b, 0),
@@ -105,9 +111,13 @@ const ProductInfo: React.FC<{ item: IProduct }> = ({ item }) => {
         <h1 className={styles.title}>{item.name}</h1>
         <p className={styles.price}>— {formatRub(item.price)}</p>
         {item.description && <p className={styles.desc}>{item.description}</p>}
-        <Link href="/size_chart" target="_blank" className={styles.sizeGuide}>
+        <button
+          type="button"
+          className={styles.sizeGuide}
+          onClick={() => setSizeGuideOpen(true)}
+        >
           Гид по размерам
-        </Link>
+        </button>
       </div>
 
       <SizeGrid
@@ -127,6 +137,74 @@ const ProductInfo: React.FC<{ item: IProduct }> = ({ item }) => {
           onClearFile={handleClearFile}
         />
       )}
+
+      {item.isForPrinting && hasAnyPrintFile(printConfig) && (
+        <div className={styles.previewBlock}>
+          <h3 className={styles.previewTitle}>Превью принта</h3>
+          <PrintPreview
+            photoUrl={item.image_url}
+            photoAlt={`${item.name} — превью`}
+            productType={item.type}
+            printConfig={printConfig}
+            className={styles.previewImg}
+          />
+          <p className={styles.previewHint}>
+            Это примерное расположение. Финальный масштаб и позиционирование согласует
+            дизайнер перед печатью.
+          </p>
+        </div>
+      )}
+
+      {item.isForPrinting && (
+        <details className={styles.priceTable}>
+          <summary className={styles.priceTableSummary}>Стоимость печати</summary>
+          <table>
+            <thead>
+              <tr>
+                <th>Формат</th>
+                <th>DTG</th>
+                <th>DTF</th>
+              </tr>
+            </thead>
+            <tbody>
+              {PRINT_PRICE_TABLE.map((row) => (
+                <tr key={row.format}>
+                  <td>{row.format}</td>
+                  <td>{formatRub(row.dtg)}</td>
+                  <td>{formatRub(row.dtf)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <p className={styles.priceTableHint}>
+            Окончательную цену рассчитает менеджер по вашему макету и тиражу.
+          </p>
+        </details>
+      )}
+
+      <Dialog
+        open={sizeGuideOpen}
+        onClose={() => setSizeGuideOpen(false)}
+        maxWidth="md"
+        fullWidth
+        scroll="paper"
+      >
+        <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', pr: 1 }}>
+          <span style={{ fontFamily: 'Neue_machina', fontSize: 16, fontWeight: 800, textTransform: 'uppercase' }}>
+            Гид по размерам
+          </span>
+          <IconButton onClick={() => setSizeGuideOpen(false)} aria-label="закрыть">
+            <CloseIcon />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent dividers sx={{ p: 0 }}>
+          <iframe
+            src="/size_chart"
+            title="Гид по размерам"
+            style={{ width: '100%', height: '70vh', border: 'none', display: 'block' }}
+          />
+        </DialogContent>
+      </Dialog>
 
       <div className={styles.ctaRow}>
         <div className={styles.hrThin} />
@@ -154,6 +232,10 @@ function isPrintReady(printConfig: IPrintConfig, allowsPrint: boolean): boolean 
   if (!allowsPrint) return true;
   const required = SIDES_FOR_LOCATION[printConfig.location];
   return required.every((side) => Boolean(printConfig.files[side]));
+}
+
+function hasAnyPrintFile(printConfig: IPrintConfig): boolean {
+  return Object.values(printConfig.files).some((f) => Boolean(f?.url));
 }
 
 export default ProductInfo;
