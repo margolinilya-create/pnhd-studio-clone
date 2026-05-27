@@ -16,6 +16,8 @@ const TYPE_OPTIONS = [
 ] as const;
 
 const STOCK_OPTIONS = [
+    { value: 'studio',       label: 'Студия (в наличии)' },
+    { value: 'supplier',     label: 'У поставщика' },
     { value: 'in_stock',     label: 'В наличии' },
     { value: 'limited',      label: 'Ограниченно' },
     { value: 'out_of_stock', label: 'Нет в наличии' },

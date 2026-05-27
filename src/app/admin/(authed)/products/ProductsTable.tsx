@@ -33,6 +33,8 @@ const TYPE_LABEL: Record<string, string> = {
 };
 
 const STOCK_LABEL: Record<string, string> = {
+    studio: 'Студия',
+    supplier: 'Поставщик',
     in_stock: 'В наличии',
     limited: 'Ограниченно',
     out_of_stock: 'Нет в наличии',

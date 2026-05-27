@@ -1,7 +1,9 @@
 import { z } from 'zod';
 
 export const PRODUCT_TYPES = ['tshirt', 'hoodie', 'longsleeve', 'sweatshirt', 'cap', 'shopper'] as const;
-export const PRODUCT_STOCK = ['in_stock', 'limited', 'out_of_stock'] as const;
+// 'studio' / 'supplier' — legacy-значения из исходного каталога pnhd.ru;
+// 'in_stock' / 'limited' / 'out_of_stock' — нормализованные для новых товаров.
+export const PRODUCT_STOCK = ['studio', 'supplier', 'in_stock', 'limited', 'out_of_stock'] as const;
 
 export const sizeSchema = z.object({
     id: z.string().uuid().optional(),
