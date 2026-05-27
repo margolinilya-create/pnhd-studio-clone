@@ -24,7 +24,7 @@ export const generateStaticParams = async () => {
     const slugs = await getAllPostSlugs();
     return slugs.map((slug) => ({ post: slug }));
 }
-export const dynamicParams = false;
+export const dynamicParams = true;
 
 const PostPage = async ({params}: { params: { post: string } }) => {
     const post = await getPostBySlug(params.post);
