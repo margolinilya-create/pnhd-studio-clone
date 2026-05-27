@@ -13,7 +13,14 @@ export type LeadSource =
   | 'popup'
   | 'shop-no-model'
   | 'product-page'
-  | 'methods-consultation';
+  | 'methods-consultation'
+  | 'checkout';
+
+export interface ILeadAttachment {
+  side: string;
+  url: string;
+  filename?: string;
+}
 
 export interface ICreateLeadPayload {
   name: string;
@@ -23,6 +30,7 @@ export interface ICreateLeadPayload {
   reference_url?: string;
   source: LeadSource;
   roistat_visit?: string;
+  attachments?: ILeadAttachment[];
 }
 
 export const api = createApi({
