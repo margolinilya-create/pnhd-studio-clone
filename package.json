@@ -27,6 +27,7 @@
     "@tiptap/react": "^2.27.2",
     "@tiptap/starter-kit": "^2.27.2",
     "@types/three": "^0.164.0",
+    "agentation": "^3.0.2",
     "classnames": "^2.5.1",
     "dayjs": "^1.11.18",
     "isomorphic-dompurify": "^2.36.0",

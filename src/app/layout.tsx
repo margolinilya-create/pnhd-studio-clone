@@ -16,6 +16,7 @@ import {textileOptions} from "@/app/utils/textile-options-data";
 import {getCurrentPath} from '@/app/utils/constants';
 import {SITE_INFO} from "@/app/constants";
 import ContactsWidget from "@/components/shared-components/contactsWidget/contactsWidget";
+import { Agentation } from "agentation";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -47,7 +48,10 @@ export default function RootLayout({
     return (
       <html lang="ru">
         <ReduxProvider>
-          <body className={inter.className}>{children}</body>
+          <body className={inter.className}>
+            {children}
+            {process.env.NODE_ENV === "development" && <Agentation />}
+          </body>
         </ReduxProvider>
       </html>
     );
@@ -106,6 +110,7 @@ export default function RootLayout({
           `}
           </Script>
           <Script type="text/javascript" async src="https://app.uiscom.ru/static/cs.min.js?k=79obNG5YrzIplUgKXZYSiPbK7agWm7Dk"></Script>
+          {process.env.NODE_ENV === "development" && <Agentation />}
         </body>
       </ReduxProvider>
     </html>
