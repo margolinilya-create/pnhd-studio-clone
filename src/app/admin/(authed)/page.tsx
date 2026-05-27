@@ -16,6 +16,18 @@ async function loadCounts() {
         admin.from('leads').select('id', { count: 'exact', head: true }).eq('status', 'new'),
     ]);
 
+    // Тихие ошибки от service_role-клиента (битый ключ, RLS, network) проявляются
+    // как count=null → 0. Логируем в server-консоль, чтобы поймать на этапе разработки.
+    const errors = {
+        products: products.error,
+        posts: posts.error,
+        gallery: gallery.error,
+        newLeads: newLeads.error,
+    };
+    if (Object.values(errors).some(Boolean)) {
+        console.error('[admin/dashboard] count errors:', errors);
+    }
+
     return {
         products: products.count ?? 0,
         posts:    posts.count ?? 0,

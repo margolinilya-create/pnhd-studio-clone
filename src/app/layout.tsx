@@ -38,6 +38,21 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // x-pathname выставляется middleware. На admin-роутах публичную обёртку
+  // (header/footer/analytics) не рендерим — у админки свой layout.
+  const pathname = headers().get('x-pathname') ?? '';
+  const isAdmin = pathname.startsWith('/admin');
+
+  if (isAdmin) {
+    return (
+      <html lang="ru">
+        <ReduxProvider>
+          <body className={inter.className}>{children}</body>
+        </ReduxProvider>
+      </html>
+    );
+  }
+
   return (
     <html lang="ru">
       <ReduxProvider>

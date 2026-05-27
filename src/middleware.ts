@@ -6,10 +6,17 @@ const PUBLIC_ADMIN_PATHS = ['/admin/login'];
 export async function middleware(req: NextRequest) {
     const { pathname } = req.nextUrl;
 
-    if (!pathname.startsWith('/admin')) return NextResponse.next();
-    if (PUBLIC_ADMIN_PATHS.includes(pathname)) return NextResponse.next();
+    // Прокидываем pathname в request headers, чтобы root layout мог понять,
+    // на каком роуте находится, и не рендерить публичный header/footer на /admin.
+    const requestHeaders = new Headers(req.headers);
+    requestHeaders.set('x-pathname', pathname);
+    const passthrough = () =>
+        NextResponse.next({ request: { headers: requestHeaders } });
 
-    const res = NextResponse.next();
+    if (!pathname.startsWith('/admin')) return passthrough();
+    if (PUBLIC_ADMIN_PATHS.includes(pathname)) return passthrough();
+
+    const res = NextResponse.next({ request: { headers: requestHeaders } });
     const supabase = createMiddlewareSupabaseClient(req, res);
 
     const { data: { user } } = await supabase.auth.getUser();
@@ -38,5 +45,7 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
-    matcher: ['/admin/:path*'],
+    // Матчим всё, кроме статики Next.js и медиа-файлов — иначе x-pathname не выставится
+    // и root layout не сможет различить публичные и admin-страницы.
+    matcher: ['/((?!_next/static|_next/image|favicon|.*\\..*).*)'],
 };
