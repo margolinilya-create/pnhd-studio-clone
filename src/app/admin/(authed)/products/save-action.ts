@@ -25,12 +25,13 @@ export async function saveProduct(input: ProductInput): Promise<SaveResult> {
 
     const { id, sizes, photos, linkedIds, ...productFields } = data;
 
-    let productId = id;
-    if (productId) {
+    let productId: string;
+    if (id) {
         const { error } = await admin.from('products')
             .update(productFields)
-            .eq('id', productId);
+            .eq('id', id);
         if (error) return { ok: false, error: error.message };
+        productId = id;
     } else {
         const { data: dup } = await admin.from('products')
             .select('id').eq('slug', productFields.slug).maybeSingle();
@@ -44,13 +45,10 @@ export async function saveProduct(input: ProductInput): Promise<SaveResult> {
         productId = created.id;
     }
 
-    // productId is guaranteed to be set at this point (either from input.id or from insert)
-    const resolvedId = productId as string;
-
     try {
-        await syncChildren(admin, 'product_sizes',          resolvedId, sizes);
-        await syncChildren(admin, 'product_gallery_photos', resolvedId, photos);
-        await syncLinks(admin, resolvedId, linkedIds);
+        await syncChildren(admin, 'product_sizes',          productId, sizes);
+        await syncChildren(admin, 'product_gallery_photos', productId, photos);
+        await syncLinks(admin, productId, linkedIds);
     } catch (e) {
         return { ok: false, error: e instanceof Error ? e.message : 'Ошибка синхронизации связей' };
     }
