@@ -17,8 +17,9 @@ const LIST_LIMIT = 1000;
 Deno.serve(async (req) => {
   // Auth: единственный валидный вызов — c X-Cleanup-Secret matching env
   if (!CLEANUP_SECRET) {
-    return new Response(JSON.stringify({ error: 'CLEANUP_SECRET not configured' }), {
-      status: 500,
+    console.error('[cleanup-user-uploads] CLEANUP_SECRET not configured');
+    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+      status: 401,
       headers: { 'Content-Type': 'application/json' },
     });
   }
@@ -43,7 +44,10 @@ Deno.serve(async (req) => {
     });
   }
   if (!objects) {
-    return new Response(JSON.stringify({ deleted: 0, note: 'empty bucket' }), { status: 200 });
+    return new Response(JSON.stringify({ deleted: 0, note: 'empty bucket' }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    });
   }
 
   // TODO: paginate если objects.length === LIST_LIMIT. За 14 дней реалистично не наберём.
@@ -56,18 +60,21 @@ Deno.serve(async (req) => {
     .filter((o) => o.created_at && new Date(o.created_at) < cutoff)
     .map((o) => `${PREFIX}/${o.name}`);
 
+  console.log(`[cleanup-user-uploads] found ${objects.length} objects, ${toDelete.length} older than ${MAX_AGE_DAYS}d`);
+
   if (toDelete.length === 0) {
     return new Response(JSON.stringify({ deleted: 0 }), { status: 200 });
   }
 
   const { error: rmErr } = await supabase.storage.from(BUCKET).remove(toDelete);
   if (rmErr) {
-    return new Response(JSON.stringify({ error: `remove failed: ${rmErr.message}`, attempted: toDelete.length }), {
+    return new Response(JSON.stringify({ error: `remove failed: ${rmErr.message}`, attempted_count: toDelete.length }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },
     });
   }
 
+  console.log(`[cleanup-user-uploads] deleted ${toDelete.length} objects`);
   return new Response(JSON.stringify({ deleted: toDelete.length }), {
     status: 200,
     headers: { 'Content-Type': 'application/json' },
