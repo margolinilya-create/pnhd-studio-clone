@@ -19,7 +19,11 @@ async function loadProducts(): Promise<ProductRow[]> {
         console.error('[admin/products] load error:', error);
         return [];
     }
-    return data ?? [];
+    // Postgres numeric → JS string ("2000") при сериализации; для DataGrid type:'number' нужен number.
+    return (data ?? []).map((r) => ({
+        ...r,
+        price: typeof r.price === 'string' ? Number(r.price) : r.price,
+    }));
 }
 
 export default async function ProductsListPage() {
