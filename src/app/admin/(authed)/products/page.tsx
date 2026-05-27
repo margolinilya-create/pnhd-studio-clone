@@ -1,8 +1,7 @@
-import Link from 'next/link';
-import { Box, Button, Stack, Typography } from '@mui/material';
 import { createAdminClient } from '@/lib/supabase/admin-server';
 import { requireAdmin } from '../../_lib/require-admin';
-import { ProductsTable, type ProductRow } from './ProductsTable';
+import { ProductsPageClient } from './ProductsPageClient';
+import type { ProductRow } from './ProductsTable';
 
 export const metadata = { title: 'Товары' };
 export const dynamic = 'force-dynamic';
@@ -25,16 +24,5 @@ async function loadProducts(): Promise<ProductRow[]> {
 
 export default async function ProductsListPage() {
     const products = await loadProducts();
-
-    return (
-        <Box>
-            <Stack direction="row" justifyContent="space-between" alignItems="center" mb={3}>
-                <Typography variant="h4">Товары</Typography>
-                <Button component={Link} href="/admin/products/new" variant="contained">
-                    + Новый
-                </Button>
-            </Stack>
-            <ProductsTable products={products} />
-        </Box>
-    );
+    return <ProductsPageClient products={products} />;
 }
