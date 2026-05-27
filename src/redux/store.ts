@@ -3,6 +3,7 @@ import { reducer as utilsReducer } from './utils-slice/utils.slice';
 import { reducer as cartReducer } from './cart-slice/cart.slice';
 import { reducer as leadReducer } from './lead-slice/lead.slice';
 import { cartPersistMiddleware } from './middleware/cart-persist';
+import { cartOrphanCleanupMiddleware } from './middleware/cart-orphan-cleanup';
 import { api } from '@/api/api';
 import { setupListeners } from '@reduxjs/toolkit/query';
 
@@ -16,6 +17,7 @@ export const store = configureStore({
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware()
       .prepend(cartPersistMiddleware.middleware)
+      .prepend(cartOrphanCleanupMiddleware.middleware)
       .concat(api.middleware),
 });
 
