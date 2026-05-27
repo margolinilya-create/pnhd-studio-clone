@@ -2,7 +2,7 @@
 
 Этот файл — единый источник правды для будущих ИИ-сессий. Если ты — Claude или другой агент, начни отсюда.
 
-> **Last full update:** 2026-05-27 после батча «3D-конструктор → simplified flow + leads-pipeline + catalog import».
+> **Last full update:** 2026-05-27 после батча «pre-launch hardening — leads retention + orphan-GC + image whitelist».
 > Если правишь — синхронизируй разделы 4, 5, 6, 7, 9, 10 одновременно с кодом.
 
 ---
@@ -68,7 +68,7 @@ ESLint правила `@next/next/no-img-element`, `react-hooks/exhaustive-deps`
 | `/shop/[slug]` | SSG (`generateStaticParams`) | Supabase `products` by slug + новая правая панель `ProductInfo` | ✅ |
 | `/blog` | SSR | Supabase `blog_posts` | ✅ |
 | `/blog/[post]` | SSG (`generateStaticParams`, `dynamicParams=false`) | Supabase `blog_posts` by slug | ✅ |
-| `/cart` | CSR | Redux + sessionStorage (key `order_v2`) | ✅ |
+| `/cart` | CSR | Redux + sessionStorage (key `order_v3`) | ✅ |
 | `/checkout` | CSR | Redux + RTK Query → CDEK/orders | ⚠️ demo-alert (нет CDEK + нет шлюза) |
 | `/thanks` | CSR | — | ✅ |
 | `/contacts`, `/oferta`, `/privacy`, `/size_chart`, `/howto`, `/loyalty` | SSR | статика | ✅ |
@@ -114,8 +114,17 @@ resetCart() / setDelivery / setCdek... / setUserData / setPaymentURL / setUserPr
 
 - Слушает: `addToCart, setPrintLocation, setPrintFile, clearPrintFile, clearAllPrints, deleteItemFromCart, resetCart`
 - НЕ слушает `restoreCart` — иначе сразу после гидрации переписывает sessionStorage тем же значением.
-- Ключ: `order_v2` (был `order`; bumped из-за смены схемы `prints[] → printConfig`).
-- CartIcon на mount чистит legacy ключ `order` и валидирует форму restored массива (требует `printConfig.location ∈ enum + files: object + itemCartId: string`).
+- Ключ: `order_v3` (был `order_v2`; bumped из-за добавления `path` в `IPrintFileRef`).
+- CartIcon на mount чистит legacy ключи `order` и `order_v2` и валидирует форму restored массива (требует `printConfig.location ∈ enum + files: object + itemCartId: string`).
+
+### Cart-orphan-cleanup middleware
+
+[src/redux/middleware/cart-orphan-cleanup.ts](src/redux/middleware/cart-orphan-cleanup.ts) — second listener middleware:
+
+- Слушает: `clearPrintFile`, `clearAllPrints`, `deleteItemFromCart`, `resetCart`
+- На каждом action diff'ит `previousState.cart.order` vs `currentState.cart.order`, собирает `path`-поля из удалённых `IPrintFileRef`, вызывает `supabase.storage.from('user-uploads').remove(paths)`.
+- Best-effort: ошибки storage логируются `console.warn`, но action не отменяется.
+- Покрывает 90% случаев когда юзер сам убрал/удалил принт. Abandoned sessions (закрытая вкладка) подметаются nightly sweeper'ом (см. §6).
 
 ### Hydration race fix (B1 из review-pass)
 
@@ -176,12 +185,17 @@ resetCart() / setDelivery / setCdek... / setUserData / setPaymentURL / setUserPr
 | Function | verify_jwt | Назначение |
 |---|---|---|
 | `create-lead` | `false` (публичный POST) | Принимает заявки, валидирует (length-caps + regex), rate-limit 3/мин по `sha256(IP)`, CORS allowlist, insert в `leads` через service_role, опц. → Bitrix24 `crm.lead.add`, опц. → Telegram |
+| `cleanup-user-uploads` | `false` (secret-header auth) | Nightly sweeper: листает `user-uploads/prints/`, удаляет объекты старше 14 дней. Авторизуется через `X-Cleanup-Secret` header. Вызывается pg_cron через pg_net. |
 
 #### env переменные `create-lead`:
 - `SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY` — выставляются автоматически
 - `BITRIX_WEBHOOK_URL` — опц., формат `https://<portal>.bitrix24.ru/rest/<user>/<token>/`. Когда задан — лиды летят в Bitrix24. Пока пустой.
 - `TELEGRAM_BOT_TOKEN` + `TELEGRAM_CHAT_ID` — опц., при наличии шлёт уведомление в Telegram.
 - `ALLOWED_ORIGINS` — опц. CSV. Если не задан, используется встроенный list (`studio.pnhd.ru`, наши Vercel-aliases, `localhost:3000`, regex `pnhd-studio-clone-*.vercel.app`).
+
+#### env переменные `cleanup-user-uploads`:
+- `SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY` — auto
+- `CLEANUP_SECRET` — обязательный, hex-32 random. Тот же секрет хранится в `vault.secrets` под именем `edge_function_cleanup_secret` для pg_cron.
 
 ### Миграции (`supabase/migrations/`)
 
@@ -191,6 +205,11 @@ resetCart() / setDelivery / setCdek... / setUserData / setPaymentURL / setUserPr
 4. `20260527000002_leads_table.sql` — leads table
 5. `20260527000003_leads_harden.sql` — `ip_hash` колонка + drop anon-insert на leads + drop SVG из bucket + path-prefix RLS
 6. `20260527000004_import_catalog.sql` — реальный каталог (25 продуктов), извлечённый из RSC-payload `studio.pnhd.ru` (см. секцию 9)
+
+Миграции **5–8** — admin panel (см. §15). После них:
+
+9. `20260527000009_leads_retention.sql` — pg_cron job daily DELETE leads >90 дней
+10. `20260527000010_user_uploads_sweeper.sql` — pg_cron + pg_net вызов `cleanup-user-uploads` daily, секрет из Vault
 
 ---
 
@@ -275,7 +294,8 @@ API оригинала `pnhdstudioapi.ru/api/products` отдаёт 502. Скр�
 | [src/api/api.ts](src/api/api.ts) | RTK Query endpoints; `createLead` → Edge Function через `queryFn` + supabase-js; `LeadSource` enum |
 | [src/redux/store.ts](src/redux/store.ts) | Store + `cartPersistMiddleware` |
 | [src/redux/cart-slice/cart.slice.ts](src/redux/cart-slice/cart.slice.ts) | Reducers без sessionStorage (всё через listener middleware) |
-| [src/redux/middleware/cart-persist.ts](src/redux/middleware/cart-persist.ts) | `createListenerMiddleware` для sessionStorage persist, ключ `CART_STORAGE_KEY = 'order_v2'` |
+| [src/redux/middleware/cart-persist.ts](src/redux/middleware/cart-persist.ts) | `createListenerMiddleware` для sessionStorage persist, ключ `CART_STORAGE_KEY = 'order_v3'` |
+| [src/redux/middleware/cart-orphan-cleanup.ts](src/redux/middleware/cart-orphan-cleanup.ts) | Listener middleware: удаляет orphan'ы из Storage когда юзер чистит принты |
 | [src/lib/supabase/server.ts](src/lib/supabase/server.ts) | Supabase client для SSR |
 | [src/lib/supabase/client.ts](src/lib/supabase/client.ts) | Supabase client для browser |
 | [src/lib/storage/upload-print.ts](src/lib/storage/upload-print.ts) | Аплоадер в `user-uploads/prints/...` |
@@ -287,6 +307,7 @@ API оригинала `pnhdstudioapi.ru/api/products` отдаёт 502. Скр�
 | [src/components/shared-components/noModelBlock/NoModelBlockForm.tsx](src/components/shared-components/noModelBlock/NoModelBlockForm.tsx) | Форма «не нашли модель» на /shop |
 | [supabase/migrations/](supabase/migrations/) | SQL миграции (6 штук) |
 | [supabase/functions/create-lead/index.ts](supabase/functions/create-lead/index.ts) | Edge Function |
+| [supabase/functions/cleanup-user-uploads/index.ts](supabase/functions/cleanup-user-uploads/index.ts) | Edge Function-sweeper для bucket `user-uploads/prints/` |
 
 ### Удалено (после батча 2026-05-27)
 
@@ -319,14 +340,16 @@ API оригинала `pnhdstudioapi.ru/api/products` отдаёт 502. Скр�
 - [x] Bucket `user-uploads`: path-prefix RLS, drop SVG, MIME whitelist
 - [x] Drop direct anon-insert RLS на `leads` (только Edge Function пишет)
 
+### 🟢 Сделано (батч 2026-05-27, pre-launch hardening)
+- [x] Leads retention 90 дней через pg_cron (`cleanup-old-leads`)
+- [x] Orphan-GC: `IPrintFileRef.path` + listener middleware `cart-orphan-cleanup.ts`
+- [x] Sweeper Edge Function `cleanup-user-uploads` + pg_cron вызов (14-day cutoff)
+- [x] Image whitelist в `next.config.mjs` сужен до конкретного Supabase ref
+
 ### 🟡 Известные косяки (open)
 
 | Severity | Issue | Где |
 |---|---|---|
-| Med | Orphan-файлы в `user-uploads` — clearPrintFile удаляет URL из Redux, но Storage-объект остаётся. Нужен GC: либо хранить path в `IPrintFileRef` + клиентский `remove()`, либо scheduled Edge Function-sweeper. | [src/lib/storage/upload-print.ts](src/lib/storage/upload-print.ts), `clearPrintFile` reducer |
-| Med | Нет retention-политики на `public.leads` — PII копится вечно, 152-ФЗ требует purpose-limited storage. Нужен `pg_cron` job. | `leads` table |
-| Med | `next.config.mjs` images разрешает любой `*.supabase.co` — сузить до своего subdomain. | `next.config.mjs` |
-| Low | `dynamicParams=false` на `/blog/[post]` — новые посты не появятся без билда. | `src/app/blog/[post]/page.tsx` |
 | Low | 6 копипаст-страниц категорий (`futbolki`, `hudi`, `kepki`, `longslivy`, `svitshoty`, `shoppery`) — должны быть один generic компонент. | `src/app/{categories}/page.tsx` |
 | Low | Three.js в общем бандле (главная + shop-lead-screen) — `dynamic({ ssr:false })` сэкономит ~600 КБ gzipped. | `src/components/shared-components/3d-tee/3d-tee.tsx` |
 | Low | 15/25 товаров с битым `image_url` на cdn.pnhd.ru — нужны исходники для заливки в `product-images` bucket. | `products.image_url` |
@@ -362,7 +385,9 @@ NEXT_PUBLIC_SUPABASE_URL=https://almfjmiygtnzngkayhdv.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=<берётся из Supabase Dashboard → Settings → API → publishable/anon key>
 ```
 
-Для Edge Function `create-lead` секреты выставляются в Supabase Dashboard → Edge Functions → Secrets (не в Next.js env): `BITRIX_WEBHOOK_URL`, `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`, `ALLOWED_ORIGINS`.
+Для Edge Functions секреты выставляются в Supabase Dashboard → Edge Functions → Secrets (не в Next.js env):
+- `BITRIX_WEBHOOK_URL`, `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`, `ALLOWED_ORIGINS` — для `create-lead`
+- `CLEANUP_SECRET` — для `cleanup-user-uploads` (тот же hex продублирован в `vault.secrets` под именем `edge_function_cleanup_secret`)
 
 ### Добавить новый товар
 
