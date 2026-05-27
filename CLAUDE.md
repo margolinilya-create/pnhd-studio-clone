@@ -2,7 +2,7 @@
 
 Этот файл — единый источник правды для будущих ИИ-сессий. Если ты — Claude или другой агент, начни отсюда.
 
-> **Last full update:** 2026-05-27 после батча «pre-launch hardening — leads retention + orphan-GC + image whitelist».
+> **Last full update:** 2026-05-27 после батча «tech-debt frontend — 3D dynamic-import + CategoryPage refactor + admin active-link».
 > Если правишь — синхронизируй разделы 4, 5, 6, 7, 9, 10 одновременно с кодом.
 
 ---
@@ -36,7 +36,7 @@
 
 | Слой | Технология | Версия |
 |---|---|---|
-| Framework | Next.js (App Router) | 14.1.0 |
+| Framework | Next.js (App Router) | 14.2.35 |
 | Runtime | React | 18 |
 | Язык | TypeScript (strict) | 5 |
 | Стиль | CSS Modules + MUI v7 `sx` + Emotion | — |
@@ -53,7 +53,7 @@
 - `@ffmpeg/core`, `@ffmpeg/ffmpeg` (видео-запись конструктора)
 - `konva`, `react-konva`, `use-image` (2D-редактор принта)
 
-3D-зависимости (`three`, `@react-three/fiber`, `@react-three/drei`, `maath`) **остались** — их использует `<Tee>` (3D-футболка на главной маркетинг-страницах). Они в общем бандле → известный perf-issue (см. секцию 11).
+3D-зависимости (`three`, `@react-three/fiber`, `@react-three/drei`, `maath`) **остались** — их использует `<Tee>` (3D-футболка на главной маркетинг-страницах). Загружаются через `next/dynamic({ssr:false})` → не блокируют initial bundle.
 
 ESLint правила `@next/next/no-img-element`, `react-hooks/exhaustive-deps`, `react/no-unescaped-entities` — отключены (исторический долг).
 
@@ -74,7 +74,7 @@ ESLint правила `@next/next/no-img-element`, `react-hooks/exhaustive-deps`
 | `/contacts`, `/oferta`, `/privacy`, `/size_chart`, `/howto`, `/loyalty` | SSR | статика | ✅ |
 | `/methods/[slug]`, `/methods/[slug]/[type]` | SSR | локальные TS-данные (`method-options-data.ts`) | ✅ |
 | `/prints/[slug]`, `/textile/[slug]` | SSR | локальные TS-данные | ✅ |
-| `/futbolki`, `/hudi`, `/kepki`, `/longslivy`, `/svitshoty`, `/shoppery` | SSR | статика | ✅ (6 копипаст-страниц — кандидат на generic-рефакторинг) |
+| `/futbolki`, `/hudi`, `/kepki`, `/longslivy`, `/svitshoty`, `/shoppery` | SSR | Supabase `products` (через generic `<CategoryPage>` + local `config.tsx`) | ✅ (рефакторинг 2026-05-27) |
 | ~~`/shop/[slug]/constructor`~~ | — | **УДАЛЁН** | вся папка `src/components/pages-components/constructor-page/` тоже |
 
 `dynamicParams=false` на `/blog/[post]` — после деплоя новые посты не появятся без билда. TODO.
@@ -303,6 +303,8 @@ API оригинала `pnhdstudioapi.ru/api/products` отдаёт 502. Скр�
 | [src/lib/queries/products.ts](src/lib/queries/products.ts) | `getAllProducts`, `getProductBySlug`, `getAllProductSlugs` |
 | [src/lib/queries/blog.ts](src/lib/queries/blog.ts) | `getAllPosts`, `getPostBySlug` |
 | [src/components/pages-components/shop-page/product-info/](src/components/pages-components/shop-page/product-info/) | **Новая правая панель на product page**: `product-info.tsx` (root) + `size-grid.tsx` (VariantB сетка с индикатором остатка) + `print-selector.tsx` (5 чипов + drop-zones) + `upload-slot.tsx` (drag-and-drop + a11y) + `print-config.ts` (общий `SIDES_FOR_LOCATION` + `PRINT_OPTIONS`) + `product-info.module.css` |
+| [src/components/pages-components/category-page/category-page.tsx](src/components/pages-components/category-page/category-page.tsx) | Shared SEO-страница категории (futbolki/hudi/kepki/longslivy/svitshoty/shoppery). Принимает `ICategoryPageConfig` |
+| [src/components/shared-components/3d-tee/tee-placeholder.tsx](src/components/shared-components/3d-tee/tee-placeholder.tsx) | Static fallback для асинхронно-грузящегося 3D Tee |
 | [src/components/shared-components/lead-form/lead-form.tsx](src/components/shared-components/lead-form/lead-form.tsx) | Footer + popup-форма (принимает `source` prop) |
 | [src/components/shared-components/noModelBlock/NoModelBlockForm.tsx](src/components/shared-components/noModelBlock/NoModelBlockForm.tsx) | Форма «не нашли модель» на /shop |
 | [supabase/migrations/](supabase/migrations/) | SQL миграции (10 штук) |
@@ -346,17 +348,18 @@ API оригинала `pnhdstudioapi.ru/api/products` отдаёт 502. Скр�
 - [x] Sweeper Edge Function `cleanup-user-uploads` + pg_cron вызов (14-day cutoff)
 - [x] Image whitelist в `next.config.mjs` сужен до конкретного Supabase ref
 
+### 🟢 Сделано (батч 2026-05-27, tech debt)
+- [x] Three.js (`<Tee>`) — `next/dynamic({ssr:false})` + placeholder в main-screen + shop-lead-screen
+- [x] 6 категорийных страниц → один `<CategoryPage>` + 6 локальных `config.tsx`
+- [x] Active-link highlighting в admin sidebar (`usePathname` + `selected`)
+
 ### 🟡 Известные косяки (open)
 
 | Severity | Issue | Где |
 |---|---|---|
-| Low | 6 копипаст-страниц категорий (`futbolki`, `hudi`, `kepki`, `longslivy`, `svitshoty`, `shoppery`) — должны быть один generic компонент. | `src/app/{categories}/page.tsx` |
-| Low | Three.js в общем бандле (главная + shop-lead-screen) — `dynamic({ ssr:false })` сэкономит ~600 КБ gzipped. | `src/components/shared-components/3d-tee/3d-tee.tsx` |
 | Low | 15/25 товаров с битым `image_url` на cdn.pnhd.ru — нужны исходники для заливки в `product-images` bucket. | `products.image_url` |
 | Low | `dangerouslySetInnerHTML` × 6 без санитизации (методы, текстиль, принты, блог). | various |
-| Low | Next.js 14.1.0 — CVE GHSA-fr5h-rqp8-mj6g (SSRF в Image Optimization), нужно ≥14.2. | `package.json` |
 | Low | RTK Query baseUrl всё ещё `https://pnhdstudioapi.ru` (мёртвый) — `createLead` обходит через `queryFn`, остальные эндпоинты (orders, CDEK, promocodes) пока бьются в пустоту. Когда подключим — поменять baseUrl или вынести в queryFn. | [src/api/api.ts](src/api/api.ts) |
-| Info | 3D-tee на главной всё ещё рендерится синхронно — можно `dynamic()` обернуть. | `main-screen.tsx`, `shop-lead-screen.tsx` |
 
 ### 🟠 Большие куски (требуют решения)
 
@@ -557,7 +560,6 @@ SUPABASE_SERVICE_ROLE_KEY=<из Supabase Dashboard → Project Settings → API 
 ### Что осталось (необязательно, инкрементально)
 
 - Перезалить мёртвые `cdn.pnhd.ru` фото на 25 товарах через admin-форму
-- Active-link highlight в sidebar (`usePathname`) — косметика
 - Vitest для unit-тестов `syncChildren`/`syncLinks`/`requireAdmin`
 - E2E через Playwright (логин → создать товар → проверить /shop)
 - 2FA через Supabase MFA
