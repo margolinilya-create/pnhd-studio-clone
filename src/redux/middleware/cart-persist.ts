@@ -1,7 +1,7 @@
 import { createListenerMiddleware, isAnyOf } from '@reduxjs/toolkit';
 import { actions as cartActions, TCartState } from '@/redux/cart-slice/cart.slice';
 
-export const CART_STORAGE_KEY = 'order_v2';
+export const CART_STORAGE_KEY = 'order_v3';
 
 export const cartPersistMiddleware = createListenerMiddleware();
 

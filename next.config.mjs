@@ -30,7 +30,7 @@ const nextConfig = {
             // Supabase Storage public objects
             {
                 protocol: 'https',
-                hostname: '*.supabase.co',
+                hostname: 'almfjmiygtnzngkayhdv.supabase.co',
                 pathname: '/storage/v1/object/public/**',
             },
             // Placeholder-картинки в сид-данных

@@ -44,5 +44,6 @@ export async function uploadPrintFile(file: File): Promise<IPrintFileRef> {
     url: data.publicUrl,
     filename: file.name,
     sizeBytes: file.size,
+    path,
   };
 }
