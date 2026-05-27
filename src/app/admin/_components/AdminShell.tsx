@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import {
     Box, AppBar, Toolbar, Typography, Drawer,
     List, ListItem, ListItemButton, ListItemText,
@@ -18,6 +19,12 @@ const NAV = [
 ];
 
 export function AdminShell({ children, userEmail }: { children: React.ReactNode; userEmail: string }) {
+    const pathname = usePathname();
+    const isActive = (href: string) => {
+        if (href === '/admin') return pathname === '/admin';
+        return pathname.startsWith(href);
+    };
+
     return (
         <Box sx={{ display: 'flex', minHeight: '100vh' }}>
             <AppBar position="fixed" sx={{ zIndex: (t) => t.zIndex.drawer + 1 }} elevation={0} color="default">
@@ -41,7 +48,7 @@ export function AdminShell({ children, userEmail }: { children: React.ReactNode;
                 <List>
                     {NAV.map((n) => (
                         <ListItem key={n.href} disablePadding>
-                            <ListItemButton component={Link} href={n.href}>
+                            <ListItemButton component={Link} href={n.href} selected={isActive(n.href)}>
                                 <ListItemText primary={n.label} />
                             </ListItemButton>
                         </ListItem>
