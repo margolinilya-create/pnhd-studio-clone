@@ -36,7 +36,7 @@
 
 | Слой | Технология | Версия |
 |---|---|---|
-| Framework | Next.js (App Router) | 14.1.0 |
+| Framework | Next.js (App Router) | 14.2.35 |
 | Runtime | React | 18 |
 | Язык | TypeScript (strict) | 5 |
 | Стиль | CSS Modules + MUI v7 `sx` + Emotion | — |
@@ -359,7 +359,6 @@ API оригинала `pnhdstudioapi.ru/api/products` отдаёт 502. Скр�
 |---|---|---|
 | Low | 15/25 товаров с битым `image_url` на cdn.pnhd.ru — нужны исходники для заливки в `product-images` bucket. | `products.image_url` |
 | Low | `dangerouslySetInnerHTML` × 6 без санитизации (методы, текстиль, принты, блог). | various |
-| Low | Next.js 14.1.0 — CVE GHSA-fr5h-rqp8-mj6g (SSRF в Image Optimization), нужно ≥14.2. | `package.json` |
 | Low | RTK Query baseUrl всё ещё `https://pnhdstudioapi.ru` (мёртвый) — `createLead` обходит через `queryFn`, остальные эндпоинты (orders, CDEK, promocodes) пока бьются в пустоту. Когда подключим — поменять baseUrl или вынести в queryFn. | [src/api/api.ts](src/api/api.ts) |
 
 ### 🟠 Большие куски (требуют решения)
