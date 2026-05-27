@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import {
     Box, IconButton, Avatar, Stack, Snackbar, Alert,
     Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper,
@@ -46,8 +47,10 @@ export function ProductsTable({ products }: { products: ProductRow[] }) {
     const [toast, setToast] = useState<{ severity: 'success' | 'error'; msg: string } | null>(null);
 
     const handleDuplicate = (id: string) => {
+        console.log('[admin/products] duplicate click', id);
         startTransition(async () => {
             const res = await duplicateProduct(id);
+            console.log('[admin/products] duplicate result', res);
             if (res.ok) {
                 setToast({ severity: 'success', msg: 'Скопирован' });
                 router.push(`/admin/products/${res.slug}`);
@@ -58,9 +61,11 @@ export function ProductsTable({ products }: { products: ProductRow[] }) {
     };
 
     const handleDelete = (id: string, name: string) => {
+        console.log('[admin/products] delete click', id, name);
         if (!confirm(`Удалить «${name}»?`)) return;
         startTransition(async () => {
             const res = await deleteProduct(id);
+            console.log('[admin/products] delete result', res);
             if (res.ok) {
                 setToast({ severity: 'success', msg: 'Удалён' });
                 router.refresh();
@@ -105,9 +110,9 @@ export function ProductsTable({ products }: { products: ProductRow[] }) {
                                 </TableCell>
                                 <TableCell>
                                     <Box
-                                        component="a"
-                                        sx={{ cursor: 'pointer', color: 'inherit', textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}
-                                        onClick={() => router.push(`/admin/products/${p.slug}`)}
+                                        component={Link}
+                                        href={`/admin/products/${p.slug}`}
+                                        sx={{ color: 'inherit', textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}
                                     >
                                         {p.name}
                                     </Box>
@@ -122,7 +127,8 @@ export function ProductsTable({ products }: { products: ProductRow[] }) {
                                     <Stack direction="row" spacing={0.5} justifyContent="flex-end">
                                         <IconButton
                                             size="small"
-                                            onClick={() => router.push(`/admin/products/${p.slug}`)}
+                                            component={Link}
+                                            href={`/admin/products/${p.slug}`}
                                             title="Редактировать"
                                         >
                                             <EditIcon fontSize="small" />
