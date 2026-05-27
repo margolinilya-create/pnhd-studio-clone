@@ -7,7 +7,7 @@ import Image from "next/image";
 import shop_screen_left_shape from '../../../../../public/shop_lead_left_shape.svg'
 import shop_screen_right_shape from '../../../../../public/shop_lead_right_shape.svg'
 import shop_lead_main_photo from '../../../../../public/shop_lead_main_photo.png'
-import Tee from "@/components/shared-components/3d-tee/3d-tee";
+import TeeClient from '../main-screen/tee-client';
 
 
 
@@ -36,7 +36,7 @@ const ShopLeadScreen: React.FC = () => {
                     <Image src={shop_screen_right_shape} alt='графическая форма' className={styles.box_shape} />
                 </div>
                 <div className={styles.box_imageWrapper}>
-                    <Tee backdropStatus={false} fov={15} />
+                    <TeeClient backdropStatus={false} fov={15} />
                     {/* <Image src={shop_lead_main_photo} alt='футболка с принтом' className={styles.box_image} /> */}
                 </div>
             </div>
