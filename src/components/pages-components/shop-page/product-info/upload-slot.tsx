@@ -148,6 +148,11 @@ const UploadSlot: React.FC<Props> = ({ side, file, onUpload, onClear }) => {
             {isLoading ? 'Загрузка…' : 'Перетащи файл или нажми'}
           </div>
           <div className={styles.uploadFormats}>PNG · JPG · WEBP · до 20 МБ</div>
+          {isLoading && (
+            <div className={styles.uploadProgress} aria-hidden="true">
+              <span className={styles.uploadProgressBar} />
+            </div>
+          )}
           {error && (
             <div className={styles.uploadError} role="alert">
               {error}
