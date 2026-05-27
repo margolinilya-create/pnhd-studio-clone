@@ -1,50 +1,8 @@
-import { IProduct } from "./types";
-import { TBlogPosts } from "./types";
-import {retry} from "@reduxjs/toolkit/query";
-
-
-
 export const apiBaseUrl = 'https://pnhdstudioapi.ru';
 //export const apiBaseUrl = 'http://localhost:9000';
 export const CDN_URL = 'https://cdn.pnhd.ru';
 
-export const ACQUIRE_RATIO = 0.965 //комиссия эквайринга
-
-export const checkResponse = (res: any) => {
-    if (res.ok || res.created) {
-      return res.json() as Array<IProduct>;
-    }
-    return res.json().then((err: any) => Promise.reject(err));
-};
-
-  
-  export const getShopData = async (searchParams?: { [n: string]: string}) => {
-    let queryString = '';
-    if (searchParams) {
-        const keys = Object.keys(searchParams);
-        keys.forEach((key, index) => {
-            if (index === 0)  return queryString += `?${key}=${searchParams[key]}`;
-            return queryString += `&${key}=${searchParams[key]}`
-        })
-    }
-    const shopData = await fetch(`${apiBaseUrl}/api/products${queryString}`, {
-        next: { revalidate: 3600, tags: ['shopDataTag'] },
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      })
-      .then(checkResponse)
-    return shopData.data;
-}
-
-export const getPosts = async (): Promise<TBlogPosts> => {
-    const posts = await fetch(`${apiBaseUrl}/api/blog`, {
-        next: { revalidate: 3600, tags: ['blogTag'] },
-    })
-    .then(checkResponse);
-
-    return posts;
-}
+export const ACQUIRE_RATIO = 0.965; //комиссия эквайринга
 
 export const tumblers = [ 'DTG', 'DTF', 'ТЕРМОПЕРЕНОС', 'ВЫШИВКА' ];
 

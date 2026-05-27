@@ -132,6 +132,19 @@ async function sha256Hex(input: string): Promise<string> {
     .join('');
 }
 
+// PR #6: соль для ip_hash. Без соли hash(ip) — radial rainbow-table'ом тривиально
+// поиск по тяжёлым IP-адресам клиентов. С солью — нельзя без brute по 2^256.
+// Salt берётся из env IP_HASH_SALT (hex-32 random). Если не задан — fallback на
+// фиксированную строку (deployment-warning в логи).
+const IP_HASH_SALT = Deno.env.get('IP_HASH_SALT') ?? '';
+if (!IP_HASH_SALT) {
+  console.warn('IP_HASH_SALT not set — rate-limit hashes are vulnerable to rainbow-table lookup');
+}
+
+function hashIp(ip: string): Promise<string> {
+  return sha256Hex(`${ip}:${IP_HASH_SALT}`);
+}
+
 // Извлекаем client IP исключительно из `cf-connecting-ip`.
 // См. PR #1 для обоснования (header-probe / Cloudflare behaviour).
 function extractIp(req: Request): string {
@@ -312,7 +325,7 @@ Deno.serve(async (req: Request) => {
   });
 
   const ip = extractIp(req);
-  const ipHash = await sha256Hex(ip);
+  const ipHash = await hashIp(ip);
 
   // Rate-limit через выделенную таблицу rate_limit_log (не ПДн).
   const windowStart = new Date(

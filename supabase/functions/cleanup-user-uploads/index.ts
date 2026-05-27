@@ -14,6 +14,22 @@ const PREFIX = 'prints';
 const MAX_AGE_DAYS = 14;
 const LIST_LIMIT = 1000;
 
+// Constant-time string comparison via byte-by-byte XOR.
+// Возвращает false если длины разные (без раннего exit, чтобы не утекать длину).
+function timingSafeEqualStr(a: string, b: string): boolean {
+  const aBytes = new TextEncoder().encode(a);
+  const bBytes = new TextEncoder().encode(b);
+  // Чтобы длины не утекали, всегда читаем max(len) байт.
+  const maxLen = Math.max(aBytes.length, bBytes.length);
+  let diff = aBytes.length ^ bBytes.length;
+  for (let i = 0; i < maxLen; i++) {
+    const x = i < aBytes.length ? aBytes[i] : 0;
+    const y = i < bBytes.length ? bBytes[i] : 0;
+    diff |= x ^ y;
+  }
+  return diff === 0;
+}
+
 Deno.serve(async (req) => {
   // Auth: единственный валидный вызов — c X-Cleanup-Secret matching env
   if (!CLEANUP_SECRET) {
@@ -23,8 +39,10 @@ Deno.serve(async (req) => {
       headers: { 'Content-Type': 'application/json' },
     });
   }
-  const provided = req.headers.get('X-Cleanup-Secret');
-  if (provided !== CLEANUP_SECRET) {
+  const provided = req.headers.get('X-Cleanup-Secret') ?? '';
+  // PR #6: timing-safe compare через crypto.subtle (доступен в Deno runtime).
+  // Защита от хитрых атак, угадывающих секрет побайтно по разнице времени ответа.
+  if (!timingSafeEqualStr(provided, CLEANUP_SECRET)) {
     return new Response(JSON.stringify({ error: 'Unauthorized' }), {
       status: 401,
       headers: { 'Content-Type': 'application/json' },

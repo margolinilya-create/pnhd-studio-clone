@@ -1,3 +1,20 @@
+import { withSentryConfig } from '@sentry/nextjs';
+
+// Content-Security-Policy в Report-Only режиме (PR #6).
+// Через 1-2 недели после наблюдения за report'ами — переключить в enforce.
+const CSP_REPORT_ONLY = [
+    "default-src 'self'",
+    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cloud.roistat.com https://mc.yandex.ru https://app.uiscom.ru https://*.uiscom.ru https://browser.sentry-cdn.com https://*.sentry.io",
+    "style-src 'self' 'unsafe-inline'",
+    "img-src 'self' data: blob: https://cdn.pnhd.ru https://*.supabase.co https://mc.yandex.ru https://placehold.co https://yastatic.net",
+    "font-src 'self' data:",
+    "connect-src 'self' https://*.supabase.co https://mc.yandex.ru https://cloud.roistat.com https://*.uiscom.ru https://*.sentry.io https://*.ingest.sentry.io",
+    "frame-src 'self' https://www.youtube.com https://yandex.ru https://*.yandex.ru",
+    "frame-ancestors 'none'",
+    "base-uri 'self'",
+    "form-action 'self'",
+].join('; ');
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
     transpilePackages: ['mui-tel-input'],
@@ -11,6 +28,7 @@ const nextConfig = {
                     { key: 'X-Content-Type-Options', value: 'nosniff' },
                     { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
                     { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=(), interest-cohort=()' },
+                    { key: 'Content-Security-Policy-Report-Only', value: CSP_REPORT_ONLY },
                 ],
             },
         ];
@@ -70,11 +88,6 @@ const nextConfig = {
                 hostname: 'cdn.pnhd.ru',
                 pathname: '/**',
             },
-            {
-                protocol: 'https',
-                hostname: 'pnhdstudioapi.ru',
-                pathname: '/**',
-            },
             // Supabase Storage public objects
             {
                 protocol: 'https',
@@ -87,8 +100,18 @@ const nextConfig = {
                 hostname: 'placehold.co',
                 pathname: '/**',
             },
+            // (pnhdstudioapi.ru удалён из whitelist в PR #6 — host мёртв 502 + не используется)
         ],
     },
 };
 
-export default nextConfig;
+// Sentry-обёртка: активна только когда задан NEXT_PUBLIC_SENTRY_DSN/SENTRY_DSN
+// (внутри instrumentation.ts / instrumentation-client.ts init выполняется условно).
+// Без DSN — no-op. Source-maps загружаются только если задан SENTRY_AUTH_TOKEN.
+export default withSentryConfig(nextConfig, {
+    silent: !process.env.SENTRY_AUTH_TOKEN,
+    org: process.env.SENTRY_ORG,
+    project: process.env.SENTRY_PROJECT,
+    authToken: process.env.SENTRY_AUTH_TOKEN,
+    widenClientFileUpload: false,
+});
