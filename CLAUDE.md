@@ -417,22 +417,84 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=<берётся из Supabase Dashboard → Settin
 
 ## 15. Admin panel (WIP — branch `feat/admin-foundation`)
 
-Внутренний кабинет для управления каталогом/блогом/галереей/лидами. **Не в main**. Фаундейшен на ветке `feat/admin-foundation`. Когда будет готов — слиётся.
+Внутренний кабинет для управления каталогом/блогом/галереей/лидами. **Не в main** — собирается на ветке `feat/admin-foundation`, ~33 коммита. Когда вся работа закончится — единый PR в main.
+
+### Документы
 
 | Документ | Назначение |
 |---|---|
-| [docs/superpowers/specs/2026-05-27-admin-panel-design.md](docs/superpowers/specs/2026-05-27-admin-panel-design.md) | Design spec (459 строк) — scope, tech-decisions, UI |
-| [docs/superpowers/plans/2026-05-27-admin-foundation.md](docs/superpowers/plans/2026-05-27-admin-foundation.md) | Implementation plan (1258 строк) — пошаговая разбивка |
-| [docs/superpowers/notes/2026-05-27-admin-bootstrap.md](docs/superpowers/notes/2026-05-27-admin-bootstrap.md) | Bootstrap первого админа (Supabase Auth → admin_users) |
+| [docs/superpowers/specs/2026-05-27-admin-panel-design.md](docs/superpowers/specs/2026-05-27-admin-panel-design.md) | Design spec — scope, tech-decisions, UI, security |
+| [docs/superpowers/plans/2026-05-27-admin-foundation.md](docs/superpowers/plans/2026-05-27-admin-foundation.md) | Plan 1 — Foundation (БД, Auth, login, shell, dashboard) ✅ |
+| [docs/superpowers/plans/2026-05-27-admin-products-module.md](docs/superpowers/plans/2026-05-27-admin-products-module.md) | Plan 2 — Products module (list, форма с 6 табами) ✅ |
+| [docs/superpowers/notes/2026-05-27-admin-bootstrap.md](docs/superpowers/notes/2026-05-27-admin-bootstrap.md) | Bootstrap первого админа (Dashboard → admin_users) |
 
-Что уже на ветке:
-- Миграции 5–8: `admin_users` table + `is_admin()` helper + admin RLS на content tables + storage buckets + misc columns (SEO + leads.status)
-- Supabase Auth wired: [src/lib/supabase/auth-server.ts](src/lib/supabase/auth-server.ts), [src/lib/supabase/auth-browser.ts](src/lib/supabase/auth-browser.ts), [src/lib/supabase/middleware-client.ts](src/lib/supabase/middleware-client.ts), [src/lib/supabase/admin-server.ts](src/lib/supabase/admin-server.ts)
-- Edge middleware [src/middleware.ts](src/middleware.ts) — гейтит `/admin/*` через cookie-session
-- `requireAdmin()` guard [src/app/admin/_lib/require-admin.ts](src/app/admin/_lib/require-admin.ts)
-- Dep `@supabase/ssr` добавлен
+Plan 3 (Blog + Gallery + Leads) — ещё не написан, следующий этап.
 
-Требует **новый env**: `SUPABASE_SERVICE_ROLE_KEY` (server-only, без `NEXT_PUBLIC_`) — нужен админскому клиенту для bypass RLS при write-операциях.
+### Что работает (smoke-tested)
+
+**Auth и shell**:
+- `/admin/login` — email+пароль форма (`signInWithPassword`), allowlist-чек по `admin_users`, защита от open-redirect через `safeNextPath`
+- `/admin` — dashboard со счётчиками (товары/посты/принты/новые заявки)
+- AdminShell с боковой нав-панелью + email + кнопка выйти
+- Route group `(authed)` изолирует страницы с shell; `/admin/login` без shell
+- Тройная защита: middleware + `requireAdmin()` server-action guard + RLS на write-таблицах
+
+**Products module** (`/admin/products`):
+- Список 25 товаров в MUI Table (DataGrid не сработал в этой связке — заменили на простую таблицу)
+- Создание / редактирование через форму с табами: **Основное · Размеры · Фото · Конструктор · SEO · Друзья**
+- Drag-drop upload картинок → Supabase Storage `product-images` через `sharp` (resize 2000px + webp 85%)
+- Drag-reorder галереи; добавление/удаление размеров; multi-select связанных товаров с server-search
+- Atomic save: zod-валидация → upsert products → `syncChildren(sizes)` → `syncChildren(photos)` → `syncLinks` → `revalidatePath('/shop', '/shop/[slug]')`
+- Дублирование + удаление с confirm
+
+### Migrations и Storage
+
+Миграции **5–8** в `supabase/migrations/`:
+- `admin_users` table + `is_admin()` SQL function
+- Admin write-policies на products, product_sizes, product_gallery_photos, product_links, blog_posts, gallery_images, leads
+- Storage buckets `product-images`, `blog-images`, `gallery-images` (public-read, admin-write)
+- `products.meta_title`, `products.meta_description`, `leads.status`
+
+### Supabase clients (новая структура)
+
+Существующие [src/lib/supabase/server.ts](src/lib/supabase/server.ts) и [client.ts](src/lib/supabase/client.ts) **не изменены** (на них сидят /shop, /blog, RTK Query). Для admin-flow добавлены параллельные клиенты:
+- [src/lib/supabase/auth-server.ts](src/lib/supabase/auth-server.ts) — cookies-session anon, для admin server components
+- [src/lib/supabase/auth-browser.ts](src/lib/supabase/auth-browser.ts) — cookies-session anon, для login/logout form
+- [src/lib/supabase/middleware-client.ts](src/lib/supabase/middleware-client.ts) — для `middleware.ts`
+- [src/lib/supabase/admin-server.ts](src/lib/supabase/admin-server.ts) — **service_role** (`'server-only'`, обходит RLS, только в Server Actions после `requireAdmin()`)
+
+Edge middleware [src/middleware.ts](src/middleware.ts) защищает `/admin/:path*` и заодно выставляет `x-pathname` header чтобы root-layout мог скрыть публичный header/footer на admin-роутах.
+
+### Новые deps
+
+`@supabase/ssr` (cookies-session), `@mui/x-data-grid` (формально установлен, по факту не используется — заменили на MUI Table), `react-hook-form`, `@hookform/resolvers`, `zod`, `isomorphic-dompurify` (для Plan 3 / Tiptap), `@mui/icons-material`.
+
+Также **Next.js поднят 14.1 → 14.2.35** — в 14.1 был dev-mode webpack bug с пропадающими vendor chunks на nested server components в route groups (`/admin/products/[slug]/page.js` падал с `Cannot find module ./vendor-chunks/@supabase.js`). Заодно закрыли [CVE GHSA-fr5h-rqp8-mj6g](https://github.com/advisories/GHSA-fr5h-rqp8-mj6g).
+
+### Env
+
+Новый **server-only** ключ (никогда не префиксовать `NEXT_PUBLIC_`):
+```
+SUPABASE_SERVICE_ROLE_KEY=<из Supabase Dashboard → Project Settings → API → service_role>
+```
+На Vercel: Production + Preview + Development.
+
+### Bootstrap
+
+Первый админ создаётся вручную — см. [notes/2026-05-27-admin-bootstrap.md](docs/superpowers/notes/2026-05-27-admin-bootstrap.md). Кратко: Supabase Dashboard → Auth → Add user → скопировать UID → `insert into admin_users` через SQL Editor или MCP.
+
+### Известные баги/caveats
+
+- **MUI v7 + Next.js 14 RSC**: большинство MUI-компонентов требуют `'use client'`. Сервер-компонент не может прямо импортить `Box/Button/Grid` из `@mui/material` — будет `unstable_createUseMediaQuery is not a function` при build. Pattern: server-page тянет данные → client-wrapper рендерит MUI.
+- **DataGrid v7** в этой связке рендерится пустым (props доходят, но header/rows не видны). Для products-list используем простую `Table` — для 25 строк хватает с запасом.
+- **Image URLs** у импортированных 25 товаров ссылаются на `cdn.pnhd.ru` — там не отдаётся. Реальные фото нужно перезалить через таб «Фото» в каждом товаре (или batch-импорт переписать).
+- **`stock` enum**: импорт принёс значения `studio` / `supplier` (legacy из pnhd.ru); добавлены в zod-схему рядом с нормализованными `in_stock/limited/out_of_stock` — новые товары лучше создавать на нормализованных.
+
+### Roadmap (что осталось)
+
+1. **Plan 3 — Blog + Gallery + Leads**: Tiptap-редактор постов, drop-zone gallery, list лидов со статусами
+2. **Smoke-тест Products end-to-end** до конца (создание / фото upload / publish на `/shop`)
+3. **PR** в `main` единым merge после Plan 3
 
 ---
 
