@@ -8,7 +8,7 @@ import main_screen_tshirt from '../../../../../public/main_screen_tshirt.png';
 import button_arrow from '../../../../../public/button_arrow.svg';
 import LeadButton from '@/components/shared-components/lead-button/lead-button';
 import Link from 'next/link';
-import Tee from '@/components/shared-components/3d-tee/3d-tee';
+import TeeClient from './tee-client';
 import xmasimg from './xmas.svg'
 import LoyaltyBanner from './loyalty-banner'
 
@@ -39,7 +39,7 @@ const MainScreen: React.FC = () => {
                             {/* Вот сюда */}
                             <div className={styles.smallBlockImageWrapper}>
                                 {/* <Image src={main_screen_tshirt} alt='футболка' className={styles.smallBlock_image} /> */}
-                                <Tee backdropStatus={true} fov={20} />
+                                <TeeClient backdropStatus={true} fov={20} />
                             </div>
 
                             <div className={styles.smallBlock_squareWrapper}>
