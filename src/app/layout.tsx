@@ -16,7 +16,17 @@ import {textileOptions} from "@/app/utils/textile-options-data";
 import {getCurrentPath} from '@/app/utils/constants';
 import {SITE_INFO} from "@/app/constants";
 import ContactsWidget from "@/components/shared-components/contactsWidget/contactsWidget";
-import { Agentation } from "agentation";
+import dynamic from "next/dynamic";
+
+// Agentation toolbar даёт +417 KB JS-чанка; в prod-сборку не включаем.
+// Условие константно на этапе build (process.env.NODE_ENV инлайнится), поэтому
+// в prod-build Webpack статически выкидывает обе ветки dynamic + import.
+const Agentation =
+  process.env.NODE_ENV !== "production"
+    ? dynamic(() => import("agentation").then((m) => m.Agentation), {
+        ssr: false,
+      })
+    : () => null;
 
 const inter = Inter({ subsets: ["latin"] });
 
