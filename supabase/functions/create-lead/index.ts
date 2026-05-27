@@ -1,17 +1,31 @@
 // Supabase Edge Function: create-lead
 // Public endpoint (verify_jwt=false) — принимает заявки из форм клона pnhd-studio.
-// Пишет в public.leads через service_role (минуя anon RLS), опционально проксирует
-// в Bitrix24 incoming webhook (если задан BITRIX_WEBHOOK_URL).
+//
+// Поведение (после PR #2 / 152-ФЗ migration):
+//   - Если задан BITRIX_WEBHOOK_URL → лид уходит ТОЛЬКО в Bitrix24 (РФ),
+//     `public.leads` НЕ пишется (data-minimal, 152-ФЗ-compliant).
+//   - Если BITRIX_WEBHOOK_URL не задан → fallback: пишем в `public.leads`,
+//     чтобы заявка не потерялась пока владелец не настроит webhook.
+//     В этом режиме 152-ФЗ-compliance НЕ обеспечена — это страховка на time-in-transit.
+//
+// Rate-limit: всегда через таблицу `public.rate_limit_log` (sha256(ip) + ts, не ПДн),
+// не зависит от наличия leads-таблицы.
 //
 // Env:
 //   SUPABASE_URL                — выставляется автоматически
 //   SUPABASE_SERVICE_ROLE_KEY   — выставляется автоматически
-//   BITRIX_WEBHOOK_URL          — опц.
+//   BITRIX_WEBHOOK_URL          — опц.; если задан → переходим в Bitrix-only режим
 //   TELEGRAM_BOT_TOKEN          — опц.
 //   TELEGRAM_CHAT_ID            — опц.
 //   ALLOWED_ORIGINS             — опц. CSV; если не задан, используется встроенный список.
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4';
+
+type LeadAttachment = {
+  side?: string;
+  url?: string;
+  filename?: string;
+};
 
 type LeadPayload = {
   name?: string;
@@ -21,6 +35,7 @@ type LeadPayload = {
   reference_url?: string;
   source?: string;
   roistat_visit?: string;
+  attachments?: LeadAttachment[];
 };
 
 const ALLOWED_SOURCES = new Set([
@@ -29,6 +44,7 @@ const ALLOWED_SOURCES = new Set([
   'shop-no-model',
   'product-page',
   'methods-consultation',
+  'checkout',
 ]);
 
 const LIMITS = {
@@ -39,7 +55,12 @@ const LIMITS = {
   reference_url: 500,
   source: 32,
   roistat_visit: 128,
+  attachment_url: 500,
+  attachment_filename: 200,
+  attachment_side: 32,
 };
+
+const MAX_ATTACHMENTS = 12;
 
 const RATE_LIMIT_WINDOW_SECONDS = 60;
 const RATE_LIMIT_MAX_PER_WINDOW = 3;
@@ -112,20 +133,31 @@ async function sha256Hex(input: string): Promise<string> {
 }
 
 // Извлекаем client IP исключительно из `cf-connecting-ip`.
-//
-// Supabase Edge Functions проксируются через Cloudflare; CF перезаписывает этот
-// заголовок реальным client IP и игнорирует любые X-Forwarded-For/X-Real-IP,
-// которые отправит сам клиент. Проверено probe-функцией header-probe (PR #1):
-// при curl с поддельным `X-Forwarded-For: 1.2.3.4` входной XFF был отброшен,
-// а cf-connecting-ip пришёл с реальным IP вызывающего.
-//
-// XFF-fallback намеренно убран: он spoofable, если CF когда-нибудь выпадет из
-// маршрута (или Supabase сменит инфраструктуру) — лучше получить деградацию в
-// «единый rate-limit бакет 'unknown'» (safe-fail), чем тихий обход лимита.
+// См. PR #1 для обоснования (header-probe / Cloudflare behaviour).
 function extractIp(req: Request): string {
   const cf = req.headers.get('cf-connecting-ip');
   if (cf) return cf;
   return 'unknown';
+}
+
+type SanitizedAttachment = { side: string; url: string; filename?: string };
+
+function sanitizeAttachments(raw: unknown): SanitizedAttachment[] {
+  if (!Array.isArray(raw)) return [];
+  const out: SanitizedAttachment[] = [];
+  for (const item of raw.slice(0, MAX_ATTACHMENTS)) {
+    if (!item || typeof item !== 'object') continue;
+    const rawSide = sanitize((item as LeadAttachment).side, LIMITS.attachment_side);
+    const url = sanitize((item as LeadAttachment).url, LIMITS.attachment_url);
+    if (!url || !URL_RE.test(url)) continue;
+    const side = rawSide || 'file';
+    const filename = sanitize(
+      (item as LeadAttachment).filename,
+      LIMITS.attachment_filename,
+    );
+    out.push({ side, url, filename: filename || undefined });
+  }
+  return out;
 }
 
 async function sendToBitrix(
@@ -138,6 +170,7 @@ async function sendToBitrix(
     reference_url?: string;
     source: string;
     roistat_visit?: string;
+    attachments?: SanitizedAttachment[];
   },
 ): Promise<{ ok: true; id: number } | { ok: false; error: string }> {
   const url = webhookBase.replace(/\/+$/, '') + '/crm.lead.add.json';
@@ -154,7 +187,15 @@ async function sendToBitrix(
   if (payload.comment) commentParts.push(payload.comment);
   if (payload.reference_url) commentParts.push(`Референс: ${payload.reference_url}`);
   if (payload.roistat_visit) commentParts.push(`roistat_visit: ${payload.roistat_visit}`);
-  if (commentParts.length > 0) fields.COMMENTS = commentParts.join(' | ');
+  if (payload.attachments && payload.attachments.length > 0) {
+    commentParts.push('');
+    commentParts.push('Файлы принтов:');
+    for (const a of payload.attachments) {
+      const label = a.filename ? `${a.side} (${a.filename})` : a.side;
+      commentParts.push(`• ${label}: ${a.url}`);
+    }
+  }
+  if (commentParts.length > 0) fields.COMMENTS = commentParts.join('\n');
 
   try {
     const r = await fetch(url, {
@@ -173,20 +214,31 @@ async function sendToBitrix(
 }
 
 async function notifyTelegram(
-  payload: { name: string; phone: string; email?: string; comment?: string; reference_url?: string; source: string },
-  leadId: string,
+  payload: {
+    name: string;
+    phone: string;
+    email?: string;
+    comment?: string;
+    reference_url?: string;
+    source: string;
+    attachments?: SanitizedAttachment[];
+  },
+  leadRef: string,
 ): Promise<void> {
   const token = Deno.env.get('TELEGRAM_BOT_TOKEN');
   const chatId = Deno.env.get('TELEGRAM_CHAT_ID');
   if (!token || !chatId) return;
   const text = [
-    `Новая заявка #${leadId.slice(0, 8)}`,
+    `Новая заявка ${leadRef}`,
     `Источник: ${payload.source}`,
     `Имя: ${payload.name}`,
     `Телефон: ${payload.phone}`,
     payload.email ? `Email: ${payload.email}` : '',
     payload.comment ? `Комментарий: ${payload.comment}` : '',
     payload.reference_url ? `Референс: ${payload.reference_url}` : '',
+    payload.attachments && payload.attachments.length > 0
+      ? `Файлов: ${payload.attachments.length}`
+      : '',
   ]
     .filter(Boolean)
     .join('\n');
@@ -231,6 +283,7 @@ Deno.serve(async (req: Request) => {
   const reference_url = sanitize(raw.reference_url, LIMITS.reference_url);
   const source = sanitize(raw.source, LIMITS.source);
   const roistat_visit = sanitize(raw.roistat_visit, LIMITS.roistat_visit);
+  const attachments = sanitizeAttachments(raw.attachments);
 
   if (!name || !phone) {
     return jsonResponse({ ok: false, error: 'name_and_phone_required' }, 400, origin);
@@ -261,12 +314,12 @@ Deno.serve(async (req: Request) => {
   const ip = extractIp(req);
   const ipHash = await sha256Hex(ip);
 
-  // Rate-limit: не более RATE_LIMIT_MAX_PER_WINDOW заявок с одного IP за окно.
+  // Rate-limit через выделенную таблицу rate_limit_log (не ПДн).
   const windowStart = new Date(
     Date.now() - RATE_LIMIT_WINDOW_SECONDS * 1000,
   ).toISOString();
   const { count: recentCount, error: rateError } = await supabase
-    .from('leads')
+    .from('rate_limit_log')
     .select('id', { count: 'exact', head: true })
     .eq('ip_hash', ipHash)
     .gte('created_at', windowStart);
@@ -278,6 +331,68 @@ Deno.serve(async (req: Request) => {
   if ((recentCount ?? 0) >= RATE_LIMIT_MAX_PER_WINDOW) {
     return jsonResponse({ ok: false, error: 'rate_limited' }, 429, origin);
   }
+
+  // Регистрируем попытку в rate_limit_log (best-effort: ошибка не блокирует).
+  const { error: rateInsertError } = await supabase
+    .from('rate_limit_log')
+    .insert({ ip_hash: ipHash });
+  if (rateInsertError) {
+    console.warn('rate_limit_log_insert_failed', rateInsertError);
+  }
+
+  const bitrixBase = Deno.env.get('BITRIX_WEBHOOK_URL');
+
+  // ----- Режим A: Bitrix-only (152-ФЗ compliant) -----
+  if (bitrixBase) {
+    const bitrixResult = await sendToBitrix(bitrixBase, {
+      name,
+      phone,
+      email: email || undefined,
+      comment: comment || undefined,
+      reference_url: reference_url || undefined,
+      source,
+      roistat_visit: roistat_visit || undefined,
+      attachments: attachments.length > 0 ? attachments : undefined,
+    });
+
+    if (!bitrixResult.ok) {
+      console.error('bitrix_send_failed', bitrixResult.error);
+      // Telegram-нотификация даже при сбое Bitrix — менеджер не теряет заявку.
+      notifyTelegram(
+        {
+          name,
+          phone,
+          email: email || undefined,
+          comment: comment || undefined,
+          reference_url: reference_url || undefined,
+          source,
+          attachments: attachments.length > 0 ? attachments : undefined,
+        },
+        `(Bitrix FAIL: ${bitrixResult.error.slice(0, 80)})`,
+      );
+      return jsonResponse({ ok: false, error: 'bitrix_send_failed' }, 502, origin);
+    }
+
+    notifyTelegram(
+      {
+        name,
+        phone,
+        email: email || undefined,
+        comment: comment || undefined,
+        reference_url: reference_url || undefined,
+        source,
+        attachments: attachments.length > 0 ? attachments : undefined,
+      },
+      `#${bitrixResult.id}`,
+    );
+
+    return jsonResponse({ ok: true, leadId: String(bitrixResult.id) }, 200, origin);
+  }
+
+  // ----- Режим B: Bitrix не настроен → fallback в public.leads -----
+  // Страховка на time-in-transit: PR #2 безопасно мержится до того как владелец
+  // настроит BITRIX_WEBHOOK_URL. Когда secret выставлен — этот блок не выполняется.
+  console.warn('bitrix_webhook_url_missing — falling back to public.leads insert');
 
   const userAgent = (req.headers.get('user-agent') ?? '').slice(0, 500) || null;
 
@@ -294,7 +409,7 @@ Deno.serve(async (req: Request) => {
       user_agent: userAgent,
       ip_hash: ipHash,
       bitrix_lead_id: null,
-      bitrix_error: null,
+      bitrix_error: 'bitrix_webhook_url_missing',
     })
     .select('id')
     .single();
@@ -302,30 +417,6 @@ Deno.serve(async (req: Request) => {
   if (insertError || !lead) {
     console.error('lead_insert_failed', insertError);
     return jsonResponse({ ok: false, error: 'internal' }, 500, origin);
-  }
-
-  const bitrixBase = Deno.env.get('BITRIX_WEBHOOK_URL');
-  if (bitrixBase) {
-    const bitrixResult = await sendToBitrix(bitrixBase, {
-      name,
-      phone,
-      email: email || undefined,
-      comment: comment || undefined,
-      reference_url: reference_url || undefined,
-      source,
-      roistat_visit: roistat_visit || undefined,
-    });
-    if (bitrixResult.ok) {
-      await supabase
-        .from('leads')
-        .update({ bitrix_lead_id: bitrixResult.id })
-        .eq('id', lead.id);
-    } else {
-      await supabase
-        .from('leads')
-        .update({ bitrix_error: bitrixResult.error.slice(0, 500) })
-        .eq('id', lead.id);
-    }
   }
 
   notifyTelegram(
@@ -336,8 +427,9 @@ Deno.serve(async (req: Request) => {
       comment: comment || undefined,
       reference_url: reference_url || undefined,
       source,
+      attachments: attachments.length > 0 ? attachments : undefined,
     },
-    lead.id,
+    `#${lead.id.slice(0, 8)} (fallback)`,
   );
 
   return jsonResponse({ ok: true, leadId: lead.id }, 200, origin);
