@@ -415,44 +415,75 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=<берётся из Supabase Dashboard → Settin
 
 ---
 
-## 15. Admin panel (WIP — branch `feat/admin-foundation`)
+## 15. Admin panel (shipped — в production)
 
-Внутренний кабинет для управления каталогом/блогом/галереей/лидами. **Не в main** — собирается на ветке `feat/admin-foundation`, ~33 коммита. Когда вся работа закончится — единый PR в main.
+Внутренний кабинет на `/admin/*` — CRUD товаров, блога, галереи + просмотр лидов. **Смержен в main** через [PR #1](https://github.com/margolinilya-create/pnhd-studio-clone/pull/1) (42 коммита) и работает на production: **https://pnhd-studio-clone.vercel.app/admin/login**.
 
 ### Документы
 
 | Документ | Назначение |
 |---|---|
 | [docs/superpowers/specs/2026-05-27-admin-panel-design.md](docs/superpowers/specs/2026-05-27-admin-panel-design.md) | Design spec — scope, tech-decisions, UI, security |
-| [docs/superpowers/plans/2026-05-27-admin-foundation.md](docs/superpowers/plans/2026-05-27-admin-foundation.md) | Plan 1 — Foundation (БД, Auth, login, shell, dashboard) ✅ |
-| [docs/superpowers/plans/2026-05-27-admin-products-module.md](docs/superpowers/plans/2026-05-27-admin-products-module.md) | Plan 2 — Products module (list, форма с 6 табами) ✅ |
-| [docs/superpowers/notes/2026-05-27-admin-bootstrap.md](docs/superpowers/notes/2026-05-27-admin-bootstrap.md) | Bootstrap первого админа (Dashboard → admin_users) |
+| [docs/superpowers/plans/2026-05-27-admin-foundation.md](docs/superpowers/plans/2026-05-27-admin-foundation.md) | Plan 1 — Foundation ✅ |
+| [docs/superpowers/plans/2026-05-27-admin-products-module.md](docs/superpowers/plans/2026-05-27-admin-products-module.md) | Plan 2 — Products module ✅ |
+| [docs/superpowers/plans/2026-05-28-admin-blog-gallery-leads.md](docs/superpowers/plans/2026-05-28-admin-blog-gallery-leads.md) | Plan 3 — Blog + Gallery + Leads ✅ |
+| [docs/superpowers/notes/2026-05-27-admin-bootstrap.md](docs/superpowers/notes/2026-05-27-admin-bootstrap.md) | Bootstrap нового админа |
 
-Plan 3 (Blog + Gallery + Leads) — ещё не написан, следующий этап.
+### Маршруты
 
-### Что работает (smoke-tested)
+```
+/admin/login              форма входа (без shell)
+/admin                    dashboard со счётчиками
+/admin/products           list (MUI Table)
+/admin/products/new       форма создания
+/admin/products/[slug]    форма редактирования (6 табов)
+/admin/blog               list блог-постов
+/admin/blog/new
+/admin/blog/[slug]        форма + Tiptap WYSIWYG
+/admin/gallery            drop-zone + drag-reorder + alt-dialog
+/admin/leads              read-only + status workflow
+```
+
+### Что работает
 
 **Auth и shell**:
-- `/admin/login` — email+пароль форма (`signInWithPassword`), allowlist-чек по `admin_users`, защита от open-redirect через `safeNextPath`
-- `/admin` — dashboard со счётчиками (товары/посты/принты/новые заявки)
-- AdminShell с боковой нав-панелью + email + кнопка выйти
-- Route group `(authed)` изолирует страницы с shell; `/admin/login` без shell
-- Тройная защита: middleware + `requireAdmin()` server-action guard + RLS на write-таблицах
+- `signInWithPassword` + allowlist `admin_users` + защита от open-redirect через `safeNextPath`
+- AdminShell с sidebar + email в шапке + logout
+- Route group `(authed)` изолирует страницы с shell от `/admin/login`
+- Тройная защита: middleware → `requireAdmin()` → RLS на write-таблицах
+- Root layout читает `x-pathname` header (выставляется middleware) → не рендерит публичный header/footer на admin-роутах
 
-**Products module** (`/admin/products`):
-- Список 25 товаров в MUI Table (DataGrid не сработал в этой связке — заменили на простую таблицу)
-- Создание / редактирование через форму с табами: **Основное · Размеры · Фото · Конструктор · SEO · Друзья**
-- Drag-drop upload картинок → Supabase Storage `product-images` через `sharp` (resize 2000px + webp 85%)
-- Drag-reorder галереи; добавление/удаление размеров; multi-select связанных товаров с server-search
-- Atomic save: zod-валидация → upsert products → `syncChildren(sizes)` → `syncChildren(photos)` → `syncLinks` → `revalidatePath('/shop', '/shop/[slug]')`
-- Дублирование + удаление с confirm
+**Products** (`/admin/products`):
+- Список 25 товаров (MUI Table — DataGrid v7 не работает в связке, см. caveats)
+- Форма с 6 табами: **Основное · Размеры · Фото · Конструктор · SEO · Друзья**
+- Drag-drop upload в Supabase Storage `product-images` через `sharp` (resize 2000px + webp 85%)
+- Drag-reorder галереи; multi-select связанных товаров с server-search
+- Atomic save через Server Action: zod-валидация → upsert → `syncChildren(sizes)` → `syncChildren(photos)` → `syncLinks` → `revalidatePath('/shop', '/shop/[slug]')`
+- Дублирование + удаление
+
+**Blog** (`/admin/blog`):
+- Список постов с обложкой / автором / хэштегами / датой
+- Tiptap WYSIWYG: `B I U S | H2 H3 | lists | link image quote | undo redo` + inline-uploads картинок в `blog-images`
+- `savePost` Server Action санитайзит `body_html` через **isomorphic-dompurify** (whitelist `<p><h2><h3><strong><em><u><s><ul><ol><li><a><img><blockquote><br>` + `href src alt title target rel`)
+- Снят `dynamicParams: false` на публичном `/blog/[post]` — новые посты появляются без redeploy через `revalidatePath`
+
+**Gallery** (`/admin/gallery`):
+- Drop-zone (multi-file) → upload в `gallery-images`
+- Drag-reorder сетки с bulk-update `sort_order`
+- Dialog для edit `alt`, delete с очисткой Storage (best-effort)
+
+**Leads** (`/admin/leads`):
+- Список с фильтром по статусу (`Все / Новые / В работе / Готовые / Спам`)
+- Workflow `new → contacted → done/spam` через контекстные кнопки в строке
+- tel/mailto-ссылки на phone/email
+- RLS уже разрешает admin select+update на leads (миграция 6)
 
 ### Migrations и Storage
 
 Миграции **5–8** в `supabase/migrations/`:
 - `admin_users` table + `is_admin()` SQL function
 - Admin write-policies на products, product_sizes, product_gallery_photos, product_links, blog_posts, gallery_images, leads
-- Storage buckets `product-images`, `blog-images`, `gallery-images` (public-read, admin-write)
+- Storage buckets `product-images` (10 MB), `blog-images` (5 MB), `gallery-images` (5 MB, +svg) — все public-read, admin-write
 - `products.meta_title`, `products.meta_description`, `leads.status`
 
 ### Supabase clients (новая структура)
@@ -463,38 +494,48 @@ Plan 3 (Blog + Gallery + Leads) — ещё не написан, следующи
 - [src/lib/supabase/middleware-client.ts](src/lib/supabase/middleware-client.ts) — для `middleware.ts`
 - [src/lib/supabase/admin-server.ts](src/lib/supabase/admin-server.ts) — **service_role** (`'server-only'`, обходит RLS, только в Server Actions после `requireAdmin()`)
 
-Edge middleware [src/middleware.ts](src/middleware.ts) защищает `/admin/:path*` и заодно выставляет `x-pathname` header чтобы root-layout мог скрыть публичный header/footer на admin-роутах.
+Edge middleware [src/middleware.ts](src/middleware.ts) защищает `/admin/:path*` и заодно выставляет `x-pathname` header чтобы root-layout мог скрыть публичный chrome на admin-роутах.
 
 ### Новые deps
 
-`@supabase/ssr` (cookies-session), `@mui/x-data-grid` (формально установлен, по факту не используется — заменили на MUI Table), `react-hook-form`, `@hookform/resolvers`, `zod`, `isomorphic-dompurify` (для Plan 3 / Tiptap), `@mui/icons-material`.
+| Пакет | Зачем |
+|---|---|
+| `@supabase/ssr` | Cookies-session в App Router |
+| `@mui/x-data-grid` | Установлен, **не используется** (см. caveats) |
+| `@mui/icons-material` | Иконки в DataGrid actions / Tiptap toolbar |
+| `react-hook-form` + `@hookform/resolvers` | Формы продукта/блога |
+| `zod` | Schema-валидация в Server Actions |
+| `isomorphic-dompurify` | Sanitize blog `body_html` |
+| `@tiptap/{react,pm,starter-kit,extension-link,extension-image}` | Blog WYSIWYG |
 
-Также **Next.js поднят 14.1 → 14.2.35** — в 14.1 был dev-mode webpack bug с пропадающими vendor chunks на nested server components в route groups (`/admin/products/[slug]/page.js` падал с `Cannot find module ./vendor-chunks/@supabase.js`). Заодно закрыли [CVE GHSA-fr5h-rqp8-mj6g](https://github.com/advisories/GHSA-fr5h-rqp8-mj6g).
+Также **Next.js поднят 14.1.0 → 14.2.35** — в 14.1 был dev-mode webpack bug с пропадающими vendor chunks на nested server components в route groups. Заодно закрыли [CVE GHSA-fr5h-rqp8-mj6g](https://github.com/advisories/GHSA-fr5h-rqp8-mj6g) (SSRF в Image Optimization).
 
 ### Env
 
-Новый **server-only** ключ (никогда не префиксовать `NEXT_PUBLIC_`):
+Server-only ключ (никогда не префиксовать `NEXT_PUBLIC_`):
 ```
 SUPABASE_SERVICE_ROLE_KEY=<из Supabase Dashboard → Project Settings → API → service_role>
 ```
-На Vercel: Production + Preview + Development.
+**Уже выставлен** на Vercel (Production + Preview + Development) и в локальном `.env.local`.
 
 ### Bootstrap
 
-Первый админ создаётся вручную — см. [notes/2026-05-27-admin-bootstrap.md](docs/superpowers/notes/2026-05-27-admin-bootstrap.md). Кратко: Supabase Dashboard → Auth → Add user → скопировать UID → `insert into admin_users` через SQL Editor или MCP.
+Первый админ (`mib@pnhd.ru`) уже в `admin_users`. Новые добавляются по [docs/superpowers/notes/2026-05-27-admin-bootstrap.md](docs/superpowers/notes/2026-05-27-admin-bootstrap.md): Supabase Dashboard → Auth → Add user → скопировать UID → `insert into admin_users` через SQL Editor или MCP.
 
 ### Известные баги/caveats
 
 - **MUI v7 + Next.js 14 RSC**: большинство MUI-компонентов требуют `'use client'`. Сервер-компонент не может прямо импортить `Box/Button/Grid` из `@mui/material` — будет `unstable_createUseMediaQuery is not a function` при build. Pattern: server-page тянет данные → client-wrapper рендерит MUI.
-- **DataGrid v7** в этой связке рендерится пустым (props доходят, но header/rows не видны). Для products-list используем простую `Table` — для 25 строк хватает с запасом.
+- **DataGrid v7** в этой связке рендерится пустым (props доходят, но header/rows не видны). Для всех list-страниц используем `<Table>` из `@mui/material` — для 25 товаров / 3 постов / 0 заявок этого с запасом. Если объём вырастет > 200 строк — копать DataGrid или переходить на TanStack Table.
 - **Image URLs** у импортированных 25 товаров ссылаются на `cdn.pnhd.ru` — там не отдаётся. Реальные фото нужно перезалить через таб «Фото» в каждом товаре (или batch-импорт переписать).
-- **`stock` enum**: импорт принёс значения `studio` / `supplier` (legacy из pnhd.ru); добавлены в zod-схему рядом с нормализованными `in_stock/limited/out_of_stock` — новые товары лучше создавать на нормализованных.
+- **`stock` enum**: импорт принёс legacy значения `studio` / `supplier` из pnhd.ru; добавлены в zod-схему рядом с нормализованными `in_stock/limited/out_of_stock` — новые товары лучше создавать на нормализованных.
 
-### Roadmap (что осталось)
+### Что осталось (необязательно, инкрементально)
 
-1. **Plan 3 — Blog + Gallery + Leads**: Tiptap-редактор постов, drop-zone gallery, list лидов со статусами
-2. **Smoke-тест Products end-to-end** до конца (создание / фото upload / publish на `/shop`)
-3. **PR** в `main` единым merge после Plan 3
+- Перезалить мёртвые `cdn.pnhd.ru` фото на 25 товарах через admin-форму
+- Active-link highlight в sidebar (`usePathname`) — косметика
+- Vitest для unit-тестов `syncChildren`/`syncLinks`/`requireAdmin`
+- E2E через Playwright (логин → создать товар → проверить /shop)
+- 2FA через Supabase MFA
 
 ---
 
