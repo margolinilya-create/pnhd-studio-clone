@@ -1,9 +1,12 @@
 'use client';
 
-import { useMemo, useState, useTransition } from 'react';
+import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { DataGrid, type GridColDef, type GridRenderCellParams } from '@mui/x-data-grid';
-import { Box, IconButton, Avatar, Stack, Snackbar, Alert } from '@mui/material';
+import {
+    Box, IconButton, Avatar, Stack, Snackbar, Alert,
+    Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper,
+    Typography,
+} from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -40,108 +43,111 @@ export function ProductsTable({ products }: { products: ProductRow[] }) {
     const [pending, startTransition] = useTransition();
     const [toast, setToast] = useState<{ severity: 'success' | 'error'; msg: string } | null>(null);
 
-    const columns: GridColDef<ProductRow>[] = useMemo(() => [
-        {
-            field: 'image_url',
-            headerName: 'Фото',
-            width: 70,
-            sortable: false,
-            filterable: false,
-            renderCell: (params: GridRenderCellParams<ProductRow>) => (
-                <Avatar
-                    variant="rounded"
-                    src={params.value as string | undefined}
-                    sx={{ width: 40, height: 40 }}
-                />
-            ),
-        },
-        { field: 'name', headerName: 'Название', flex: 1, minWidth: 200 },
-        {
-            field: 'type',
-            headerName: 'Тип',
-            width: 140,
-            valueFormatter: (v: string) => TYPE_LABEL[v] ?? v,
-        },
-        {
-            field: 'price',
-            headerName: 'Цена ₽',
-            width: 110,
-            type: 'number',
-            valueFormatter: (v: number) => v?.toLocaleString('ru-RU'),
-        },
-        {
-            field: 'stock',
-            headerName: 'Наличие',
-            width: 140,
-            valueFormatter: (v: string | null) => (v ? STOCK_LABEL[v] ?? v : '—'),
-        },
-        {
-            field: 'actions',
-            headerName: '',
-            width: 140,
-            sortable: false,
-            filterable: false,
-            renderCell: (params: GridRenderCellParams<ProductRow>) => (
-                <Stack direction="row" spacing={0.5}>
-                    <IconButton
-                        size="small"
-                        onClick={() => router.push(`/admin/products/${params.row.slug}`)}
-                        title="Редактировать"
-                    >
-                        <EditIcon fontSize="small" />
-                    </IconButton>
-                    <IconButton
-                        size="small"
-                        disabled={pending}
-                        onClick={() => {
-                            startTransition(async () => {
-                                const res = await duplicateProduct(params.row.id);
-                                if (res.ok) {
-                                    setToast({ severity: 'success', msg: 'Скопирован' });
-                                    router.push(`/admin/products/${res.slug}`);
-                                } else {
-                                    setToast({ severity: 'error', msg: res.error });
-                                }
-                            });
-                        }}
-                        title="Дублировать"
-                    >
-                        <ContentCopyIcon fontSize="small" />
-                    </IconButton>
-                    <IconButton
-                        size="small"
-                        disabled={pending}
-                        onClick={() => {
-                            if (!confirm(`Удалить «${params.row.name}»?`)) return;
-                            startTransition(async () => {
-                                const res = await deleteProduct(params.row.id);
-                                if (res.ok) {
-                                    setToast({ severity: 'success', msg: 'Удалён' });
-                                    router.refresh();
-                                } else {
-                                    setToast({ severity: 'error', msg: res.error });
-                                }
-                            });
-                        }}
-                        title="Удалить"
-                    >
-                        <DeleteIcon fontSize="small" />
-                    </IconButton>
-                </Stack>
-            ),
-        },
-    ], [router, pending]);
+    const handleDuplicate = (id: string) => {
+        startTransition(async () => {
+            const res = await duplicateProduct(id);
+            if (res.ok) {
+                setToast({ severity: 'success', msg: 'Скопирован' });
+                router.push(`/admin/products/${res.slug}`);
+            } else {
+                setToast({ severity: 'error', msg: res.error });
+            }
+        });
+    };
+
+    const handleDelete = (id: string, name: string) => {
+        if (!confirm(`Удалить «${name}»?`)) return;
+        startTransition(async () => {
+            const res = await deleteProduct(id);
+            if (res.ok) {
+                setToast({ severity: 'success', msg: 'Удалён' });
+                router.refresh();
+            } else {
+                setToast({ severity: 'error', msg: res.error });
+            }
+        });
+    };
 
     return (
-        <Box sx={{ height: 'calc(100vh - 200px)', width: '100%' }}>
-            <DataGrid
-                rows={products}
-                columns={columns}
-                getRowId={(r) => r.id}
-                pageSizeOptions={[25, 50, 100]}
-                initialState={{ pagination: { paginationModel: { pageSize: 50 } } }}
-                disableRowSelectionOnClick
-            />
+        <Box>
+            <TableContainer component={Paper} variant="outlined">
+                <Table size="small">
+                    <TableHead>
+                        <TableRow>
+                            <TableCell width={60}>Фото</TableCell>
+                            <TableCell>Название</TableCell>
+                            <TableCell width={140}>Тип</TableCell>
+                            <TableCell width={120} align="right">Цена ₽</TableCell>
+                            <TableCell width={140}>Наличие</TableCell>
+                            <TableCell width={140} />
+                        </TableRow>
+                    </TableHead>
+                    <TableBody>
+                        {products.length === 0 && (
+                            <TableRow>
+                                <TableCell colSpan={6} align="center">
+                                    <Typography variant="body2" color="text.secondary" py={4}>
+                                        Товаров пока нет
+                                    </Typography>
+                                </TableCell>
+                            </TableRow>
+                        )}
+                        {products.map((p) => (
+                            <TableRow key={p.id} hover>
+                                <TableCell>
+                                    <Avatar
+                                        variant="rounded"
+                                        src={p.image_url ?? undefined}
+                                        sx={{ width: 40, height: 40 }}
+                                    />
+                                </TableCell>
+                                <TableCell>
+                                    <Box
+                                        component="a"
+                                        sx={{ cursor: 'pointer', color: 'inherit', textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}
+                                        onClick={() => router.push(`/admin/products/${p.slug}`)}
+                                    >
+                                        {p.name}
+                                    </Box>
+                                    <Typography variant="caption" color="text.secondary" display="block">
+                                        {p.slug}
+                                    </Typography>
+                                </TableCell>
+                                <TableCell>{TYPE_LABEL[p.type] ?? p.type}</TableCell>
+                                <TableCell align="right">{p.price.toLocaleString('ru-RU')}</TableCell>
+                                <TableCell>{p.stock ? STOCK_LABEL[p.stock] ?? p.stock : '—'}</TableCell>
+                                <TableCell align="right">
+                                    <Stack direction="row" spacing={0.5} justifyContent="flex-end">
+                                        <IconButton
+                                            size="small"
+                                            onClick={() => router.push(`/admin/products/${p.slug}`)}
+                                            title="Редактировать"
+                                        >
+                                            <EditIcon fontSize="small" />
+                                        </IconButton>
+                                        <IconButton
+                                            size="small"
+                                            disabled={pending}
+                                            onClick={() => handleDuplicate(p.id)}
+                                            title="Дублировать"
+                                        >
+                                            <ContentCopyIcon fontSize="small" />
+                                        </IconButton>
+                                        <IconButton
+                                            size="small"
+                                            disabled={pending}
+                                            onClick={() => handleDelete(p.id, p.name)}
+                                            title="Удалить"
+                                        >
+                                            <DeleteIcon fontSize="small" />
+                                        </IconButton>
+                                    </Stack>
+                                </TableCell>
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
+            </TableContainer>
             <Snackbar
                 open={!!toast}
                 autoHideDuration={3000}
