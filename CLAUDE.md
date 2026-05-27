@@ -305,7 +305,7 @@ API оригинала `pnhdstudioapi.ru/api/products` отдаёт 502. Скр�
 | [src/components/pages-components/shop-page/product-info/](src/components/pages-components/shop-page/product-info/) | **Новая правая панель на product page**: `product-info.tsx` (root) + `size-grid.tsx` (VariantB сетка с индикатором остатка) + `print-selector.tsx` (5 чипов + drop-zones) + `upload-slot.tsx` (drag-and-drop + a11y) + `print-config.ts` (общий `SIDES_FOR_LOCATION` + `PRINT_OPTIONS`) + `product-info.module.css` |
 | [src/components/shared-components/lead-form/lead-form.tsx](src/components/shared-components/lead-form/lead-form.tsx) | Footer + popup-форма (принимает `source` prop) |
 | [src/components/shared-components/noModelBlock/NoModelBlockForm.tsx](src/components/shared-components/noModelBlock/NoModelBlockForm.tsx) | Форма «не нашли модель» на /shop |
-| [supabase/migrations/](supabase/migrations/) | SQL миграции (6 штук) |
+| [supabase/migrations/](supabase/migrations/) | SQL миграции (10 штук) |
 | [supabase/functions/create-lead/index.ts](supabase/functions/create-lead/index.ts) | Edge Function |
 | [supabase/functions/cleanup-user-uploads/index.ts](supabase/functions/cleanup-user-uploads/index.ts) | Edge Function-sweeper для bucket `user-uploads/prints/` |
 
@@ -418,7 +418,7 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=<берётся из Supabase Dashboard → Settin
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 
-`next.config.mjs` whitelistит image-хосты: `cdn.pnhd.ru`, `pnhdstudioapi.ru` (legacy, сейчас 502), `*.supabase.co`, `placehold.co`.
+`next.config.mjs` whitelistит image-хосты: `cdn.pnhd.ru`, `pnhdstudioapi.ru` (legacy, сейчас 502), `almfjmiygtnzngkayhdv.supabase.co`, `placehold.co`.
 
 ---
 
