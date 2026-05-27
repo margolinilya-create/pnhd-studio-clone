@@ -4,7 +4,6 @@ import styles from './product-cards-block.module.css';
 import Link from 'next/link';
 import { IProduct } from '@/app/utils/types';
 import ProductCard from '../product-card/product-card';
-import { apiBaseUrl } from '@/app/utils/constants';
 
 export const ProductCardsBlock: React.FC<{ shopData: Array<IProduct> }> = ({ shopData }) => {
  
@@ -38,7 +37,8 @@ export const ProductCardsBlock: React.FC<{ shopData: Array<IProduct> }> = ({ sho
       <>
         <div className={styles.screen}>
           {shopData && shopData.map((item, index) => {
-            const url = item?.image_url ? `${apiBaseUrl}${item.image_url}` : '';
+            // image_url из Supabase уже абсолютный URL (cdn.pnhd.ru или Storage public)
+            const url = item?.image_url ?? '';
             return index < endIndex && (
               <Link
                 href={`/shop/${item.slug}`}

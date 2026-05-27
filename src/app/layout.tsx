@@ -13,7 +13,6 @@ import Script from "next/script";
 import CookieBar from "@/components/shared-components/cookie-bar/cookie-bar";
 import {headers} from "next/headers";
 import {textileOptions} from "@/app/utils/textile-options-data";
-import {getCurrentPath} from '@/app/utils/constants';
 import {SITE_INFO} from "@/app/constants";
 import ContactsWidget from "@/components/shared-components/contactsWidget/contactsWidget";
 import dynamic from "next/dynamic";
@@ -31,15 +30,17 @@ const Agentation =
 const inter = Inter({ subsets: ["latin"] });
 
 export async function generateMetadata(): Promise<Metadata> {
-  let path = getCurrentPath()
+  // x-pathname проставляется middleware на каждом запросе; запасной вариант '/' если хедера нет
+  const pathname = headers().get('x-pathname') ?? '/';
 
   return {
     verification: {
       yandex: "35381404e7bfd3a4",
       //google: "M4lIu49eO2o_XQZ5jyQ3zNkORxQftkEpEvf0E04pRFU",
     },
+    metadataBase: new URL(SITE_INFO.domain),
     alternates: {
-      canonical: SITE_INFO.domain + '/' + path.join('/'),
+      canonical: pathname,
     },
   }
 }

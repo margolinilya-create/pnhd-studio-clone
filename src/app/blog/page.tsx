@@ -8,23 +8,19 @@ import {Metadata} from 'next';
 import button_arrow_right from "../../../public/button_arrow_right.svg";
 import ArticleTagButton from "@/components/pages-components/blog/article-tag/article-tag";
 import {SITE_INFO} from "@/app/constants";
+import { buildMetadata } from "@/app/_lib/build-metadata";
 
 const cx = classnames.bind(styles);
 
 export async function generateMetadata(): Promise<Metadata> {
     return {
-        title: ` Пошив и печать на одежде — статьи от PNHD>STUDIO для бизнеса и клиентов`,
-        description: `PNHD>STUDIO — это блог о создании мерча. Отвечаем на важные вопросы о пошиве одежды и нанесении принтов: как выбрать ткань, технологию печати, рассчитать бюджет. Помогаем заказчикам принимать взвешенные решения.`,
-        keywords: ['Печать на текстиле', "Мерч"],
-        //   openGraph: {
-        //     images: `${apiBaseUrl}${currItem?.image_url}`,
-        //     type: 'website',
-        //     url: `https://studio.pnhd.ru/shop/${params.slug}?id=${searchParams.id}`,
-        //     description: currItem?.description,
-        //     siteName: 'PINHEAD STUDIO',
-        //     title: currItem?.name,
-        //   }
-    }
+        ...buildMetadata({
+            title: `Пошив и печать на одежде — статьи от ${SITE_INFO.name} для бизнеса и клиентов`,
+            description: `${SITE_INFO.name} — блог о создании мерча. Отвечаем на важные вопросы о пошиве одежды и нанесении принтов: как выбрать ткань, технологию печати, рассчитать бюджет. Помогаем заказчикам принимать взвешенные решения.`,
+            path: '/blog',
+        }),
+        keywords: ['Печать на текстиле', 'Мерч', 'Блог о печати на одежде'],
+    };
 }
 
 

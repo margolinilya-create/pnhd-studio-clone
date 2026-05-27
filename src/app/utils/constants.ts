@@ -266,18 +266,6 @@ export const getCurrentUrl = (pathname: string, searchParams?: URLSearchParams) 
 }
 
 
-export function getCurrentPath():Array<string>{
-    let currentDir:RegExpMatchArray|null = __dirname.match(/(?<=[\/\\]app[\/\\]).+/)
-    let path:Array<string> = []
-
-    if (currentDir){
-        path = currentDir[0].split(/\/\\]/)
-    }
-
-    return path
-}
-
-
 /*
 {
   "post_id": 001,
