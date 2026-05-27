@@ -44,10 +44,13 @@ export async function saveProduct(input: ProductInput): Promise<SaveResult> {
         productId = created.id;
     }
 
+    // productId is guaranteed to be set at this point (either from input.id or from insert)
+    const resolvedId = productId as string;
+
     try {
-        await syncChildren(admin, 'product_sizes',          productId, sizes);
-        await syncChildren(admin, 'product_gallery_photos', productId, photos);
-        await syncLinks(admin, productId, linkedIds);
+        await syncChildren(admin, 'product_sizes',          resolvedId, sizes);
+        await syncChildren(admin, 'product_gallery_photos', resolvedId, photos);
+        await syncLinks(admin, resolvedId, linkedIds);
     } catch (e) {
         return { ok: false, error: e instanceof Error ? e.message : 'Ошибка синхронизации связей' };
     }
