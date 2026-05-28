@@ -14,7 +14,8 @@
     "payload:gen-types": "cross-env NODE_OPTIONS=--no-deprecation payload generate:types",
     "payload:gen-importmap": "cross-env NODE_OPTIONS=--no-deprecation payload generate:importmap",
     "payload:migrate": "cross-env NODE_OPTIONS=--no-deprecation payload migrate",
-    "payload:migrate:create": "cross-env NODE_OPTIONS=--no-deprecation payload migrate:create"
+    "payload:migrate:create": "cross-env NODE_OPTIONS=--no-deprecation payload migrate:create",
+    "etl:catalog": "tsx scripts/etl-catalog.ts"
   },
   "dependencies": {
     "@emotion/react": "^11.11.4",

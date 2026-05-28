@@ -24,5 +24,18 @@ export const Media: CollectionConfig = {
       type: 'text',
       label: 'Alt-текст',
     },
+    {
+      name: 'tag',
+      type: 'select',
+      label: 'Тег (для группировки в админке)',
+      defaultValue: 'misc',
+      options: [
+        { label: 'Товар', value: 'product' },
+        { label: 'Блог', value: 'blog' },
+        { label: 'Галерея принтов', value: 'gallery_prints' },
+        { label: 'Дроп', value: 'drops' },
+        { label: 'Прочее', value: 'misc' },
+      ],
+    },
   ],
 };
