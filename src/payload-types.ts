@@ -203,6 +203,68 @@ export interface Lead {
   updatedAt: string;
 }
 
+export type OrderStatus =
+  | 'draft'
+  | 'pending_payment'
+  | 'paid'
+  | 'in_production'
+  | 'shipped'
+  | 'delivered'
+  | 'cancelled'
+  | 'refunded';
+export type PaymentStatus = 'unpaid' | 'awaiting_callback' | 'paid' | 'failed' | 'refunded';
+export type ProductionStatus = 'not_started' | 'layout_review' | 'printing' | 'qc' | 'packed';
+export type DeliveryType = 'cdek_pvz' | 'cdek_door' | 'self_pickup';
+export type PaymentProvider = 'tochka' | 'tbank';
+
+export interface Order {
+  id: string;
+  orderNumber?: string;
+  channel: 'b2c' | 'b2b';
+  customer: {
+    name: string;
+    phone: string;
+    email?: string | null;
+    roistatVisit?: string | null;
+  };
+  delivery?: {
+    type?: DeliveryType | null;
+    cityCode?: string | null;
+    cityName?: string | null;
+    address?: string | null;
+    pvzCode?: string | null;
+    cost?: number | null;
+  };
+  promoCode?: string | Promo | null;
+  subtotal: number;
+  discount?: number | null;
+  shippingCost?: number | null;
+  total: number;
+  status: OrderStatus;
+  paymentStatus: PaymentStatus;
+  productionStatus?: ProductionStatus | null;
+  paymentProvider?: PaymentProvider | null;
+  sbpQrId?: string | null;
+  sbpQrUrl?: string | null;
+  fiscalReceiptId?: string | null;
+  notes?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface OrderItem {
+  id: string;
+  order: string | Order;
+  product: string | Product;
+  variant: string | Variant;
+  quantity: number;
+  pricePerUnit: number;
+  printConfig?: unknown;
+  lineTotal: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface Config {
   collections: {
     users: User;
@@ -215,6 +277,8 @@ export interface Config {
     drops: Drop;
     promos: Promo;
     leads: Lead;
+    orders: Order;
+    'order-items': OrderItem;
   };
   globals: object;
 }

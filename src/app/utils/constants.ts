@@ -1,5 +1,8 @@
-export const apiBaseUrl = 'https://pnhdstudioapi.ru';
-//export const apiBaseUrl = 'http://localhost:9000';
+// Phase 4: переключено на относительный baseURL — все RTK Query endpoints
+// резолвятся в текущем Next.js приложении (Payload REST + custom endpoints).
+// CDEK/promocodes endpoints пока не реализованы (вернут 404 — это TODO).
+export const apiBaseUrl = '';
+
 export const CDN_URL = 'https://cdn.pnhd.ru';
 
 export const ACQUIRE_RATIO = 0.965; //комиссия эквайринга
