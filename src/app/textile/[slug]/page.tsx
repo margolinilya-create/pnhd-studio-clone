@@ -9,11 +9,12 @@ import DtfCalculator from "@/components/pages-components/method-page/dtf-calcula
 import Link from "next/link";
 import { textileOptions } from "@/app/utils/textile-options-data";
 
-export const generateMetadata = ({
-    params,
-}: {
-    params: { slug: string };
-}): Metadata => {
+export const generateMetadata = async (
+    props: {
+        params: Promise<{ slug: string }>;
+    }
+): Promise<Metadata> => {
+    const params = await props.params;
     const option = textileOptions.find((item) => item.slug === params.slug);
 
     return {
@@ -35,8 +36,9 @@ export const generateStaticParams = async () => {
 }
 
 const MethodPage: React.FC<{
-    params: { slug: string };
-}> = ({ params }) => {
+    params: Promise<{ slug: string }>;
+}> = async props => {
+    const params = await props.params;
     const textile = textileOptions.find((item) => item.slug === params.slug);
     //const options = ssOptions.filter((item) => item.parent === method?.name);
 

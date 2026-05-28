@@ -15,7 +15,8 @@ import {type} from "node:os";
 import { SITE_INFO } from "@/app/constants";
 import AdvantagesComponent from "@/components/pages-components/method-page/advantages/advantages";
 
-export const generateMetadata = ({params}: { params: { slug: string } }): Metadata => {
+export const generateMetadata = async (props: { params: Promise<{ slug: string }> }): Promise<Metadata> => {
+  const params = await props.params;
   const method = methodsData.find((item) => item.slug === params.slug);
   const currentUrl = SITE_INFO.domain+'/methods/'+params.slug
 
@@ -38,8 +39,9 @@ export const generateMetadata = ({params}: { params: { slug: string } }): Metada
 
 
 const MethodPage: React.FC<{
-  params: { slug: string };
-}> = ({params}) => {
+  params: Promise<{ slug: string }>;
+}> = async props => {
+  const params = await props.params;
 
   const method = methodsData.find((item) => item.slug === params.slug);
   const options = ssOptions.filter((item) => item.parent === method?.name);

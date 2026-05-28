@@ -15,23 +15,13 @@ import {headers} from "next/headers";
 import {textileOptions} from "@/app/utils/textile-options-data";
 import {SITE_INFO} from "@/app/constants";
 import ContactsWidget from "@/components/shared-components/contactsWidget/contactsWidget";
-import dynamic from "next/dynamic";
-
-// Agentation toolbar даёт +417 KB JS-чанка; в prod-сборку не включаем.
-// Условие константно на этапе build (process.env.NODE_ENV инлайнится), поэтому
-// в prod-build Webpack статически выкидывает обе ветки dynamic + import.
-const Agentation =
-  process.env.NODE_ENV !== "production"
-    ? dynamic(() => import("agentation").then((m) => m.Agentation), {
-        ssr: false,
-      })
-    : () => null;
+import AgentationLoader from "@/components/shared-components/agentation-loader/agentation-loader";
 
 const inter = Inter({ subsets: ["latin"] });
 
 export async function generateMetadata(): Promise<Metadata> {
   // x-pathname проставляется middleware на каждом запросе; запасной вариант '/' если хедера нет
-  const pathname = headers().get('x-pathname') ?? '/';
+  const pathname = (await headers()).get('x-pathname') ?? '/';
 
   return {
     verification: {
@@ -45,14 +35,16 @@ export async function generateMetadata(): Promise<Metadata> {
   }
 }
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+export default async function RootLayout(
+  {
+    children,
+  }: Readonly<{
+    children: React.ReactNode;
+  }>
+) {
   // x-pathname выставляется middleware. На admin-роутах публичную обёртку
   // (header/footer/analytics) не рендерим — у админки свой layout.
-  const pathname = headers().get('x-pathname') ?? '';
+  const pathname = (await headers()).get('x-pathname') ?? '';
   const isAdmin = pathname.startsWith('/admin');
 
   if (isAdmin) {
@@ -61,7 +53,7 @@ export default function RootLayout({
         <ReduxProvider>
           <body className={inter.className}>
             {children}
-            <Agentation />
+            <AgentationLoader />
           </body>
         </ReduxProvider>
       </html>
@@ -121,7 +113,7 @@ export default function RootLayout({
           `}
           </Script>
           <Script type="text/javascript" async src="https://app.uiscom.ru/static/cs.min.js?k=79obNG5YrzIplUgKXZYSiPbK7agWm7Dk"></Script>
-          <Agentation />
+          <AgentationLoader />
         </body>
       </ReduxProvider>
     </html>

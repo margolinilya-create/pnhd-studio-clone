@@ -17,12 +17,14 @@ async function loadPost(slug: string): Promise<BlogPostInput | null> {
     return data ?? null;
 }
 
-export default async function EditPostPage({ params }: { params: { slug: string } }) {
+export default async function EditPostPage(props: { params: Promise<{ slug: string }> }) {
+    const params = await props.params;
     const post = await loadPost(params.slug);
     if (!post) notFound();
     return <BlogForm initial={post} />;
 }
 
-export async function generateMetadata({ params }: { params: { slug: string } }) {
+export async function generateMetadata(props: { params: Promise<{ slug: string }> }) {
+    const params = await props.params;
     return { title: params.slug };
 }

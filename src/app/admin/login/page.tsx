@@ -2,11 +2,12 @@ import { LoginForm } from './LoginForm';
 
 export const metadata = { title: 'Вход — PNHD admin', robots: { index: false, follow: false } };
 
-export default function LoginPage({
-    searchParams,
-}: {
-    searchParams: { next?: string; error?: string };
-}) {
+export default async function LoginPage(
+    props: {
+        searchParams: Promise<{ next?: string; error?: string }>;
+    }
+) {
+    const searchParams = await props.searchParams;
     const next = searchParams.next ?? '/admin';
     const initialError =
         searchParams.error === 'forbidden' ? 'Доступ запрещён' : null;

@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 
 export default function useDebouncedFunction(func: any, delay: number, cleanUp = false) {
-    const timeoutRef: any = useRef();
+    const timeoutRef: any = useRef<any>(undefined);
   
     function clearTimer() {
       if (timeoutRef.current) {
