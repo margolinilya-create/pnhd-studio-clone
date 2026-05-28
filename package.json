@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@emotion/react": "^11.11.4",
@@ -52,6 +54,7 @@
     "@types/uuid": "^9.0.8",
     "eslint": "^8",
     "eslint-config-next": "^14.2.35",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^4.1.7"
   }
 }

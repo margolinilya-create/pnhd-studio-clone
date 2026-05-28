@@ -29,6 +29,9 @@ jobs:
         # ESLint disabled rules в проекте (см. CLAUDE.md §2); --max-warnings=0 не ставим,
         # чтобы CI не падал на исторических warning'ах. Только на ошибках.
 
+      - name: Test
+        run: npm test
+
       - name: Build
         run: npm run build
         env:
