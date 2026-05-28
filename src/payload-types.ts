@@ -172,6 +172,37 @@ export interface Promo {
   updatedAt: string;
 }
 
+export type LeadSource =
+  | 'footer'
+  | 'popup'
+  | 'shop-no-model'
+  | 'product-page'
+  | 'methods-consultation'
+  | 'checkout';
+
+export type LeadStatus = 'new' | 'contacted' | 'done' | 'spam';
+
+export interface Lead {
+  id: string;
+  name: string;
+  phone: string;
+  email?: string | null;
+  comment?: string | null;
+  referenceUrl?: string | null;
+  source: LeadSource;
+  roistatVisit?: string | null;
+  userAgent?: string | null;
+  attachments?: {
+    side?: string | null;
+    url: string;
+    filename?: string | null;
+    id?: string | null;
+  }[] | null;
+  status: LeadStatus;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface Config {
   collections: {
     users: User;
@@ -183,6 +214,7 @@ export interface Config {
     pages: Page;
     drops: Drop;
     promos: Promo;
+    leads: Lead;
   };
   globals: object;
 }

@@ -1,5 +1,6 @@
 import { Categories } from './Categories';
 import { Drops } from './Drops';
+import { Leads } from './Leads';
 import { Media } from './Media';
 import { Pages } from './Pages';
 import { Prices } from './Prices';
@@ -18,4 +19,5 @@ export const collections = [
   Pages,
   Drops,
   Promos,
+  Leads,
 ];
