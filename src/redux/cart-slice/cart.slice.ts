@@ -89,6 +89,22 @@ const cartSlice = createSlice({
     ) => {
       state.order?.push(action.payload);
     },
+    // Заменяет существующий cart-entry по itemCartId. Используется flow'ом
+    // «Изменить размер»: product page открыт в edit-mode (?edit=<id>), пользователь
+    // меняет размеры/принт, на «Сохранить» — заменяем item целиком.
+    updateCartItem: (
+      state,
+      action: PayloadAction<{
+        itemCartId: string;
+        item: IProduct;
+        printConfig: IPrintConfig;
+      }>,
+    ) => {
+      const idx = state.order?.findIndex((e) => e.itemCartId === action.payload.itemCartId);
+      if (idx !== undefined && idx >= 0) {
+        state.order[idx] = action.payload;
+      }
+    },
     setPrintLocation: (
       state,
       action: PayloadAction<{ itemCartId: string; location: TPrintLocation }>,
