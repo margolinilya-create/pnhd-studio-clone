@@ -1,4 +1,5 @@
 import { withSentryConfig } from '@sentry/nextjs';
+import { withPayload } from '@payloadcms/next/withPayload';
 
 // Content-Security-Policy в Report-Only режиме (PR #6).
 // Через 1-2 недели после наблюдения за report'ами — переключить в enforce.
@@ -108,10 +109,13 @@ const nextConfig = {
 // Sentry-обёртка: активна только когда задан NEXT_PUBLIC_SENTRY_DSN/SENTRY_DSN
 // (внутри instrumentation.ts / instrumentation-client.ts init выполняется условно).
 // Без DSN — no-op. Source-maps загружаются только если задан SENTRY_AUTH_TOKEN.
-export default withSentryConfig(nextConfig, {
-    silent: !process.env.SENTRY_AUTH_TOKEN,
-    org: process.env.SENTRY_ORG,
-    project: process.env.SENTRY_PROJECT,
-    authToken: process.env.SENTRY_AUTH_TOKEN,
-    widenClientFileUpload: false,
-});
+export default withPayload(
+    withSentryConfig(nextConfig, {
+        silent: !process.env.SENTRY_AUTH_TOKEN,
+        org: process.env.SENTRY_ORG,
+        project: process.env.SENTRY_PROJECT,
+        authToken: process.env.SENTRY_AUTH_TOKEN,
+        widenClientFileUpload: false,
+    }),
+    { devBundleServerPackages: false },
+);
