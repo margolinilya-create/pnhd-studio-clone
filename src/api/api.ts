@@ -1,6 +1,5 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import { apiBaseUrl } from "@/app/utils/constants";
-import { getSupabaseClient } from "@/lib/supabase/client";
 import {
   ICdekCitySearchResponse,
   ICdekPointsResponse,
@@ -105,41 +104,27 @@ export const api = createApi({
       }),
     }),
     createLead: builder.mutation<{ leadId: string }, ICreateLeadPayload>({
-      // Edge Function `create-lead`: пишет в public.leads + опц. шлёт в Bitrix24.
-      queryFn: async (payload) => {
-        try {
-          const supabase = getSupabaseClient();
-          const { data, error } = await supabase.functions.invoke<{
-            ok: boolean;
-            leadId?: string;
-            error?: string;
-          }>('create-lead', { body: payload });
-          if (error) {
-            return {
-              error: {
-                status: 'CUSTOM_ERROR',
-                error: error.message,
-              } as any,
-            };
-          }
-          if (!data?.ok || !data.leadId) {
-            return {
-              error: {
-                status: 'CUSTOM_ERROR',
-                error: data?.error ?? 'create_lead_failed',
-              } as any,
-            };
-          }
-          return { data: { leadId: data.leadId } };
-        } catch (e) {
-          return {
-            error: {
-              status: 'CUSTOM_ERROR',
-              error: e instanceof Error ? e.message : String(e),
-            } as any,
-          };
-        }
-      },
+      // Payload REST: POST /api/leads. Маппинг snake_case → camelCase для коллекции.
+      query: (data) => ({
+        url: '/api/leads',
+        method: 'POST',
+        body: JSON.stringify({
+          name: data.name,
+          phone: data.phone,
+          email: data.email,
+          comment: data.comment,
+          referenceUrl: data.reference_url,
+          source: data.source,
+          roistatVisit: data.roistat_visit,
+          attachments: data.attachments,
+        }),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      }),
+      transformResponse: (resp: { doc?: { id: string } }) => ({
+        leadId: resp.doc?.id ?? '',
+      }),
     }),
     promocodeValidation: builder.mutation<unknown, {user_promocode: string}>({
       query: (data) => ({

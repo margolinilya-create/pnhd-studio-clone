@@ -50,12 +50,10 @@ export default buildConfig({
       },
     }),
   ],
-  cors: [
-    'http://localhost:3000',
-    'https://studio.pnhd.ru',
-  ],
-  csrf: [
-    'http://localhost:3000',
-    'https://studio.pnhd.ru',
-  ],
+  cors: process.env.ALLOWED_ORIGINS
+    ? process.env.ALLOWED_ORIGINS.split(',').map((s) => s.trim()).filter(Boolean)
+    : ['http://localhost:3000', 'https://studio.pnhd.ru'],
+  csrf: process.env.ALLOWED_ORIGINS
+    ? process.env.ALLOWED_ORIGINS.split(',').map((s) => s.trim()).filter(Boolean)
+    : ['http://localhost:3000', 'https://studio.pnhd.ru'],
 });
