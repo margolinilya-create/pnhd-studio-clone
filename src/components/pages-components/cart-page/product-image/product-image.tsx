@@ -4,7 +4,6 @@ import Link from "next/link";
 import styles from './product-image.module.css';
 import { ICartOrderElement } from "@/app/utils/types";
 import { CDN_URL } from "@/app/utils/constants";
-import PrintPreview from "@/components/pages-components/shop-page/product-info/print-preview";
 
 const ProductImage: React.FC<{ elem: ICartOrderElement }> = ({ elem }) => {
     // Источники в порядке убывания доверия:
@@ -28,31 +27,17 @@ const ProductImage: React.FC<{ elem: ICartOrderElement }> = ({ elem }) => {
         }
     };
 
-    const hasPrint =
-        elem.printConfig?.location && elem.printConfig.location !== 'none' &&
-        Object.values(elem.printConfig?.files ?? {}).some((f) => Boolean(f?.url));
-
     return (
         <div className={styles.cart_productImageWrapper}>
             <Link href={`/shop/${elem.item.slug}`} className={styles.cart_link}>
-                {hasPrint ? (
-                    <PrintPreview
-                        photoUrl={imageSrc}
-                        photoAlt={elem.item.name}
-                        productType={elem.item.type}
-                        printConfig={elem.printConfig}
-                        className={styles.cart_productImage}
-                    />
-                ) : (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                        src={imageSrc}
-                        alt={elem.item.name}
-                        className={styles.cart_productImage}
-                        loading="lazy"
-                        onError={handleError}
-                    />
-                )}
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                    src={imageSrc}
+                    alt={elem.item.name}
+                    className={styles.cart_productImage}
+                    loading="lazy"
+                    onError={handleError}
+                />
             </Link>
         </div>
     );

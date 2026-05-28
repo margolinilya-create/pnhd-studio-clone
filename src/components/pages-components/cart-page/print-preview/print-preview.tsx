@@ -22,6 +22,9 @@ const PrintPreview: React.FC<{ elem: ICartOrderElement }> = ({ elem }) => {
             <p className={styles.printsInfo_format} title={file.filename}>
               {file.filename}
             </p>
+            <p className={styles.printsInfo_priceHint}>
+              + стоимость нанесения (рассчитает менеджер)
+            </p>
           </div>
           <div className={styles.printsInfo_controlButtonsWrapper}>
             <button

@@ -53,18 +53,37 @@
 }
 
 .prints_info {
-    grid-row-gap: 5px;
     align-items: start;
-    display: grid;
-    grid-template-columns: auto auto;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
     line-height: 19px;
-    row-gap: 5px;
+    min-width: 0;
 }
 
 .prints_info > p {
     margin: 0;
     padding: 0;
-    
+}
+
+.printsInfo_format {
+    max-width: 220px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: #888;
+    font-size: 14px;
+    line-height: 16px;
+}
+
+.printsInfo_priceHint {
+    font-family: 'Neue_machina';
+    font-size: 12px;
+    line-height: 14px;
+    color: #888;
+    margin: 0;
+    padding: 0;
+    max-width: 240px;
 }
   
 .prints_price__right {
