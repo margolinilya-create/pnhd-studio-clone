@@ -1,78 +1,65 @@
 'use client'
-import React, { useEffect, useRef, useState} from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import styles from './product-cards-block.module.css';
 import Link from 'next/link';
 import { IProduct } from '@/app/utils/types';
 import ProductCard from '../product-card/product-card';
-import { apiBaseUrl } from '@/app/utils/constants';
+
+// Module-level constant: не пересоздаём при каждом ре-рендере (PR #5)
+const OBSERVER_OPTIONS: IntersectionObserverInit = {
+    root: null,
+    rootMargin: '0px 0px 50px 0px',
+    threshold: 0.1,
+};
+
+const PAGE_SIZE = 8;
 
 export const ProductCardsBlock: React.FC<{ shopData: Array<IProduct> }> = ({ shopData }) => {
- 
-    const [ endIndex, setEndIndex ] = useState(8);
-    const observerRef = useRef(null);
-    
-    const observerOptions = {
-      root: null,
-      rootMargin: '0px 0px 50px 0px',
-      threshold: 0.1,
-    }
+    const [endIndex, setEndIndex] = useState(PAGE_SIZE);
+    const observerRef = useRef<HTMLDivElement | null>(null);
 
     useEffect(() => {
+        const observer = new IntersectionObserver((entries) => {
+            const [entry] = entries;
+            if (entry.isIntersecting && endIndex < shopData.length) {
+                setEndIndex((prev) => Math.min(prev + PAGE_SIZE, shopData.length));
+            }
+        }, OBSERVER_OPTIONS);
+        if (observerRef.current) {
+            observer.observe(observerRef.current);
+        }
 
-      const observer = new IntersectionObserver((entries) => {
-          const [ entry ] = entries;
-          if (entry.isIntersecting && endIndex < shopData.length) {
-            setEndIndex(endIndex + 8);
-          }
-      }, observerOptions);
-      if (observerRef && observerRef.current) {
-          observer.observe(observerRef.current);
-      }
-
-      return () => {
-          if (observerRef.current) observer.unobserve(observerRef.current);
-      }
-  }, [observerRef, endIndex, observerOptions])
+        return () => {
+            if (observerRef.current) observer.unobserve(observerRef.current);
+        };
+    }, [endIndex, shopData.length]);
 
     return (
-      <>
-        <div className={styles.screen}>
-          {shopData && shopData.map((item, index) => {
-            const url = item?.image_url ? `${apiBaseUrl}${item.image_url}` : '';
-            return index < endIndex && (
-              <Link
-                href={`/shop/${item.slug}`}
-                className={styles.link}
-                key={item._id}
-              >
-                <ProductCard
-                  title={item.name}
-                  price={item.price}
-                  img={url}
-                  sizes={item.sizes}
-                  slug={item.slug}
-                />
-              </Link>
-            );
-          })} 
-         
-        </div>
-        {/* observer elem */}
-        <div
-            style={{ width: '100%', height: '10px' }}
-            ref={observerRef}
-        >
-        </div>
+        <>
+            <div className={styles.screen}>
+                {shopData && shopData.slice(0, endIndex).map((item) => (
+                    <Link
+                        href={`/shop/${item.slug}`}
+                        className={styles.link}
+                        key={item._id}
+                    >
+                        <ProductCard
+                            title={item.name}
+                            price={item.price}
+                            img={item?.image_url ?? ''}
+                            sizes={item.sizes}
+                            slug={item.slug}
+                        />
+                    </Link>
+                ))}
+            </div>
+            {/* observer elem */}
+            <div
+                style={{ width: '100%', height: '10px' }}
+                ref={observerRef}
+            />
         </>
-    )
-}
-
-
+    );
+};
 
 export default ProductCardsBlock;
-
-
-
-
-
-

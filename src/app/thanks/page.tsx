@@ -1,42 +1,35 @@
-'use client'
-import React, { useEffect, useState } from "react";
-import { useRouter, redirect } from "next/navigation";
+import React from "react";
+import Link from "next/link";
+import { Metadata } from "next";
 import styles from './page.module.css';
+import { buildMetadata } from "@/app/_lib/build-metadata";
 
+export const metadata: Metadata = buildMetadata({
+    title: 'Заявка отправлена | PINHEAD STUDIO',
+    description: 'Спасибо! Менеджер свяжется в течение 30 минут.',
+    path: '/thanks',
+});
 
-
-
-
-
-const Page: React.FC<{ searchParams: { [n: string]: string }}> = ({ searchParams }) => {
-
-    const [ counter, setCounter ] = useState(5)
-
-    const router = useRouter();
-    useEffect(() => {
-        if (!searchParams.from || searchParams.from !== 'checkout') router.push('/');
-        const interval = setInterval(() => {
-            if(counter === 0) return router.push('/');
-            setCounter(counter - 1);
-        }, 1000)
-
-        return () => {
-            clearInterval(interval)
-        }
-    }, [counter])
-
+const Page: React.FC = () => {
     return (
         <section className={styles.page}>
-        {searchParams.from && searchParams.from === 'checkout' &&
             <div className={styles.wrapper}>
                 <h1 className={styles.title}>СПАСИБО!</h1>
                 <p className={styles.text}>
-                    Мы свяжемся с вами в течении 15 минут — подтвердим заказ и пришлем ссылку на оплату UwU, а пока перенаправми вас на главную через {counter} секунд.
+                    Заявка отправлена. Менеджер свяжется с вами <strong>в течение 30 минут</strong> по
+                    указанному телефону — согласует расположение принта, итоговую стоимость и условия доставки.
                 </p>
+                <p className={styles.text}>
+                    Если вы не получите звонок — напишите нам в Telegram <a href="https://t.me/pnhd_studio" target="_blank" rel="noopener noreferrer">@pnhd_studio</a> или
+                    позвоните по номеру <a href="tel:+78129046156">+7 (812) 904-61-56</a>.
+                </p>
+                <div className={styles.actions}>
+                    <Link href="/" className={styles.linkBtn}>На главную</Link>
+                    <Link href="/shop" className={styles.linkBtnPrimary}>Вернуться в каталог</Link>
+                </div>
             </div>
-        }
         </section>
-    )
-}
+    );
+};
 
 export default Page;

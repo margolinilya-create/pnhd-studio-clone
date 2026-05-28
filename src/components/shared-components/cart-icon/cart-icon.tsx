@@ -9,7 +9,7 @@ import { usePathname } from "next/navigation";
 import { useAppDispatch } from "@/redux/redux-hooks";
 import { actions as cartActions } from "@/redux/cart-slice/cart.slice";
 import { CART_STORAGE_KEY } from "@/redux/middleware/cart-persist";
-import { ICartOrderElement } from "@/app/utils/types";
+import { isValidStoredCart } from "@/lib/cart/validate-stored-cart";
 import { useRouter } from "next/navigation";
 
 const CartIcon: React.FC = () => {
@@ -42,23 +42,8 @@ const CartIcon: React.FC = () => {
     }
     try {
       const parsed: unknown = JSON.parse(stored);
-      const valid =
-        Array.isArray(parsed) &&
-        parsed.every((entry) => {
-          if (!entry || typeof entry !== 'object') return false;
-          const e = entry as Record<string, unknown>;
-          if (typeof e.itemCartId !== 'string' || !e.item) return false;
-          const pc = e.printConfig as Record<string, unknown> | undefined;
-          return (
-            !!pc &&
-            typeof pc.location === 'string' &&
-            ['none', 'front', 'back', 'sleeve', 'both'].includes(pc.location) &&
-            typeof pc.files === 'object' &&
-            pc.files !== null
-          );
-        });
-      if (valid) {
-        dispatch(cartActions.restoreCart(parsed as Array<ICartOrderElement>));
+      if (isValidStoredCart(parsed)) {
+        dispatch(cartActions.restoreCart(parsed));
       } else {
         window.sessionStorage.removeItem(CART_STORAGE_KEY);
         dispatch(cartActions.markHydrated());

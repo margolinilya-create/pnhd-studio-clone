@@ -18,19 +18,19 @@ const ShopLeadScreen: React.FC = () => {
         <section className={styles.screen}>
             <h2 className={styles.screen_titleWrapper}>
                 <span className={styles.screen_title}>
-                    перейди в конструктор и создай одежду с уникальными
+                    открой каталог и закажи одежду с уникальными
                 </span>
                 <span className={styles.screen_subtitle}>
                     принтами
                 </span>
             </h2>
-           
+
             <div className={styles.screen_box}>
                 <div className={styles.box_shapeWrapper}>
                     <Image src={shop_screen_left_shape} alt='графическая форма' className={styles.box_shape} />
                 </div>
                 <Link href='/shop' className={styles.box_link}>
-                    <button className={styles.box_linkButton}>перейти в конструктор</button>
+                    <button className={styles.box_linkButton}>перейти в каталог</button>
                 </Link>
                 <div className={styles.box_shapeWrapper}>
                     <Image src={shop_screen_right_shape} alt='графическая форма' className={styles.box_shape} />

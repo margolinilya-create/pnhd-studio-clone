@@ -1,0 +1,29 @@
+.wrapper {
+    position: relative;
+    width: 100%;
+    display: block;
+    overflow: hidden;
+    background-color: #f5f5f5;
+}
+
+.photo {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.overlay {
+    position: absolute;
+    pointer-events: none;
+    /* mix-blend-mode даёт реалистичное наложение на цветной текстиль */
+    mix-blend-mode: multiply;
+    /* Лёгкая полупрозрачность сглаживает edge-эффекты PNG */
+    opacity: 0.92;
+}
+
+.overlayImg {
+    display: block;
+    width: 100%;
+    height: auto;
+}

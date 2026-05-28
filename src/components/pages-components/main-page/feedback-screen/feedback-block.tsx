@@ -57,10 +57,10 @@ const FeedbackBlock: React.FC = () => {
                     </div>
 
                     <div className={styles.feedback_linkButtons}>
-                        <Link href='https://yandex.ru/profile/183887374171'>
+                        <Link href='https://yandex.ru/profile/183887374171' target='_blank' rel='noopener noreferrer'>
                             <button type='button' className={styles.feedback_linkButton}>отзывы yandex</button>
                         </Link>
-                        <Link href='https://maps.app.goo.gl/vhWL7yY1VUQUGZ5SA'>
+                        <Link href='https://maps.app.goo.gl/vhWL7yY1VUQUGZ5SA' target='_blank' rel='noopener noreferrer'>
                             <button type='button' className={styles.feedback_linkButton}>отзывы google</button>
                         </Link>
                     </div>

@@ -3,45 +3,63 @@ import styles from "@/app/contacts/page.module.css";
 import {Metadata} from "next";
 import MapScreen from "@/components/pages-components/main-page/map-screen/map-screen";
 import MarkupScript from "@/components/shared-components/markup-script/markup-script";
+import { SITE_INFO, CONTACTS } from "@/app/constants";
+import { buildMetadata } from "@/app/_lib/build-metadata";
 
-export const metadata: Metadata = {
-  title: 'Контактная информация студии печати на одежде ПИНХЭД СТУДИЯ',
-  description: 'Контакты студии печати на одежде ПИНХЭД СТУДИЯ в Санкт-Петербурге: печать принтов на футболках, создание мерча для брендов, широкоформатная печать.',
-  metadataBase: new URL('https://studio.pnhd.ru'),
-  openGraph: {
-    type: 'website',
-    title: 'PNHD STUDIO | Главная',
-    images: '/opengraph-image.jpg',
-  },
-};
+export const metadata: Metadata = buildMetadata({
+  title: `Контакты ${SITE_INFO.name} — печать на одежде в Санкт-Петербурге`,
+  description: `Контакты студии печати на одежде ${SITE_INFO.legal_name} в Санкт-Петербурге: печать принтов на футболках, создание мерча для брендов, широкоформатная печать.`,
+  path: '/contacts',
+  image: '/opengraph-image.jpg',
+});
 
 const Page: React.FC = () => {
 
-  const jsonLdOrganization = {
+  const jsonLdLocalBusiness = {
     "@context": "https://schema.org",
-    "@type": "Organization",
-    "name": "ПИНХЭД СТУДИЯ",
-    "url": "https://studio.pnhd.ru/",
-    "description": "Контакты студии печати на одежде ПИНХЭД СТУДИЯ в Санкт-Петербурге: печать принтов на футболках, создание мерча для брендов, широкоформатная печать.",
+    "@type": "LocalBusiness",
+    "@id": `${SITE_INFO.domain}/#localbusiness`,
+    "name": SITE_INFO.legal_name,
+    "alternateName": SITE_INFO.name,
+    "url": SITE_INFO.domain,
+    "description": "Студия печати на одежде в Санкт-Петербурге: печать принтов на футболках, создание мерча для брендов, широкоформатная печать.",
+    "image": `${SITE_INFO.domain}/opengraph-image.jpg`,
+    "telephone": CONTACTS.phone.raw,
+    "email": CONTACTS.email,
+    "priceRange": "₽₽",
     "address": {
       "@type": "PostalAddress",
-      "streetAddress": "ул. Чапыгина, д. 1",
-      "addressLocality": "Санкт-Петербург",
-      "postalCode": "194044",
+      "streetAddress": CONTACTS.address.street,
+      "addressLocality": CONTACTS.address.locality,
+      "postalCode": CONTACTS.address.postal_code,
       "addressCountry": "RU"
     },
+    "geo": {
+      "@type": "GeoCoordinates",
+      // Координаты ул. Чапыгина, 1, СПб (Аптекарский остров)
+      "latitude": 59.972,
+      "longitude": 30.318
+    },
+    "openingHoursSpecification": [
+      {
+        "@type": "OpeningHoursSpecification",
+        "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
+        "opens": "11:00",
+        "closes": "20:00"
+      }
+    ],
     "contactPoint": {
       "@type": "ContactPoint",
-      "telephone": "+7-(812)-904-61-56",
+      "telephone": CONTACTS.phone.raw,
       "contactType": "customer service",
-      "email": "studio@pnhd.ru",
+      "email": CONTACTS.email,
       "availableLanguage": ["Russian"]
     },
     "sameAs": [
       "https://vk.com/pinheadspb",
       "https://t.me/pnhd_studio_bot"
     ]
-  }
+  };
   const jsonLdBreadcrumbList = {
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
@@ -77,7 +95,7 @@ const Page: React.FC = () => {
           </p>
         </div>
       </section>
-      <MarkupScript jsonLd={jsonLdOrganization}/>
+      <MarkupScript jsonLd={jsonLdLocalBusiness}/>
       <MarkupScript jsonLd={jsonLdBreadcrumbList}/>
     </>
   )

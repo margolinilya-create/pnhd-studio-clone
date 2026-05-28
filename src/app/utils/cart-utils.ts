@@ -40,15 +40,6 @@ export const ruPrintPlace = (side: TPrintSide): string => {
   return '';
 };
 
-export const ruPrintLocation = (location: TPrintLocation): string => {
-  if (location === 'none') return 'без принта';
-  if (location === 'front') return 'принт спереди';
-  if (location === 'back') return 'принт сзади';
-  if (location === 'sleeve') return 'принт на рукаве';
-  if (location === 'both') return 'принт с двух сторон';
-  return '';
-};
-
 export const cartSummaryFunc = (order: Array<ICartOrderElement>): number => {
   if (!order) return 0;
   return order.reduce((acc, elem) => {

@@ -59,4 +59,6 @@ const ProductCard: React.FC<TCardProps> = ({ title, price, img, sizes, slug }) =
   )
 }
 
-export default ProductCard;
+// PR #5: ProductCard рендерится 25+ раз в каталоге; memo предотвращает
+// каскадные ре-рендеры при изменении IntersectionObserver state в parent.
+export default React.memo(ProductCard);
