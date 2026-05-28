@@ -22,7 +22,6 @@ import { actions as cartActions } from '@/redux/cart-slice/cart.slice';
 import { useRouter } from 'next/navigation';
 import { uploadPrintFile } from '@/lib/storage/upload-print';
 import { SIDES_FOR_LOCATION, PRINT_PRICE_TABLE } from './print-config';
-import PrintPreview from './print-preview';
 
 const formatRub = (n: number) => new Intl.NumberFormat('ru-RU').format(n) + ' ₽';
 
@@ -138,23 +137,6 @@ const ProductInfo: React.FC<{ item: IProduct }> = ({ item }) => {
         />
       )}
 
-      {item.isForPrinting && hasAnyPrintFile(printConfig) && (
-        <div className={styles.previewBlock}>
-          <h3 className={styles.previewTitle}>Превью принта</h3>
-          <PrintPreview
-            photoUrl={item.image_url}
-            photoAlt={`${item.name} — превью`}
-            productType={item.type}
-            printConfig={printConfig}
-            className={styles.previewImg}
-          />
-          <p className={styles.previewHint}>
-            Это примерное расположение. Финальный масштаб и позиционирование согласует
-            дизайнер перед печатью.
-          </p>
-        </div>
-      )}
-
       {item.isForPrinting && (
         <details className={styles.priceTable}>
           <summary className={styles.priceTableSummary}>Стоимость печати</summary>
@@ -232,10 +214,6 @@ function isPrintReady(printConfig: IPrintConfig, allowsPrint: boolean): boolean 
   if (!allowsPrint) return true;
   const required = SIDES_FOR_LOCATION[printConfig.location];
   return required.every((side) => Boolean(printConfig.files[side]));
-}
-
-function hasAnyPrintFile(printConfig: IPrintConfig): boolean {
-  return Object.values(printConfig.files).some((f) => Boolean(f?.url));
 }
 
 export default ProductInfo;

@@ -38,15 +38,21 @@
 }
 
 .cart_editSizeButton {
-    display: none;
+    display: inline-block;
     background-color: transparent;
     cursor: pointer;
-    padding: 10px 0 1px 0;
+    padding: 6px 0 2px 0;
     border: none;
     border-bottom: 1px solid black;
-    font-family: inherit;
+    font-family: 'Neue_machina';
+    font-size: 14px;
+    line-height: 16px;
+    text-decoration: none;
     -webkit-text-fill-color: #000000;
     color: #000000;
+}
+.cart_editSizeButton:hover {
+    opacity: 0.65;
 }
 
 .cart_productDescription {
