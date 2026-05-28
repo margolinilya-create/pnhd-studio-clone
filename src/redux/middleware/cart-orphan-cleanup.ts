@@ -31,6 +31,8 @@ cartOrphanCleanupMiddleware.startListening({
     cartActions.clearAllPrints,
     cartActions.deleteItemFromCart,
     cartActions.resetCart,
+    // updateCartItem может заменить принт-файлы — старые становятся orphan
+    cartActions.updateCartItem,
   ),
   effect: async (_action, listenerApi) => {
     if (typeof window === 'undefined') return;

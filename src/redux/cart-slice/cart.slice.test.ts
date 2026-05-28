@@ -206,6 +206,40 @@ describe('cart-slice / deleteItemFromCart', () => {
   });
 });
 
+describe('cart-slice / updateCartItem', () => {
+  it('заменяет item целиком по itemCartId (flow «изменить размер»)', () => {
+    const before = makeEntry({
+      itemCartId: 'cart-1',
+      printConfig: { location: 'none', files: {} },
+    });
+    const next = reducer(
+      seedState([before, makeEntry({ itemCartId: 'cart-2' })]),
+      actions.updateCartItem({
+        itemCartId: 'cart-1',
+        item: makeProduct({ slug: 'updated' }),
+        printConfig: { location: 'front', files: { front: makeFileRef() } },
+      }),
+    );
+    expect(next.order[0].item.slug).toBe('updated');
+    expect(next.order[0].printConfig.location).toBe('front');
+    expect(next.order[1].itemCartId).toBe('cart-2');
+  });
+
+  it('игнорирует несуществующий itemCartId (no-op)', () => {
+    const before = makeEntry({ itemCartId: 'a' });
+    const next = reducer(
+      seedState([before]),
+      actions.updateCartItem({
+        itemCartId: 'ghost',
+        item: makeProduct({ slug: 'should-not-appear' }),
+        printConfig: { location: 'back', files: {} },
+      }),
+    );
+    expect(next.order).toHaveLength(1);
+    expect(next.order[0].item.slug).toBe('futbolka-classic-belaya-man');
+  });
+});
+
 describe('cart-slice / restoreCart', () => {
   it('заменяет order и выставляет isHydrated=true', () => {
     const s = seedState([]);

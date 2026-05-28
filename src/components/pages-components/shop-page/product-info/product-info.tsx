@@ -17,29 +17,56 @@ import {
   TPrintLocation,
   TPrintSide,
 } from '@/app/utils/types';
-import { useAppDispatch } from '@/redux/redux-hooks';
+import { useAppDispatch, useAppSelector } from '@/redux/redux-hooks';
 import { actions as cartActions } from '@/redux/cart-slice/cart.slice';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { uploadPrintFile } from '@/lib/storage/upload-print';
 import { SIDES_FOR_LOCATION, PRINT_PRICE_TABLE } from './print-config';
 
 const formatRub = (n: number) => new Intl.NumberFormat('ru-RU').format(n) + ' ₽';
 
 const ProductInfo: React.FC<{ item: IProduct }> = ({ item }) => {
+  const searchParams = useSearchParams();
+  const editItemCartId = searchParams.get('edit') ?? undefined;
+  const isHydrated = useAppSelector((store) => store.cart.isHydrated);
+  // Если открыли с ?edit= — ждём гидрации корзины из sessionStorage (см. CartIcon
+  // hydration race fix), иначе useState ниже инициализируется до того как Redux
+  // подтянет редактируемый item, и prefill сорвётся.
+  if (editItemCartId && !isHydrated) {
+    return (
+      <div className={styles.box}>
+        <p style={{ fontSize: 14, color: '#888' }}>Загружаем корзину…</p>
+      </div>
+    );
+  }
+  return <ProductInfoInner item={item} editItemCartId={editItemCartId} />;
+};
+
+const ProductInfoInner: React.FC<{
+  item: IProduct;
+  editItemCartId: string | undefined;
+}> = ({ item, editItemCartId }) => {
   const dispatch = useAppDispatch();
   const router = useRouter();
+  const editEntry = useAppSelector((store) =>
+    editItemCartId ? store.cart.order.find((e) => e.itemCartId === editItemCartId) : undefined,
+  );
+  const isEditMode = Boolean(editEntry);
+
   const initialQty = useMemo(() => {
     const map: Record<string, number> = {};
     item.sizes.forEach((s) => {
-      map[s.name] = 0;
+      // В edit-mode инициализируем выбранные ранее количества (userQty с момента
+      // прошлого «В корзину»). Иначе — нули.
+      const fromCart = editEntry?.item.sizes.find((cs) => cs.name === s.name)?.userQty ?? 0;
+      map[s.name] = fromCart;
     });
     return map;
-  }, [item.sizes]);
+  }, [item.sizes, editEntry]);
   const [qty, setQty] = useState<Record<string, number>>(initialQty);
-  const [printConfig, setPrintConfig] = useState<IPrintConfig>({
-    location: 'none',
-    files: {},
-  });
+  const [printConfig, setPrintConfig] = useState<IPrintConfig>(
+    editEntry?.printConfig ?? { location: 'none', files: {} },
+  );
   const [sizeGuideOpen, setSizeGuideOpen] = useState(false);
 
   const total = useMemo(
@@ -94,18 +121,33 @@ const ProductInfo: React.FC<{ item: IProduct }> = ({ item }) => {
       ...s,
       userQty: qty[s.name] ?? 0,
     }));
-    dispatch(
-      cartActions.addToCart({
-        itemCartId: uuidv4(),
-        item: { ...item, sizes: sizesWithUserQty },
-        printConfig,
-      }),
-    );
+    if (isEditMode && editItemCartId) {
+      dispatch(
+        cartActions.updateCartItem({
+          itemCartId: editItemCartId,
+          item: { ...item, sizes: sizesWithUserQty },
+          printConfig,
+        }),
+      );
+    } else {
+      dispatch(
+        cartActions.addToCart({
+          itemCartId: uuidv4(),
+          item: { ...item, sizes: sizesWithUserQty },
+          printConfig,
+        }),
+      );
+    }
     router.push('/cart');
   };
 
   return (
     <div className={styles.box}>
+      {isEditMode && (
+        <div className={styles.editBanner} role="status">
+          Редактируете товар в корзине: размеры и макет уже подставлены, измените что нужно и нажмите «Сохранить изменения».
+        </div>
+      )}
       <div className={styles.head}>
         <h1 className={styles.title}>{item.name}</h1>
         <p className={styles.price}>— {formatRub(item.price)}</p>
@@ -203,7 +245,7 @@ const ProductInfo: React.FC<{ item: IProduct }> = ({ item }) => {
           disabled={!canCheckout}
           onClick={handleAddToCart}
         >
-          В корзину
+          {isEditMode ? 'Сохранить изменения' : 'В корзину'}
         </button>
       </div>
     </div>

@@ -19,6 +19,17 @@
   max-width: 560px;
 }
 
+.editBanner {
+  background: var(--acid);
+  border: var(--bw) solid var(--ink);
+  border-radius: var(--radius-card);
+  padding: 12px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--ink);
+}
+
 .head {
   display: flex;
   flex-direction: column;

@@ -24,7 +24,7 @@ const ProductDescription: React.FC<{ elem: ICartOrderElement }> = ({ elem }) => 
                 {elem.item.price} Р. Х{productQty} шт. — {elem.item.price * productQty} Р.
             </p>
             <Link
-                href={`/shop/${elem.item.slug}`}
+                href={`/shop/${elem.item.slug}?edit=${encodeURIComponent(elem.itemCartId)}`}
                 className={styles.cart_editSizeButton}
             >
                 Изменить&nbsp;размер

@@ -10,6 +10,7 @@ cartPersistMiddleware.startListening({
   // переписываем sessionStorage тем же значением.
   matcher: isAnyOf(
     cartActions.addToCart,
+    cartActions.updateCartItem,
     cartActions.setPrintLocation,
     cartActions.setPrintFile,
     cartActions.clearPrintFile,
