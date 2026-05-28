@@ -121,6 +121,57 @@ export interface Price {
   updatedAt: string;
 }
 
+export type PageType = 'blog' | 'landing';
+export type PageStatus = 'draft' | 'published';
+
+export interface Page {
+  id: string;
+  title: string;
+  slug: string;
+  pageType: PageType;
+  subtitle?: string | null;
+  cover?: string | Media | null;
+  author?: string | null;
+  hashtags?: { tag: string; id?: string | null }[] | null;
+  body?: unknown;
+  bodyHtml?: string | null;
+  likes?: number | null;
+  legacyPostId?: number | null;
+  publishedAt?: string | null;
+  status: PageStatus;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type DropStatus = 'teaser' | 'live' | 'sold_out' | 'archived';
+
+export interface Drop {
+  id: string;
+  name: string;
+  slug: string;
+  description?: unknown;
+  coverMedia?: string | Media | null;
+  releaseAt?: string | null;
+  products?: { product: string | Product; id?: string | null }[] | null;
+  status: DropStatus;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Promo {
+  id: string;
+  code: string;
+  discountType: 'percent' | 'fixed';
+  discountValue: number;
+  validFrom?: string | null;
+  validUntil?: string | null;
+  usageLimit?: number | null;
+  usageCount?: number | null;
+  appliesTo?: { product: string | Product; id?: string | null }[] | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface Config {
   collections: {
     users: User;
@@ -129,6 +180,9 @@ export interface Config {
     products: Product;
     variants: Variant;
     prices: Price;
+    pages: Page;
+    drops: Drop;
+    promos: Promo;
   };
   globals: object;
 }
