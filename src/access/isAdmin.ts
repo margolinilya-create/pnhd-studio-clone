@@ -1,6 +1,6 @@
 import type { Access, FieldAccess } from 'payload';
 
-import type { User } from '@/payload-types';
+import type { User } from '../payload-types.ts';
 
 const userIsAdmin = (user: User | null | undefined): boolean =>
   Array.isArray(user?.roles) && user.roles.includes('admin');

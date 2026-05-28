@@ -5,7 +5,20 @@ import path from 'path';
 import { buildConfig } from 'payload';
 import { fileURLToPath } from 'url';
 
-import { collections } from '@/collections';
+import { Categories } from './collections/Categories.ts';
+import { Drops } from './collections/Drops.ts';
+import { Leads } from './collections/Leads.ts';
+import { Media } from './collections/Media.ts';
+import { OrderItems } from './collections/OrderItems.ts';
+import { Orders } from './collections/Orders.ts';
+import { Pages } from './collections/Pages.ts';
+import { Prices } from './collections/Prices.ts';
+import { Products } from './collections/Products.ts';
+import { Promos } from './collections/Promos.ts';
+import { Users } from './collections/Users.ts';
+import { Variants } from './collections/Variants.ts';
+
+const collections = [Users, Media, Categories, Products, Variants, Prices, Pages, Drops, Promos, Leads, Orders, OrderItems];
 
 const filename = fileURLToPath(import.meta.url);
 const dirname = path.dirname(filename);
@@ -30,6 +43,7 @@ export default buildConfig({
     pool: {
       connectionString: process.env.DATABASE_URI || '',
     },
+    schemaName: 'payload',
   }),
   plugins: [
     s3Storage({

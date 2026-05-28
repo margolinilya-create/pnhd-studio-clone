@@ -1,6 +1,6 @@
 import type { CollectionConfig } from 'payload';
 
-import { hasRole } from '@/access/hasRole';
+import { hasRole } from '../access/hasRole.ts';
 
 export const Prices: CollectionConfig = {
   slug: 'prices',

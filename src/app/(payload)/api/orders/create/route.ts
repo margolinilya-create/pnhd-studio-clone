@@ -47,8 +47,8 @@ export const POST = async (req: Request) => {
   const payload = await getPayloadClient();
 
   const resolvedItems: {
-    product: string;
-    variant: string;
+    product: number;
+    variant: number;
     quantity: number;
     pricePerUnit: number;
     lineTotal: number;
@@ -85,7 +85,7 @@ export const POST = async (req: Request) => {
       limit: 1,
     });
     const variant = variantRes.docs[0] as
-      | { id: string; sku: string; stockQty: number }
+      | { id: number; sku: string; stockQty: number }
       | undefined;
     if (!variant) {
       return NextResponse.json(
@@ -132,7 +132,7 @@ export const POST = async (req: Request) => {
   }
 
   let discount = 0;
-  let promoId: string | undefined;
+  let promoId: number | undefined;
   if (promoCode) {
     const promoRes = await payload.find({
       collection: 'promos',
@@ -141,7 +141,7 @@ export const POST = async (req: Request) => {
     });
     const promo = promoRes.docs[0] as
       | {
-          id: string;
+          id: number;
           discountType: 'percent' | 'fixed';
           discountValue: number;
           validFrom?: string | null;
@@ -195,13 +195,13 @@ export const POST = async (req: Request) => {
       total,
       status: 'draft',
       paymentStatus: 'unpaid',
-    },
+    } as never,
   });
 
   for (const it of resolvedItems) {
     await payload.create({
       collection: 'order-items',
-      data: { ...it, order: order.id },
+      data: { ...it, order: order.id } as never,
     });
   }
 

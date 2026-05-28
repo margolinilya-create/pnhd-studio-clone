@@ -1,6 +1,6 @@
 import type { CollectionBeforeChangeHook, CollectionConfig } from 'payload';
 
-import { hasRole } from '@/access/hasRole';
+import { hasRole } from '../access/hasRole.ts';
 
 const assignOrderNumber: CollectionBeforeChangeHook = async ({ data, operation, req }) => {
   if (operation !== 'create') return data;

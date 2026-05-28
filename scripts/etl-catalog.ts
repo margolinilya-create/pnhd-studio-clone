@@ -152,7 +152,7 @@ const main = async () => {
   const categorySlugs = Array.from(
     new Set(products.map((p) => p.category).filter((s): s is string => Boolean(s))),
   );
-  const categoryIdBySlug = new Map<string, string>();
+  const categoryIdBySlug = new Map<string, number>();
 
   for (const slug of categorySlugs) {
     const existing = await payload.find({
@@ -205,8 +205,8 @@ const main = async () => {
     photosByProduct.get(p.product_id)!.push(p);
   }
 
-  const supabaseToPayloadProductId = new Map<string, string>();
-  const slugToSupabaseId = new Map<string, string>();
+  const supabaseToPayloadProductId = new Map<string, number>();
+  const slugToSupabaseId = new Map<string, number>();
   let createdProducts = 0;
   let createdVariants = 0;
   let createdMedia = 0;
@@ -221,7 +221,7 @@ const main = async () => {
       limit: 1,
     });
 
-    let productId: string;
+    let productId: number;
     if (existing.totalDocs > 0) {
       productId = existing.docs[0]!.id;
       console.log(`= product (exists): ${p.slug}`);
@@ -309,7 +309,7 @@ const main = async () => {
     // Gallery media.
     const productPhotos = photosByProduct.get(p.id) ?? [];
     if (productPhotos.length > 0 && existing.totalDocs === 0) {
-      const galleryMedia: { image: string }[] = [];
+      const galleryMedia: { image: number }[] = [];
       for (const photo of productPhotos) {
         const img = await fetchAsBuffer(photo.url);
         if (!img) continue;
@@ -342,7 +342,7 @@ const main = async () => {
     if (!productId) continue;
     const friendsProducts = linkedSupabaseIds
       .map((id) => supabaseToPayloadProductId.get(id))
-      .filter((id): id is string => Boolean(id))
+      .filter((id): id is number => typeof id === "number")
       .map((id) => ({ product: id }));
     if (friendsProducts.length === 0) continue;
     await payload.update({

@@ -23,23 +23,23 @@ const lexicalToPlain = (input: unknown): string => {
   return collect(root.children).join('\n').trim();
 };
 
-const mediaUrl = (m: string | Media | null | undefined): string => {
-  if (!m || typeof m === 'string') return '';
+const mediaUrl = (m: number | Media | null | undefined): string => {
+  if (!m || typeof m === 'number') return '';
   return m.url ?? '';
 };
 
 type Expanded = Product & {
-  category?: string | Category | null;
-  coverMedia?: string | Media | null;
-  galleryMedia?: { image: string | Media; id?: string | null }[] | null;
+  category?: number | Category | null;
+  coverMedia?: number | Media | null;
+  galleryMedia?: { image: number | Media; id?: string | null }[] | null;
   editorViews?: Product['editorViews'];
-  friendsProducts?: { product: string | Product; id?: string | null }[] | null;
+  friendsProducts?: { product: number | Product; id?: string | null }[] | null;
 };
 
 const friendsCsv = (p: Expanded): string => {
   const list = p.friendsProducts ?? [];
   return list
-    .map((f) => (typeof f.product === 'string' ? f.product : f.product?.slug ?? ''))
+    .map((f) => (typeof f.product === 'number' ? '' : f.product?.slug ?? ''))
     .filter(Boolean)
     .join(',');
 };
@@ -59,16 +59,16 @@ const mapProduct = (
 ): IProduct => {
   const price = prices[0]?.amount ? prices[0].amount / 100 : 0;
   const category =
-    product.category && typeof product.category !== 'string'
+    product.category && typeof product.category !== 'number'
       ? product.category.slug
-      : (product.category as string | null | undefined) ?? '';
+      : '';
 
   const galleryPhotos = (product.galleryMedia ?? [])
     .map((g) => mediaUrl(g.image))
     .filter(Boolean);
 
   return {
-    _id: product.id,
+    _id: String(product.id),
     slug: product.slug,
     name: product.name,
     description: lexicalToPlain(product.description),
@@ -102,8 +102,8 @@ const mapProduct = (
 };
 
 const fetchVariantsAndPrices = async (
-  productIds: string[],
-): Promise<{ variantsByProduct: Map<string, Variant[]>; pricesByVariant: Map<string, Price[]> }> => {
+  productIds: number[],
+): Promise<{ variantsByProduct: Map<number, Variant[]>; pricesByVariant: Map<number, Price[]> }> => {
   if (productIds.length === 0) {
     return { variantsByProduct: new Map(), pricesByVariant: new Map() };
   }
@@ -129,16 +129,16 @@ const fetchVariantsAndPrices = async (
       : { docs: [] as Price[] };
   const prices = pricesRes.docs as Price[];
 
-  const variantsByProduct = new Map<string, Variant[]>();
+  const variantsByProduct = new Map<number, Variant[]>();
   for (const v of variants) {
-    const pid = typeof v.product === 'string' ? v.product : v.product.id;
+    const pid = typeof v.product === 'number' ? v.product : v.product.id;
     if (!variantsByProduct.has(pid)) variantsByProduct.set(pid, []);
     variantsByProduct.get(pid)!.push(v);
   }
 
-  const pricesByVariant = new Map<string, Price[]>();
+  const pricesByVariant = new Map<number, Price[]>();
   for (const pr of prices) {
-    const vid = typeof pr.variant === 'string' ? pr.variant : pr.variant.id;
+    const vid = typeof pr.variant === 'number' ? pr.variant : pr.variant.id;
     if (!pricesByVariant.has(vid)) pricesByVariant.set(vid, []);
     pricesByVariant.get(vid)!.push(pr);
   }
