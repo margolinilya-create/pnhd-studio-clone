@@ -1,4 +1,4 @@
-import React from "react";
+import React, { Suspense } from "react";
 import { notFound } from "next/navigation";
 import styles from "./page.module.css";
 import { getAllProductSlugs, getProductBySlug } from "@/lib/queries/products";
@@ -116,7 +116,9 @@ const ProductPage: React.FC<{
                         )
                     })}
                 </div>
-                <ProductInfo item={item} />
+                <Suspense>
+                    <ProductInfo item={item} />
+                </Suspense>
             </section>
         </>
     );
