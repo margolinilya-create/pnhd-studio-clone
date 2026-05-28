@@ -10,8 +10,8 @@ import { SITE_INFO } from "@/app/constants";
 import { buildMetadata } from "@/app/_lib/build-metadata";
 
 type TMetadataProps = {
-    params: { slug: string },
-    searchParams: { id: string },
+    params: Promise<{ slug: string }>,
+    searchParams: Promise<{ id: string }>,
 }
 
 export const generateStaticParams = async () => {
@@ -19,7 +19,8 @@ export const generateStaticParams = async () => {
     return slugs.map((slug) => ({ slug }));
 }
 
-export async function generateMetadata({ params }: TMetadataProps): Promise<Metadata> {
+export async function generateMetadata(props: TMetadataProps): Promise<Metadata> {
+    const params = await props.params;
     const currItem = await getProductBySlug(params.slug);
     const title = currItem ? `${currItem.name} — печать на одежде | ${SITE_INFO.name}` : `Товар | ${SITE_INFO.name}`;
     const description = currItem?.description
@@ -86,9 +87,10 @@ function productJsonLd(item: NonNullable<Awaited<ReturnType<typeof getProductByS
 }
 
 const ProductPage: React.FC<{
-    params: { slug: string };
-    searchParams: { id: string };
-}> = async ({ params }) => {
+    params: Promise<{ slug: string }>;
+    searchParams: Promise<{ id: string }>;
+}> = async props => {
+    const params = await props.params;
 
     const item = await getProductBySlug(params.slug);
     if (!item) notFound();

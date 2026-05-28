@@ -20,9 +20,12 @@ function parseRuDate(formatted: string): string {
     return new Date(`${m[3]}-${m[2]}-${m[1]}T00:00:00Z`).toISOString();
 }
 
-export async function generateMetadata({ params }: {
-    params: { post: string };
-}): Promise<Metadata> {
+export async function generateMetadata(
+    props: {
+        params: Promise<{ post: string }>;
+    }
+): Promise<Metadata> {
+    const params = await props.params;
     const post = await getPostBySlug(params.post);
     if (!post) {
         return buildMetadata({
@@ -76,7 +79,8 @@ function articleJsonLd(post: NonNullable<Awaited<ReturnType<typeof getPostBySlug
     };
 }
 
-const PostPage = async ({ params }: { params: { post: string } }) => {
+const PostPage = async (props: { params: Promise<{ post: string }> }) => {
+    const params = await props.params;
     const post = await getPostBySlug(params.post);
     if (!post) notFound();
 

@@ -11,7 +11,8 @@ import AdvantagesComponent from "@/components/pages-components/method-page/advan
 
 
 
-export const generateMetadata = ({ params }: { params: { slug: string, type: string }}): Metadata => {
+export const generateMetadata = async (props: { params: Promise<{ slug: string, type: string }>}): Promise<Metadata> => {
+    const params = await props.params;
     const { slug, type } = params;
     const option: typeof ssOptions[0] = ssOptions.filter((item) => item.slug === slug && item.type === type)[0];
 
@@ -36,8 +37,9 @@ export const generateStaticParams = async ({ params }: { params: { slug: string 
 
 
 const MethodOptionsPage: React.FC<{
-    params: { slug: string, type: string };
-}> = ({ params }) => {
+    params: Promise<{ slug: string, type: string }>;
+}> = async props => {
+    const params = await props.params;
     const {slug, type} = params;
     const option: typeof ssOptions[0] = ssOptions.filter((item) => item.slug === slug && item.type === type)[0];
 

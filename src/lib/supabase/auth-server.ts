@@ -1,6 +1,6 @@
 import 'server-only';
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
-import { cookies } from 'next/headers';
+import { cookies, type UnsafeUnwrappedCookies } from 'next/headers';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 /**
@@ -8,7 +8,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
  * и в начале Server Actions для чтения текущего user.
  */
 export function createAuthServerClient(): SupabaseClient {
-    const cookieStore = cookies();
+    const cookieStore = (cookies() as unknown as UnsafeUnwrappedCookies);
 
     return createServerClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
