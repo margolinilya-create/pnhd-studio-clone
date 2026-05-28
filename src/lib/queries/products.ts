@@ -1,105 +1,206 @@
 import 'server-only';
-import { getSupabaseServer } from '../supabase/server';
-import type { IProduct } from '@/app/utils/types';
 
-type ProductRow = {
-    id: string;
-    slug: string;
-    name: string;
-    description: string | null;
-    type: string;
-    price: number;
-    stock: string | null;
-    color: string | null;
-    stage_color: string | null;
-    category: string | null;
-    is_sale: boolean;
-    is_for_printing: boolean;
-    image_url: string | null;
-    editor_front_view: string | null;
-    editor_back_view: string | null;
-    editor_lsleeve_view: string | null;
-    editor_rsleeve_view: string | null;
-    shipping_weight: number | null;
-    shipping_width: number | null;
-    shipping_length: number | null;
-    shipping_depth: number | null;
-    friends: string | null;
-    product_sizes: Array<{ name: string; qty: number; sort_order: number }>;
-    product_gallery_photos: Array<{ url: string; sort_order: number }>;
+import type { Where } from 'payload';
+
+import type { IProduct } from '@/app/utils/types';
+import { getPayloadClient, isPayloadConfigured } from '@/lib/payload/client';
+import type { Category, Media, Price, Product, Variant } from '@/payload-types';
+
+const lexicalToPlain = (input: unknown): string => {
+  if (!input || typeof input !== 'object') return '';
+  const root = (input as { root?: { children?: unknown[] } }).root;
+  if (!root || !Array.isArray(root.children)) return '';
+  const collect = (nodes: unknown[]): string[] => {
+    const out: string[] = [];
+    for (const node of nodes) {
+      if (!node || typeof node !== 'object') continue;
+      const n = node as { text?: string; children?: unknown[] };
+      if (typeof n.text === 'string') out.push(n.text);
+      if (Array.isArray(n.children)) out.push(...collect(n.children));
+    }
+    return out;
+  };
+  return collect(root.children).join('\n').trim();
 };
 
-const SELECT_COLUMNS = `
-    id, slug, name, description, type, price, stock,
-    color, stage_color, category, is_sale, is_for_printing,
-    image_url, editor_front_view, editor_back_view, editor_lsleeve_view, editor_rsleeve_view,
-    shipping_weight, shipping_width, shipping_length, shipping_depth, friends,
-    product_sizes ( name, qty, sort_order ),
-    product_gallery_photos ( url, sort_order )
-`;
+const mediaUrl = (m: string | Media | null | undefined): string => {
+  if (!m || typeof m === 'string') return '';
+  return m.url ?? '';
+};
 
-function mapProduct(row: ProductRow): IProduct {
-    return {
-        _id: row.id,
-        slug: row.slug,
-        name: row.name,
-        description: row.description ?? '',
-        links: [],
-        type: row.type,
-        price: Number(row.price),
-        shippingParams: {
-            weight: Number(row.shipping_weight ?? 0),
-            width: Number(row.shipping_width ?? 0),
-            length: Number(row.shipping_length ?? 0),
-            depth: Number(row.shipping_depth ?? 0),
-        },
-        stock: row.stock ?? '',
-        color: row.color ?? '',
-        stageColor: row.stage_color ?? '',
-        category: row.category ?? '',
-        isSale: row.is_sale,
-        isForPrinting: row.is_for_printing,
-        image_url: row.image_url ?? '',
-        galleryPhotos: (row.product_gallery_photos ?? [])
-            .slice()
-            .sort((a, b) => a.sort_order - b.sort_order)
-            .map((p) => p.url),
-        editor_front_view: row.editor_front_view ?? '',
-        editor_back_view: row.editor_back_view ?? '',
-        editor_lsleeve_view: row.editor_lsleeve_view ?? '',
-        editor_rsleeve_view: row.editor_rsleeve_view ?? '',
-        sizes: (row.product_sizes ?? [])
-            .slice()
-            .sort((a, b) => a.sort_order - b.sort_order)
-            .map((s) => ({ name: s.name, qty: s.qty })),
-        friends: row.friends ?? '',
-    };
-}
+type Expanded = Product & {
+  category?: string | Category | null;
+  coverMedia?: string | Media | null;
+  galleryMedia?: { image: string | Media; id?: string | null }[] | null;
+  editorViews?: Product['editorViews'];
+  friendsProducts?: { product: string | Product; id?: string | null }[] | null;
+};
 
-export async function getAllProducts(filters?: { type?: string }): Promise<IProduct[]> {
-    const supabase = getSupabaseServer();
-    let q = supabase.from('products').select(SELECT_COLUMNS);
-    if (filters?.type) q = q.eq('type', filters.type);
-    const { data, error } = await q;
-    if (error) throw error;
-    return (data as unknown as ProductRow[]).map(mapProduct);
-}
+const friendsCsv = (p: Expanded): string => {
+  const list = p.friendsProducts ?? [];
+  return list
+    .map((f) => (typeof f.product === 'string' ? f.product : f.product?.slug ?? ''))
+    .filter(Boolean)
+    .join(',');
+};
 
-export async function getProductBySlug(slug: string): Promise<IProduct | null> {
-    const supabase = getSupabaseServer();
-    const { data, error } = await supabase
-        .from('products')
-        .select(SELECT_COLUMNS)
-        .eq('slug', slug)
-        .maybeSingle();
-    if (error) throw error;
-    if (!data) return null;
-    return mapProduct(data as unknown as ProductRow);
-}
+const mapVariantToSize = (
+  variant: Variant,
+): { name: string; qty: number; sortOrder: number } => ({
+  name: variant.size,
+  qty: variant.stockQty ?? 0,
+  sortOrder: variant.sortOrder ?? 0,
+});
 
-export async function getAllProductSlugs(): Promise<string[]> {
-    const supabase = getSupabaseServer();
-    const { data, error } = await supabase.from('products').select('slug');
-    if (error) throw error;
-    return (data ?? []).map((r: { slug: string }) => r.slug);
-}
+const mapProduct = (
+  product: Expanded,
+  variants: Variant[],
+  prices: Price[],
+): IProduct => {
+  const price = prices[0]?.amount ? prices[0].amount / 100 : 0;
+  const category =
+    product.category && typeof product.category !== 'string'
+      ? product.category.slug
+      : (product.category as string | null | undefined) ?? '';
+
+  const galleryPhotos = (product.galleryMedia ?? [])
+    .map((g) => mediaUrl(g.image))
+    .filter(Boolean);
+
+  return {
+    _id: product.id,
+    slug: product.slug,
+    name: product.name,
+    description: lexicalToPlain(product.description),
+    links: [],
+    type: product.type,
+    price,
+    shippingParams: {
+      weight: Number(product.shippingParams?.weight ?? 0),
+      width: Number(product.shippingParams?.width ?? 0),
+      length: Number(product.shippingParams?.length ?? 0),
+      depth: Number(product.shippingParams?.depth ?? 0),
+    },
+    stock: '',
+    color: product.color ?? '',
+    stageColor: product.stageColor ?? '',
+    category,
+    isSale: Boolean(product.isSale),
+    isForPrinting: Boolean(product.isForPrinting),
+    image_url: mediaUrl(product.coverMedia),
+    galleryPhotos,
+    editor_front_view: mediaUrl(product.editorViews?.frontView),
+    editor_back_view: mediaUrl(product.editorViews?.backView),
+    editor_lsleeve_view: mediaUrl(product.editorViews?.lsleeveView),
+    editor_rsleeve_view: mediaUrl(product.editorViews?.rsleeveView),
+    sizes: variants
+      .map(mapVariantToSize)
+      .sort((a, b) => a.sortOrder - b.sortOrder)
+      .map(({ name, qty }) => ({ name, qty })),
+    friends: friendsCsv(product),
+  };
+};
+
+const fetchVariantsAndPrices = async (
+  productIds: string[],
+): Promise<{ variantsByProduct: Map<string, Variant[]>; pricesByVariant: Map<string, Price[]> }> => {
+  if (productIds.length === 0) {
+    return { variantsByProduct: new Map(), pricesByVariant: new Map() };
+  }
+  const payload = await getPayloadClient();
+
+  const variantsRes = await payload.find({
+    collection: 'variants',
+    where: { product: { in: productIds } },
+    limit: 5000,
+    pagination: false,
+  });
+  const variants = variantsRes.docs as Variant[];
+
+  const variantIds = variants.map((v) => v.id);
+  const pricesRes =
+    variantIds.length > 0
+      ? await payload.find({
+          collection: 'prices',
+          where: { variant: { in: variantIds } },
+          limit: 5000,
+          pagination: false,
+        })
+      : { docs: [] as Price[] };
+  const prices = pricesRes.docs as Price[];
+
+  const variantsByProduct = new Map<string, Variant[]>();
+  for (const v of variants) {
+    const pid = typeof v.product === 'string' ? v.product : v.product.id;
+    if (!variantsByProduct.has(pid)) variantsByProduct.set(pid, []);
+    variantsByProduct.get(pid)!.push(v);
+  }
+
+  const pricesByVariant = new Map<string, Price[]>();
+  for (const pr of prices) {
+    const vid = typeof pr.variant === 'string' ? pr.variant : pr.variant.id;
+    if (!pricesByVariant.has(vid)) pricesByVariant.set(vid, []);
+    pricesByVariant.get(vid)!.push(pr);
+  }
+
+  return { variantsByProduct, pricesByVariant };
+};
+
+export const getAllProducts = async (filters?: { type?: string }): Promise<IProduct[]> => {
+  if (!isPayloadConfigured()) return [];
+  const payload = await getPayloadClient();
+  const where: Where = {
+    status: { equals: 'published' },
+    channels: { contains: 'b2c' },
+  };
+  if (filters?.type) where.type = { equals: filters.type };
+
+  const res = await payload.find({
+    collection: 'products',
+    where,
+    depth: 2,
+    limit: 500,
+    pagination: false,
+  });
+  const products = res.docs as Expanded[];
+  const { variantsByProduct, pricesByVariant } = await fetchVariantsAndPrices(
+    products.map((p) => p.id),
+  );
+
+  return products.map((p) => {
+    const variants = variantsByProduct.get(p.id) ?? [];
+    const variantIds = variants.map((v) => v.id);
+    const prices = variantIds.flatMap((vid) => pricesByVariant.get(vid) ?? []);
+    return mapProduct(p, variants, prices);
+  });
+};
+
+export const getProductBySlug = async (slug: string): Promise<IProduct | null> => {
+  if (!isPayloadConfigured()) return null;
+  const payload = await getPayloadClient();
+  const res = await payload.find({
+    collection: 'products',
+    where: { slug: { equals: slug } },
+    depth: 2,
+    limit: 1,
+  });
+  const product = (res.docs[0] as Expanded | undefined) ?? null;
+  if (!product) return null;
+  const { variantsByProduct, pricesByVariant } = await fetchVariantsAndPrices([product.id]);
+  const variants = variantsByProduct.get(product.id) ?? [];
+  const prices = variants.flatMap((v) => pricesByVariant.get(v.id) ?? []);
+  return mapProduct(product, variants, prices);
+};
+
+export const getAllProductSlugs = async (): Promise<string[]> => {
+  if (!isPayloadConfigured()) return [];
+  const payload = await getPayloadClient();
+  const res = await payload.find({
+    collection: 'products',
+    where: { status: { equals: 'published' } },
+    limit: 1000,
+    pagination: false,
+    select: { slug: true },
+  });
+  return res.docs.map((d) => (d as { slug: string }).slug);
+};

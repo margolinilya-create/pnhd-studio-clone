@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import classnames from 'classnames/bind';
-import styles from "@/app/blog/page.module.scss";
+import styles from "@/app/(storefront)/blog/page.module.scss";
 const cx = classnames.bind(styles);
 
 type Props = {

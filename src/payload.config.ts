@@ -15,8 +15,8 @@ export default buildConfig({
     user: 'users',
   },
   routes: {
-    admin: '/admin-payload',
-    api: '/api-payload',
+    admin: '/admin',
+    api: '/api',
     graphQL: '/graphql',
     graphQLPlayground: '/graphql-playground',
   },

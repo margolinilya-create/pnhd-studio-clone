@@ -5,8 +5,9 @@
 // рендеринг + JSON-LD централизован здесь.
 
 import React from 'react';
+import Link from 'next/link';
 import { Metadata } from 'next';
-import styles from '@/app/contacts/page.module.css';
+import styles from '@/app/(storefront)/contacts/page.module.css';
 import { SITE_INFO } from '@/app/constants';
 import { IProduct } from '@/app/utils/types';
 import { getAllProducts } from '@/lib/queries/products';
@@ -76,7 +77,7 @@ async function CategoryPage({ config }: { config: ICategoryPageConfig }) {
       <MarkupScript jsonLd={jsonLdWebpage} />
       <MarkupScript jsonLd={jsonLdFaq} />
       <div className="breadcrumbs">
-        <a className={'breadcrumb-item'} href="/">Главная</a>
+        <Link className={'breadcrumb-item'} href="/">Главная</Link>
         <span className={'breadcrumb-item'}>{config.h1}</span>
       </div>
       <div className={styles.title_wrapper}>

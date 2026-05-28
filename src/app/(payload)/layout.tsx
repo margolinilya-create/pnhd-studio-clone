@@ -6,7 +6,7 @@ import React from 'react';
 
 import { handleServerFunctions, RootLayout } from '@payloadcms/next/layouts';
 
-import { importMap } from './admin-payload/importMap.js';
+import { importMap } from './admin/importMap.js';
 
 import './custom.scss';
 
