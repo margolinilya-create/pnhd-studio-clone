@@ -92,14 +92,16 @@ export const api = createApi({
             },
       }},
     }),
-    createOrder: builder.mutation<{id: string, paymentUrl: string}, IOrderBody>({
+    createOrder: builder.mutation<{id: string, paymentUrl: string | null}, IOrderBody>({
+      // POST /api/orders/create — custom endpoint, читает Payload local API,
+      // resolve products/variants/prices, валидирует stock и promo, создаёт
+      // Order + OrderItems. Возвращает paymentUrl=null (Phase 5 СБП отложено).
       query: (data) => ({
-        url: '/api/orders',
+        url: '/api/orders/create',
         method: 'POST',
         body: JSON.stringify(data),
         headers: {
           'Content-Type': 'application/json',
-          'Content-length': '',
         },
       }),
     }),

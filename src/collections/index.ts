@@ -2,6 +2,8 @@ import { Categories } from './Categories';
 import { Drops } from './Drops';
 import { Leads } from './Leads';
 import { Media } from './Media';
+import { OrderItems } from './OrderItems';
+import { Orders } from './Orders';
 import { Pages } from './Pages';
 import { Prices } from './Prices';
 import { Products } from './Products';
@@ -20,4 +22,6 @@ export const collections = [
   Drops,
   Promos,
   Leads,
+  Orders,
+  OrderItems,
 ];
