@@ -1,0 +1,27 @@
+-- S2 (PR #1 / security hotfix): закрыть LIST endpoint для bucket `user-uploads`.
+--
+-- Контекст:
+--   Bucket помечен `public = true`, поэтому индивидуальное чтение файла идёт через
+--   /storage/v1/object/public/user-uploads/<path> и не задействует RLS на storage.objects.
+--   Фронт использует только supabase.storage.getPublicUrl() — этот путь не сломается.
+--
+--   Однако SELECT-policy `user-uploads public read` (`to public`, `bucket_id = 'user-uploads'`)
+--   открывает /storage/v1/object/list/user-uploads анонимам: возвращается реестр
+--   всех клиентских принтов с UUID-путями. Это утечка PII (содержимое + имя файла).
+--
+-- Действие:
+--   Удалить broad SELECT-policy. Public URL-доступ к конкретному объекту сохраняется
+--   за счёт `bucket.public = true`. LIST endpoint начнёт возвращать пустой результат
+--   для anon (RLS = deny by default без policy).
+--
+-- Verify (после миграции):
+--   curl -s "https://almfjmiygtnzngkayhdv.supabase.co/storage/v1/object/list/user-uploads" \
+--     -H "apikey: <anon>" -H "Authorization: Bearer <anon>" \
+--     -H "Content-Type: application/json" -d '{"prefix":"","limit":100}'
+--   → []  (или 401/403)
+--
+--   Public URL должен продолжать работать:
+--   curl -I https://almfjmiygtnzngkayhdv.supabase.co/storage/v1/object/public/user-uploads/prints/<existing-path>
+--   → 200
+
+drop policy if exists "user-uploads public read" on storage.objects;
