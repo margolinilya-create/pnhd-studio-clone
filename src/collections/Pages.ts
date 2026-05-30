@@ -6,12 +6,33 @@ export const Pages: CollectionConfig = {
   slug: 'pages',
   admin: {
     useAsTitle: 'title',
-    defaultColumns: ['title', 'slug', 'pageType', 'status', 'publishedAt'],
+    defaultColumns: ['title', 'slug', 'pageType', '_status', 'publishedAt'],
+    livePreview: {
+      url: ({ data }) => {
+        const slug = (data as { slug?: string; pageType?: string }).slug ?? '';
+        const pageType = (data as { pageType?: string }).pageType ?? 'landing';
+        const base = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://pnhd-studio-clone.vercel.app';
+        const path = pageType === 'blog' ? `/blog/${slug}` : `/${slug}`;
+        return `${base}${path}?preview=true`;
+      },
+      breakpoints: [
+        { name: 'mobile', label: 'Mobile', width: 375, height: 667 },
+        { name: 'tablet', label: 'Tablet', width: 768, height: 1024 },
+        { name: 'desktop', label: 'Desktop', width: 1440, height: 900 },
+      ],
+    },
+  },
+  versions: {
+    drafts: {
+      autosave: { interval: 800 },
+      schedulePublish: true,
+    },
+    maxPerDoc: 20,
   },
   access: {
     read: ({ req: { user } }) => {
       if (user) return true;
-      return { status: { equals: 'published' } };
+      return { _status: { equals: 'published' } };
     },
     create: hasRole('admin', 'marketing'),
     update: hasRole('admin', 'marketing'),
@@ -95,16 +116,6 @@ export const Pages: CollectionConfig = {
     {
       name: 'publishedAt',
       type: 'date',
-    },
-    {
-      name: 'status',
-      type: 'select',
-      required: true,
-      defaultValue: 'draft',
-      options: [
-        { label: 'Черновик', value: 'draft' },
-        { label: 'Опубликован', value: 'published' },
-      ],
     },
   ],
 };

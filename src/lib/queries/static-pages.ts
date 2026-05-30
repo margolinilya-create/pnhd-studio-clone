@@ -30,14 +30,18 @@ const lexicalToHtml = (input: unknown): string => {
   return root.children.map(renderNode).join('');
 };
 
-export const getStaticPage = async (slug: string): Promise<StaticPage | null> => {
+export const getStaticPage = async (
+  slug: string,
+  options: { preview?: boolean } = {},
+): Promise<StaticPage | null> => {
   if (!isPayloadConfigured()) return null;
   const payload = await getPayloadClient();
   const res = await payload.find({
     collection: 'pages',
+    draft: options.preview === true,
     where: {
       slug: { equals: slug },
-      status: { equals: 'published' },
+      ...(options.preview ? {} : { _status: { equals: 'published' } }),
     },
     limit: 1,
   });

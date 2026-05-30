@@ -92,9 +92,14 @@ function articleJsonLd(post: NonNullable<Awaited<ReturnType<typeof getPostBySlug
     };
 }
 
-const PostPage = async (props: { params: Promise<{ post: string }> }) => {
+const PostPage = async (props: {
+    params: Promise<{ post: string }>;
+    searchParams?: Promise<{ preview?: string }>;
+}) => {
     const params = await props.params;
-    const post = await getPostBySlug(params.post);
+    const searchParams = (await props.searchParams) ?? {};
+    const preview = searchParams.preview === 'true';
+    const post = await getPostBySlug(params.post, { preview });
     if (!post) notFound();
 
     return (

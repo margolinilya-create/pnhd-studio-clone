@@ -66,7 +66,7 @@ export const getAllPosts = async (): Promise<TBlogPosts> => {
     collection: 'pages',
     where: {
       pageType: { equals: 'blog' },
-      status: { equals: 'published' },
+      _status: { equals: 'published' },
     },
     sort: '-publishedAt',
     depth: 1,
@@ -77,14 +77,19 @@ export const getAllPosts = async (): Promise<TBlogPosts> => {
   return { posts: pages.map((p, i) => mapPage(p, i + 1)) };
 };
 
-export const getPostBySlug = async (slug: string): Promise<Post | null> => {
+export const getPostBySlug = async (
+  slug: string,
+  options: { preview?: boolean } = {},
+): Promise<Post | null> => {
   if (!isPayloadConfigured()) return null;
   const payload = await getPayloadClient();
   const res = await payload.find({
     collection: 'pages',
+    draft: options.preview === true,
     where: {
       slug: { equals: slug },
       pageType: { equals: 'blog' },
+      ...(options.preview ? {} : { _status: { equals: 'published' } }),
     },
     depth: 1,
     limit: 1,
@@ -130,7 +135,7 @@ export const getAllPostSlugs = async (): Promise<string[]> => {
     collection: 'pages',
     where: {
       pageType: { equals: 'blog' },
-      status: { equals: 'published' },
+      _status: { equals: 'published' },
     },
     limit: 1000,
     pagination: false,

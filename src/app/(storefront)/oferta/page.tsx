@@ -14,8 +14,10 @@ export const metadata: Metadata = {
   metadataBase: new URL('https://studio.pnhd.ru'),
 };
 
-const Oferta = async () => {
-  const page = await getStaticPage('oferta');
+const Oferta = async (props: { searchParams?: Promise<{ preview?: string }> }) => {
+  const searchParams = (await props.searchParams) ?? {};
+  const preview = searchParams.preview === 'true';
+  const page = await getStaticPage('oferta', { preview });
   if (!page) notFound();
 
   return (
