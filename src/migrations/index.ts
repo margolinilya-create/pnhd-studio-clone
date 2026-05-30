@@ -1,6 +1,7 @@
 import * as migration_20260528_232600 from './20260528_232600';
 import * as migration_20260530_062122_payload_seo_meta from './20260530_062122_payload_seo_meta';
 import * as migration_20260530_064450_payload_redirects from './20260530_064450_payload_redirects';
+import * as migration_20260530_071720_order_customer_note from './20260530_071720_order_customer_note';
 
 export const migrations = [
   {
@@ -17,5 +18,10 @@ export const migrations = [
     up: migration_20260530_064450_payload_redirects.up,
     down: migration_20260530_064450_payload_redirects.down,
     name: '20260530_064450_payload_redirects',
+  },
+  {
+    up: migration_20260530_071720_order_customer_note.up,
+    down: migration_20260530_071720_order_customer_note.down,
+    name: '20260530_071720_order_customer_note'
   },
 ];

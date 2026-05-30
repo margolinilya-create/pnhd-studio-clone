@@ -122,6 +122,7 @@ export interface ICreateOrderPayload {
     name: string;
     phone: string;
     email?: string;
+    note?: string;
     roistatVisit?: string;
   };
   delivery?: {

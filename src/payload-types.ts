@@ -477,6 +477,7 @@ export interface Order {
     name: string;
     phone: string;
     email?: string | null;
+    note?: string | null;
     roistatVisit?: string | null;
   };
   delivery?: {
@@ -959,6 +960,7 @@ export interface OrdersSelect<T extends boolean = true> {
         name?: T;
         phone?: T;
         email?: T;
+        note?: T;
         roistatVisit?: T;
       };
   delivery?:
