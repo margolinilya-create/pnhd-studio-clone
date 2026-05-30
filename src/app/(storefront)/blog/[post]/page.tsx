@@ -5,7 +5,8 @@ export const revalidate = 60;
 
 import styles from './page.module.scss';
 import classNames from 'classnames/bind';
-import { getAllPostSlugs, getPostBySlug } from '@/lib/queries/blog';
+import { getAllPostSlugs, getPostBySlug, getPostSeoBySlug } from '@/lib/queries/blog';
+import type { Media } from '@/payload-types';
 import { SITE_INFO } from "@/app/constants";
 import { Metadata } from "next";
 import { buildMetadata } from "@/app/_lib/build-metadata";
@@ -29,7 +30,10 @@ export async function generateMetadata(
     }
 ): Promise<Metadata> {
     const params = await props.params;
-    const post = await getPostBySlug(params.post);
+    const [post, seo] = await Promise.all([
+        getPostBySlug(params.post),
+        getPostSeoBySlug(params.post),
+    ]);
     if (!post) {
         return buildMetadata({
             title: `Статья | ${SITE_INFO.name}`,
@@ -38,15 +42,21 @@ export async function generateMetadata(
         });
     }
 
-    const description = post.subtitle
+    const metaTitle = seo?.meta?.title;
+    const metaDescription = seo?.meta?.description;
+    const metaImage = seo?.meta?.image && typeof seo.meta.image === 'object'
+        ? (seo.meta.image as Media).url ?? undefined
+        : undefined;
+
+    const fallbackDescription = post.subtitle
         ? post.subtitle
         : stripHtml(post.blog.__html ?? '').slice(0, 200);
 
     return buildMetadata({
-        title: `${post.title} | ${SITE_INFO.name}`,
-        description,
+        title: metaTitle ?? `${post.title} | ${SITE_INFO.name}`,
+        description: metaDescription ?? fallbackDescription,
         path: `/blog/${params.post}`,
-        image: post.cover || undefined,
+        image: metaImage ?? post.cover ?? undefined,
         type: 'article',
     });
 }

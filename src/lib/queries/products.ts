@@ -192,6 +192,25 @@ export const getProductBySlug = async (slug: string): Promise<IProduct | null> =
   return mapProduct(product, variants, prices);
 };
 
+export type ProductSeo = {
+  name: string;
+  meta?: Product['meta'];
+};
+
+export const getProductSeoBySlug = async (slug: string): Promise<ProductSeo | null> => {
+  if (!isPayloadConfigured()) return null;
+  const payload = await getPayloadClient();
+  const res = await payload.find({
+    collection: 'products',
+    where: { slug: { equals: slug } },
+    depth: 1,
+    limit: 1,
+  });
+  const product = res.docs[0] as Product | undefined;
+  if (!product) return null;
+  return { name: product.name, meta: product.meta };
+};
+
 export const getAllProductSlugs = async (): Promise<string[]> => {
   if (!isPayloadConfigured()) return [];
   const payload = await getPayloadClient();

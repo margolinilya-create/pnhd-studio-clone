@@ -1,7 +1,8 @@
 import React, { Suspense } from "react";
 import { notFound } from "next/navigation";
 import styles from "./page.module.css";
-import { getAllProductSlugs, getProductBySlug } from "@/lib/queries/products";
+import { getAllProductSlugs, getProductBySlug, getProductSeoBySlug } from "@/lib/queries/products";
+import type { Media } from "@/payload-types";
 import Photos from "@/components/pages-components/shop-page/product-photos/product-photos";
 import ProductInfo from "@/components/pages-components/shop-page/product-info/product-info";
 import { Metadata } from 'next';
@@ -21,18 +22,26 @@ export const generateStaticParams = async () => {
 
 export async function generateMetadata(props: TMetadataProps): Promise<Metadata> {
     const params = await props.params;
-    const currItem = await getProductBySlug(params.slug);
-    const title = currItem ? `${currItem.name} — печать на одежде | ${SITE_INFO.name}` : `Товар | ${SITE_INFO.name}`;
-    const description = currItem?.description
+    const [currItem, seo] = await Promise.all([
+        getProductBySlug(params.slug),
+        getProductSeoBySlug(params.slug),
+    ]);
+
+    const fallbackTitle = currItem ? `${currItem.name} — печать на одежде | ${SITE_INFO.name}` : `Товар | ${SITE_INFO.name}`;
+    const fallbackDescription = currItem?.description
         ? `${currItem.name}. ${currItem.description}`.slice(0, 300)
         : `${currItem?.name ?? 'Товар'} с печатью под заказ. Доставка по России.`;
 
+    const metaImage = seo?.meta?.image && typeof seo.meta.image === 'object'
+        ? (seo.meta.image as Media).url ?? undefined
+        : undefined;
+
     return {
         ...buildMetadata({
-            title,
-            description,
+            title: seo?.meta?.title ?? fallbackTitle,
+            description: seo?.meta?.description ?? fallbackDescription,
             path: `/shop/${params.slug}`,
-            image: currItem?.image_url || undefined,
+            image: metaImage ?? currItem?.image_url ?? undefined,
             type: 'product',
         }),
         keywords: currItem ? [currItem.category, currItem.type, currItem.color].filter(Boolean) as string[] : undefined,
