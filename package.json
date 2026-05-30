@@ -16,8 +16,8 @@
     "payload:migrate": "cross-env NODE_OPTIONS=--no-deprecation payload migrate",
     "payload:migrate:create": "cross-env NODE_OPTIONS=--no-deprecation payload migrate:create",
     "etl:catalog": "tsx scripts/etl-catalog.ts",
-    "etl:blog": "tsx scripts/etl-blog.ts",
-    "etl:gallery": "tsx scripts/etl-gallery.ts"
+    "etl:blog": "node --env-file=.env.local scripts/etl-blog.mjs",
+    "etl:gallery": "node --env-file=.env.local scripts/etl-gallery.mjs"
   },
   "dependencies": {
     "@emotion/react": "^11.11.4",

@@ -1,5 +1,8 @@
 import React from 'react';
 import styles from './page.module.scss';
+
+export const revalidate = 60;
+
 import classnames from 'classnames/bind';
 import Link from 'next/link';
 import Image from 'next/image';
