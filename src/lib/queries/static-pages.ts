@@ -1,0 +1,54 @@
+import 'server-only';
+
+import { getPayloadClient, isPayloadConfigured } from '@/lib/payload/client';
+import type { Page } from '@/payload-types';
+
+export type StaticPage = {
+  title: string;
+  bodyHtml: string;
+  subtitle: string | null;
+};
+
+const lexicalToHtml = (input: unknown): string => {
+  if (!input || typeof input !== 'object') return '';
+  const root = (input as { root?: { children?: unknown[] } }).root;
+  if (!root || !Array.isArray(root.children)) return '';
+  const renderNode = (node: unknown): string => {
+    if (!node || typeof node !== 'object') return '';
+    const n = node as { type?: string; text?: string; children?: unknown[]; tag?: string };
+    if (n.type === 'text' && typeof n.text === 'string') {
+      return n.text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+    const inner = Array.isArray(n.children) ? n.children.map(renderNode).join('') : '';
+    if (n.type === 'paragraph') return `<p>${inner}</p>`;
+    if (n.type === 'heading') return `<${n.tag ?? 'h2'}>${inner}</${n.tag ?? 'h2'}>`;
+    if (n.type === 'list') return `<ul>${inner}</ul>`;
+    if (n.type === 'listitem') return `<li>${inner}</li>`;
+    if (n.type === 'linebreak') return '<br>';
+    return inner;
+  };
+  return root.children.map(renderNode).join('');
+};
+
+export const getStaticPage = async (slug: string): Promise<StaticPage | null> => {
+  if (!isPayloadConfigured()) return null;
+  const payload = await getPayloadClient();
+  const res = await payload.find({
+    collection: 'pages',
+    where: {
+      slug: { equals: slug },
+      status: { equals: 'published' },
+    },
+    limit: 1,
+  });
+  const page = res.docs[0] as Page | undefined;
+  if (!page) return null;
+  const html = page.bodyHtml && page.bodyHtml.trim().length > 0
+    ? page.bodyHtml
+    : lexicalToHtml(page.body);
+  return {
+    title: page.title,
+    bodyHtml: html,
+    subtitle: page.subtitle ?? null,
+  };
+};
