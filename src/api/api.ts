@@ -4,7 +4,8 @@ import {
   ICdekCitySearchResponse,
   ICdekPointsResponse,
   ICdekPriceResponse,
-  IOrderBody,
+  ICreateOrderPayload,
+  ICreateOrderResponse,
 } from "@/app/utils/types";
 
 export type LeadSource =
@@ -92,7 +93,7 @@ export const api = createApi({
             },
       }},
     }),
-    createOrder: builder.mutation<{id: string, paymentUrl: string | null}, IOrderBody>({
+    createOrder: builder.mutation<ICreateOrderResponse, ICreateOrderPayload>({
       // POST /api/orders/create — custom endpoint, читает Payload local API,
       // resolve products/variants/prices, валидирует stock и promo, создаёт
       // Order + OrderItems. Возвращает paymentUrl=null (Phase 5 СБП отложено).

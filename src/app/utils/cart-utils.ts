@@ -1,14 +1,12 @@
 import {
   ICartOrderElement,
+  ICreateOrderPayload,
   IPrintConfig,
   IPrintFileRef,
   TPrintSide,
   TPrintLocation,
-  TUserOrderItem,
-  IOrderBody,
 } from './types';
 import { TCartState } from '@/redux/cart-slice/cart.slice';
-import { v4 as uuidv4 } from 'uuid';
 
 const SIDES_FOR_LOCATION: Record<TPrintLocation, TPrintSide[]> = {
   none: [],
@@ -59,62 +57,51 @@ export const packagesWeightCalcFunc = (
   });
 };
 
-export const checkoutOrderObjectCreateFunc = (cart: TCartState, roistat: string): IOrderBody => {
-  const { order, validPromoCode, deliveryParams, userData, isDelivery } = cart;
-  const orderTotalPrice = cartSummaryFunc(order ?? []);
+// Раскладывает cart-state в payload для POST /api/orders/create.
+// Каждый размер с userQty>0 становится отдельным item'ом (endpoint резолвит
+// productSlug+variantSize → product.id + variant.id).
+export const buildOrderPayload = (
+  cart: TCartState,
+  options: {
+    customer: { name: string; phone: string; email?: string };
+    roistatVisit?: string;
+  },
+): ICreateOrderPayload => {
+  const { order, validPromoCode, deliveryParams, isDelivery } = cart;
 
-  const data: IOrderBody = {
-    order_total_price: orderTotalPrice,
-    order_discounted_price: validPromoCode.name
-      ? orderTotalPrice * validPromoCode.discount_ratio
-      : orderTotalPrice,
-    order_promocode: validPromoCode,
-    owner_name: `${userData.surname} ${userData.name}`,
-    owner_phone: userData.phone.substring(1, userData.phone.length),
-    owner_email: userData.email,
-    order_key: uuidv4(),
-    items: [],
-    isShipping: isDelivery,
-    shipping_city: deliveryParams.validCityTo,
-    shipping_point: deliveryParams.validDeliveryPoint,
-    shipping_price: deliveryParams.deliveryPrice,
-    packages: [],
-    roistat,
+  const items: ICreateOrderPayload['items'] = [];
+  for (const elem of order ?? []) {
+    for (const size of elem.item.sizes) {
+      const qty = size.userQty ?? 0;
+      if (qty < 1) continue;
+      items.push({
+        productSlug: elem.item.slug,
+        variantSize: size.name,
+        quantity: qty,
+        printConfig: elem.printConfig,
+      });
+    }
+  }
+
+  return {
+    customer: {
+      name: options.customer.name,
+      phone: options.customer.phone,
+      email: options.customer.email,
+      roistatVisit: options.roistatVisit,
+    },
+    delivery: isDelivery
+      ? {
+          type: deliveryParams.validDeliveryPoint ? 'cdek_pvz' : 'cdek_door',
+          cityCode: deliveryParams.validCityTo?.code
+            ? String(deliveryParams.validCityTo.code)
+            : undefined,
+          cityName: deliveryParams.validCityTo?.city ?? undefined,
+          pvzCode: deliveryParams.validDeliveryPoint?.code ?? undefined,
+          cost: deliveryParams.deliveryPrice ?? 0,
+        }
+      : { type: 'self_pickup', cost: 0 },
+    items,
+    promoCode: validPromoCode?.name || undefined,
   };
-
-  order?.forEach((elem) => {
-    const itemQty = elem.item.sizes.reduce((acc, { userQty }) => acc + (userQty ?? 0), 0);
-    const sizesString = elem.item.sizes
-      .filter((s) => (s.userQty ?? 0) > 0)
-      .map((s) => `,размер:${s.name}`)
-      .join('') + '.';
-
-    const printDescription = (side: TPrintSide, title: string): string => {
-      const file = elem.printConfig?.files[side];
-      return file ? `${title}. Файл: ${file.url}` : '';
-    };
-
-    const itemToAdd: TUserOrderItem = {
-      ...elem.item,
-      textile: elem.item.name.concat(sizesString),
-      item_price: itemQty * elem.item.price,
-      printPrice: 0,
-      qty: elem.item.sizes,
-      qtyAll: itemQty,
-      front_print: printDescription('front', 'Печать на груди'),
-      back_print: printDescription('back', 'Печать на спине'),
-      lsleeve_print: printDescription('sleeve', 'Печать на рукаве'),
-      rsleeve_print: '',
-    };
-
-    data.items.push(itemToAdd);
-    data.packages.push({
-      height: '10',
-      length: '10',
-      weight: '1000',
-      width: '10',
-    });
-  });
-
-  return data;
 };

@@ -13,7 +13,8 @@ import styles from "./page.module.css";
 import { useAppDispatch, useAppSelector } from "@/redux/redux-hooks";
 import { actions as cartActions } from "@/redux/cart-slice/cart.slice";
 import { cartSummaryFunc } from "@/app/utils/cart-utils";
-import { useCreateLeadMutation, ILeadAttachment } from "@/api/api";
+import { useCreateOrderMutation } from "@/api/api";
+import type { ICreateOrderPayload } from "@/app/utils/types";
 import { getRoistatVisit } from "@/lib/analytics/roistat";
 
 const textFieldSx = {
@@ -38,7 +39,7 @@ const CheckoutPage: React.FC = () => {
     const [consent, setConsent] = useState(false);
     const [submitError, setSubmitError] = useState<string | null>(null);
 
-    const [createLead, { isLoading }] = useCreateLeadMutation();
+    const [createOrder, { isLoading }] = useCreateOrderMutation();
 
     // Редиректим в /shop, если корзина пуста (после гидрации).
     useEffect(() => {
@@ -48,41 +49,24 @@ const CheckoutPage: React.FC = () => {
         }
     }, [isHydrated, order, router]);
 
-    const attachments: ILeadAttachment[] = useMemo(() => {
-        const out: ILeadAttachment[] = [];
+    // items для POST /api/orders/create: каждый размер с userQty>0 →
+    // отдельный элемент.
+    const items = useMemo<ICreateOrderPayload['items']>(() => {
+        const out: ICreateOrderPayload['items'] = [];
         for (const elem of order ?? []) {
-            for (const [side, file] of Object.entries(elem.printConfig?.files ?? {})) {
-                if (file?.url) {
-                    out.push({
-                        side: `${elem.item.name} / ${side}`,
-                        url: file.url,
-                        filename: file.filename,
-                    });
-                }
+            for (const size of elem.item.sizes) {
+                const qty = size.userQty ?? 0;
+                if (qty < 1) continue;
+                out.push({
+                    productSlug: elem.item.slug,
+                    variantSize: size.name,
+                    quantity: qty,
+                    printConfig: elem.printConfig,
+                });
             }
         }
         return out;
     }, [order]);
-
-    const orderSummaryText = useMemo(() => {
-        const lines: string[] = [];
-        for (const elem of order ?? []) {
-            const qty = elem.item.sizes.reduce((acc, s) => acc + (s.userQty ?? 0), 0);
-            const sizesText = elem.item.sizes
-                .filter((s) => (s.userQty ?? 0) > 0)
-                .map((s) => `${s.name}×${s.userQty}`)
-                .join(", ");
-            const printText =
-                elem.printConfig?.location && elem.printConfig.location !== "none"
-                    ? ` [принт: ${elem.printConfig.location}]`
-                    : "";
-            lines.push(
-                `• ${elem.item.name} — ${qty} шт. (${sizesText})${printText} — ${elem.item.price * qty} ₽`,
-            );
-        }
-        lines.push(`Итого: ${totalOrderPrice} ₽`);
-        return lines.join("\n");
-    }, [order, totalOrderPrice]);
 
     const isValid =
         name.trim().length > 0 &&
@@ -95,38 +79,41 @@ const CheckoutPage: React.FC = () => {
         if (!isValid || isLoading) return;
         setSubmitError(null);
 
-        const fullComment = [
-            comment.trim() ? `Комментарий: ${comment.trim()}` : "",
-            `Город доставки: ${city.trim()}`,
-            "",
-            "Состав заказа:",
-            orderSummaryText,
-        ]
-            .filter(Boolean)
-            .join("\n");
-
-        try {
-            const result = await createLead({
+        // Комментарий клиента пока теряется (нет поля customer.note в Orders).
+        // Добавим в отдельном PR — сейчас фокус на самом cutover'е.
+        const payload: ICreateOrderPayload = {
+            customer: {
                 name: name.trim(),
                 phone: phone.trim(),
                 email: email.trim() || undefined,
-                comment: fullComment,
-                source: "checkout",
-                roistat_visit: getRoistatVisit() || undefined,
-                attachments: attachments.length > 0 ? attachments : undefined,
-            }).unwrap();
+                roistatVisit: getRoistatVisit() || undefined,
+            },
+            delivery: {
+                type: 'cdek_door',
+                cityName: city.trim(),
+                cost: 0,
+            },
+            items,
+        };
 
-            if (result?.leadId) {
+        try {
+            const result = await createOrder(payload).unwrap();
+            if (result?.id) {
                 dispatch(cartActions.resetCart());
-                router.push("/thanks");
+                router.push(`/thanks?order=${result.id}`);
             }
         } catch (err) {
-            const errAny = err as { error?: string; data?: { error?: string } };
-            setSubmitError(
-                errAny?.data?.error ??
-                    errAny?.error ??
-                    "Не удалось отправить заявку. Попробуйте ещё раз или свяжитесь по телефону.",
-            );
+            const errAny = err as { error?: string; data?: { error?: string; sku?: string; available?: number; requested?: number } };
+            const errCode = errAny?.data?.error ?? errAny?.error;
+            let msg = "Не удалось оформить заявку. Попробуйте ещё раз или свяжитесь по телефону.";
+            if (errCode === 'out_of_stock') {
+                msg = `Размер ${errAny.data?.sku ?? ''} больше не в наличии (доступно ${errAny.data?.available ?? 0}, заказано ${errAny.data?.requested ?? 0}). Обновите корзину.`;
+            } else if (errCode === 'product_not_found' || errCode === 'variant_not_found') {
+                msg = 'Один из товаров в корзине больше не доступен. Обновите страницу.';
+            } else if (errCode === 'price_not_found') {
+                msg = 'Цена товара временно недоступна. Свяжитесь с нами по телефону.';
+            }
+            setSubmitError(msg);
         }
     };
 

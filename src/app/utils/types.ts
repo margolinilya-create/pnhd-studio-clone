@@ -113,37 +113,39 @@ services : Array<{
 total_sum: number,
 weight_calc: number,
 }
-interface IAdditionalOrderParams {
-    item_price?: number,
-    printPrice?: number,
-    qty?: Array<{name: string, qty: number, userQty?: number}>
-    qtyAll?: number,
-    front_print?: string,
-    back_print?: string,
-    lsleeve_print?: string,
-    rsleeve_print?: string,
-    textile?: string,
+// Соответствует payload, который ожидает POST /api/orders/create.
+// Endpoint резолвит productSlug → product.id, variantSize → variant.id,
+// валидирует stock, читает price из 'prices', применяет promo, и создаёт
+// Order + OrderItems со статусом draft / paymentStatus unpaid.
+export interface ICreateOrderPayload {
+  customer: {
+    name: string;
+    phone: string;
+    email?: string;
+    roistatVisit?: string;
+  };
+  delivery?: {
+    type?: 'cdek_pvz' | 'cdek_door' | 'self_pickup';
+    cityCode?: string;
+    cityName?: string;
+    address?: string;
+    pvzCode?: string;
+    cost?: number;
+  };
+  items: Array<{
+    productSlug: string;
+    variantSize: string;
+    quantity: number;
+    printConfig?: unknown;
+  }>;
+  promoCode?: string;
 }
-export type TUserOrderItem = IProduct & IAdditionalOrderParams;
 
-export interface IOrderBody {
-  order_total_price: number,
-  order_discounted_price: number,
-  order_promocode?: any,
-  owner_name: string,
-  owner_phone: string,
-  owner_email: string,
-  order_key: string,
-  items: Array<TUserOrderItem>,
-  isShipping: boolean,
-  shipping_city?: ICdekCitySearchResponse,
-  shipping_point?: ICdekPointsResponse,
-  shipping_price: number,
-  packages: Array<{ height: string,
-  length: string,
-  weight: string,
-  width: string,}>,
-  roistat: string,
+export interface ICreateOrderResponse {
+  id: string;
+  orderNumber: string | null;
+  total: number;
+  paymentUrl: string | null;
 }
 
 export type TOptionsData = {
