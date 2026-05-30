@@ -1,5 +1,8 @@
 import React from 'react';
 import { notFound } from 'next/navigation';
+
+export const revalidate = 60;
+
 import styles from './page.module.scss';
 import classNames from 'classnames/bind';
 import { getAllPostSlugs, getPostBySlug } from '@/lib/queries/blog';
