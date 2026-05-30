@@ -94,6 +94,35 @@ export const getPostBySlug = async (slug: string): Promise<Post | null> => {
   return mapPage(page, 0);
 };
 
+export type PostSeo = {
+  title: string;
+  subtitle?: string | null;
+  meta?: Page['meta'];
+  cover: string;
+};
+
+export const getPostSeoBySlug = async (slug: string): Promise<PostSeo | null> => {
+  if (!isPayloadConfigured()) return null;
+  const payload = await getPayloadClient();
+  const res = await payload.find({
+    collection: 'pages',
+    where: {
+      slug: { equals: slug },
+      pageType: { equals: 'blog' },
+    },
+    depth: 1,
+    limit: 1,
+  });
+  const page = res.docs[0] as Page | undefined;
+  if (!page) return null;
+  return {
+    title: page.title,
+    subtitle: page.subtitle,
+    meta: page.meta,
+    cover: coverUrl(page.cover),
+  };
+};
+
 export const getAllPostSlugs = async (): Promise<string[]> => {
   if (!isPayloadConfigured()) return [];
   const payload = await getPayloadClient();

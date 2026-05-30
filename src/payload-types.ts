@@ -279,6 +279,14 @@ export interface Product {
   isForPrinting?: boolean | null;
   color?: string | null;
   stageColor?: string | null;
+  meta?: {
+    title?: string | null;
+    description?: string | null;
+    /**
+     * Maximum upload file size: 12MB. Recommended file size for images is <500KB.
+     */
+    image?: (number | null) | Media;
+  };
   updatedAt: string;
   createdAt: string;
 }
@@ -355,6 +363,14 @@ export interface Page {
   legacyPostId?: number | null;
   publishedAt?: string | null;
   status: 'draft' | 'published';
+  meta?: {
+    title?: string | null;
+    description?: string | null;
+    /**
+     * Maximum upload file size: 12MB. Recommended file size for images is <500KB.
+     */
+    image?: (number | null) | Media;
+  };
   updatedAt: string;
   createdAt: string;
 }
@@ -763,6 +779,13 @@ export interface ProductsSelect<T extends boolean = true> {
   isForPrinting?: T;
   color?: T;
   stageColor?: T;
+  meta?:
+    | T
+    | {
+        title?: T;
+        description?: T;
+        image?: T;
+      };
   updatedAt?: T;
   createdAt?: T;
 }
@@ -816,6 +839,13 @@ export interface PagesSelect<T extends boolean = true> {
   legacyPostId?: T;
   publishedAt?: T;
   status?: T;
+  meta?:
+    | T
+    | {
+        title?: T;
+        description?: T;
+        image?: T;
+      };
   updatedAt?: T;
   createdAt?: T;
 }
