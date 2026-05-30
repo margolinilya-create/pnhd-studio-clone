@@ -10,7 +10,7 @@ type IncomingItem = {
 };
 
 type IncomingBody = {
-  customer?: { name?: string; phone?: string; email?: string; roistatVisit?: string };
+  customer?: { name?: string; phone?: string; email?: string; note?: string; roistatVisit?: string };
   delivery?: {
     type?: 'cdek_pvz' | 'cdek_door' | 'self_pickup';
     cityCode?: string;
@@ -174,6 +174,7 @@ export const POST = async (req: Request) => {
         name: customer.name,
         phone: customer.phone,
         email: customer.email,
+        note: customer.note,
         roistatVisit: customer.roistatVisit,
       },
       ...(delivery

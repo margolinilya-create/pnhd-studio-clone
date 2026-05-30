@@ -79,13 +79,12 @@ const CheckoutPage: React.FC = () => {
         if (!isValid || isLoading) return;
         setSubmitError(null);
 
-        // Комментарий клиента пока теряется (нет поля customer.note в Orders).
-        // Добавим в отдельном PR — сейчас фокус на самом cutover'е.
         const payload: ICreateOrderPayload = {
             customer: {
                 name: name.trim(),
                 phone: phone.trim(),
                 email: email.trim() || undefined,
+                note: comment.trim() || undefined,
                 roistatVisit: getRoistatVisit() || undefined,
             },
             delivery: {

@@ -71,6 +71,12 @@ export const Orders: CollectionConfig = {
         { name: 'name', type: 'text', required: true },
         { name: 'phone', type: 'text', required: true },
         { name: 'email', type: 'email' },
+        {
+          name: 'note',
+          type: 'textarea',
+          maxLength: 2000,
+          label: 'Комментарий клиента (из /checkout)',
+        },
         { name: 'roistatVisit', type: 'text' },
       ],
     },
