@@ -79,6 +79,7 @@ export interface Config {
     leads: Lead;
     orders: Order;
     'order-items': OrderItem;
+    redirects: Redirect;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
@@ -98,6 +99,7 @@ export interface Config {
     leads: LeadsSelect<false> | LeadsSelect<true>;
     orders: OrdersSelect<false> | OrdersSelect<true>;
     'order-items': OrderItemsSelect<false> | OrderItemsSelect<true>;
+    redirects: RedirectsSelect<false> | RedirectsSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
@@ -532,6 +534,31 @@ export interface OrderItem {
   createdAt: string;
 }
 /**
+ * Перенаправления URL. From — старый путь (например /old-product). To — внутренний документ или внешний URL. Применяется через middleware на storefront.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "redirects".
+ */
+export interface Redirect {
+  id: number;
+  from: string;
+  to?: {
+    type?: ('reference' | 'custom') | null;
+    reference?:
+      | ({
+          relationTo: 'pages';
+          value: number | Page;
+        } | null)
+      | ({
+          relationTo: 'products';
+          value: number | Product;
+        } | null);
+    url?: string | null;
+  };
+  updatedAt: string;
+  createdAt: string;
+}
+/**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv".
  */
@@ -602,6 +629,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'order-items';
         value: number | OrderItem;
+      } | null)
+    | ({
+        relationTo: 'redirects';
+        value: number | Redirect;
       } | null);
   globalSlug?: string | null;
   user: {
@@ -968,6 +999,22 @@ export interface OrderItemsSelect<T extends boolean = true> {
   pricePerUnit?: T;
   printConfig?: T;
   lineTotal?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "redirects_select".
+ */
+export interface RedirectsSelect<T extends boolean = true> {
+  from?: T;
+  to?:
+    | T
+    | {
+        type?: T;
+        reference?: T;
+        url?: T;
+      };
   updatedAt?: T;
   createdAt?: T;
 }

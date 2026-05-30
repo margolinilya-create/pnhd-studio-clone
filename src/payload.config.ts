@@ -1,4 +1,5 @@
 import { postgresAdapter } from '@payloadcms/db-postgres';
+import { redirectsPlugin } from '@payloadcms/plugin-redirects';
 import { seoPlugin } from '@payloadcms/plugin-seo';
 import { lexicalEditor } from '@payloadcms/richtext-lexical';
 import { s3Storage } from '@payloadcms/storage-s3';
@@ -47,6 +48,16 @@ export default buildConfig({
     schemaName: 'payload',
   }),
   plugins: [
+    redirectsPlugin({
+      collections: ['pages', 'products'],
+      overrides: {
+        admin: {
+          group: 'SEO',
+          description:
+            'Перенаправления URL. From — старый путь (например /old-product). To — внутренний документ или внешний URL. Применяется через middleware на storefront.',
+        },
+      },
+    }),
     s3Storage({
       collections: {
         media: {
