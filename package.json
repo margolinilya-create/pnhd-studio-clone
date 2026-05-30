@@ -28,6 +28,7 @@
     "@mui/x-data-grid": "^7.29.13",
     "@payloadcms/db-postgres": "^3.85.0",
     "@payloadcms/next": "^3.85.0",
+    "@payloadcms/plugin-redirects": "^3.85.0",
     "@payloadcms/plugin-seo": "^3.85.0",
     "@payloadcms/richtext-lexical": "^3.85.0",
     "@payloadcms/storage-s3": "^3.85.0",
