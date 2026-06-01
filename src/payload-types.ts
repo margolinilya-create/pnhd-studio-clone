@@ -392,6 +392,54 @@ export interface Page {
    */
   legacyPostId?: number | null;
   publishedAt?: string | null;
+  /**
+   * Cashback-уровни. Используется только на странице /loyalty.
+   */
+  loyaltyLevels?:
+    | {
+        level: string;
+        sum: string;
+        cashback?: string | null;
+        label?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * Sequential steps. Используется только на странице /howto.
+   */
+  howtoSteps?:
+    | {
+        title: string;
+        body: {
+          root: {
+            type: string;
+            children: {
+              type: any;
+              version: number;
+              [k: string]: unknown;
+            }[];
+            direction: ('ltr' | 'rtl') | null;
+            format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+            indent: number;
+            version: number;
+          };
+          [k: string]: unknown;
+        };
+        image?: (number | null) | Media;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * Размерные таблицы для типов одежды. Используется только на странице /size_chart.
+   */
+  sizeChartItems?:
+    | {
+        type: string;
+        label?: string | null;
+        image?: (number | null) | Media;
+        id?: string | null;
+      }[]
+    | null;
   meta?: {
     title?: string | null;
     description?: string | null;
@@ -1241,6 +1289,31 @@ export interface PagesSelect<T extends boolean = true> {
   likes?: T;
   legacyPostId?: T;
   publishedAt?: T;
+  loyaltyLevels?:
+    | T
+    | {
+        level?: T;
+        sum?: T;
+        cashback?: T;
+        label?: T;
+        id?: T;
+      };
+  howtoSteps?:
+    | T
+    | {
+        title?: T;
+        body?: T;
+        image?: T;
+        id?: T;
+      };
+  sizeChartItems?:
+    | T
+    | {
+        type?: T;
+        label?: T;
+        image?: T;
+        id?: T;
+      };
   meta?:
     | T
     | {

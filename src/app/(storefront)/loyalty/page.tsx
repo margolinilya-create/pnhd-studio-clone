@@ -1,10 +1,16 @@
 import React from "react";
-import styles from "./page.module.css";
+import { notFound } from "next/navigation";
 import { Metadata } from "next";
+import Link from "next/link";
+
 import FeedbackScreen from "@/components/pages-components/main-page/feedback-screen/feedback-screen";
 import MapScreen from "@/components/pages-components/main-page/map-screen/map-screen";
-import Link from "next/link";
+import { getStaticPage } from "@/lib/queries/static-pages";
+
+import styles from "./page.module.css";
 import LoyaltyCarousel from "./loyalty-carousel";
+
+export const revalidate = 60;
 
 export const metadata: Metadata = {
     title: "Программа лояльности Pinhead Studio — бонусы за заказы",
@@ -23,40 +29,17 @@ export const metadata: Metadata = {
     },
 };
 
-const levels = [
-    {
-        level: "Уровень 1",
-        sum: "до 3 000 ₽",
-        cashback: null,
-        label: "базовый",
-    },
-    {
-        level: "Уровень 2",
-        sum: "от 3 000 ₽",
-        cashback: "3%",
-        label: null,
-    },
-    {
-        level: "Уровень 3",
-        sum: "от 10 000 ₽",
-        cashback: "5%",
-        label: null,
-    },
-    {
-        level: "Уровень 4",
-        sum: "от 30 000 ₽",
-        cashback: "7%",
-        label: null,
-    },
-    {
-        level: "Уровень 5",
-        sum: "от 100 000 ₽",
-        cashback: "10%",
-        label: null,
-    },
-];
+const Page = async (props: { searchParams?: Promise<{ preview?: string }> }) => {
+    const searchParams = (await props.searchParams) ?? {};
+    const preview = searchParams.preview === "true";
+    const page = await getStaticPage("loyalty", { preview });
 
-const Page: React.FC = () => {
+    if (!page) {
+        notFound();
+    }
+
+    const levels = page.loyaltyLevels ?? [];
+
     return (
         <>
             <section className={styles.hero}>
@@ -100,7 +83,7 @@ const Page: React.FC = () => {
                 <div className={styles.levels_grid}>
                     {levels.map((item) => (
                         <div
-                            key={item.level}
+                            key={item.id ?? item.level}
                             className={styles.level_card}
                         >
                             <p className={styles.level_name}>{item.level}</p>
@@ -108,7 +91,7 @@ const Page: React.FC = () => {
                             {item.cashback ? (
                                 <p className={styles.level_cashback}>{item.cashback}</p>
                             ) : (
-                                <p className={styles.level_no_cashback}>без кешбэка</p>
+                                <p className={styles.level_no_cashback}>{item.label ?? "без кешбэка"}</p>
                             )}
                         </div>
                     ))}

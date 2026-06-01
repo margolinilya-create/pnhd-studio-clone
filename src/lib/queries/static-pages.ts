@@ -8,6 +8,9 @@ export type StaticPage = {
   title: string;
   bodyHtml: string;
   subtitle: string | null;
+  loyaltyLevels: Page['loyaltyLevels'];
+  howtoSteps: Page['howtoSteps'];
+  sizeChartItems: Page['sizeChartItems'];
 };
 
 const lexicalToHtml = (input: unknown): string => {
@@ -55,5 +58,15 @@ export const getStaticPage = async (
     title: page.title,
     bodyHtml: sanitizeHtml(html),
     subtitle: page.subtitle ?? null,
+    loyaltyLevels: page.loyaltyLevels ?? null,
+    howtoSteps: page.howtoSteps ?? null,
+    sizeChartItems: page.sizeChartItems ?? null,
   };
 };
+
+/**
+ * Helper для рендеринга Lexical-richText в простую HTML-строку.
+ * Используется только на статичных страницах (howto step body) — пользовательский
+ * ввод санитайзится через bodyHtml ветку выше.
+ */
+export const lexicalRichTextToHtml = (input: unknown): string => lexicalToHtml(input);

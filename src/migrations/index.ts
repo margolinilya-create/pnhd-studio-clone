@@ -11,6 +11,7 @@ import * as migration_20260601_210348_navigation_global from './20260601_210348_
 import * as migration_20260601_210820_cookie_bar_global from './20260601_210820_cookie_bar_global';
 import * as migration_20260601_221521_site_settings_contacts_geo from './20260601_221521_site_settings_contacts_geo';
 import * as migration_20260601_231406_checkout_messages_global from './20260601_231406_checkout_messages_global';
+import * as migration_20260601_232405_pages_static_extensions from './20260601_232405_pages_static_extensions';
 
 export const migrations = [
   {
@@ -76,6 +77,11 @@ export const migrations = [
   {
     up: migration_20260601_231406_checkout_messages_global.up,
     down: migration_20260601_231406_checkout_messages_global.down,
-    name: '20260601_231406_checkout_messages_global'
+    name: '20260601_231406_checkout_messages_global',
+  },
+  {
+    up: migration_20260601_232405_pages_static_extensions.up,
+    down: migration_20260601_232405_pages_static_extensions.down,
+    name: '20260601_232405_pages_static_extensions'
   },
 ];
