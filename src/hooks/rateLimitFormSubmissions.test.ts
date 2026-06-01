@@ -1,9 +1,9 @@
 import { describe, expect, it, vi } from 'vitest';
 import { MAX_PER_WINDOW, rateLimitFormSubmissions } from './rateLimitFormSubmissions';
 
-function makeReq(ip: string) {
+function makeReq(ip: string, headerName: 'x-vercel-forwarded-for' | 'x-forwarded-for' | 'x-real-ip' = 'x-vercel-forwarded-for') {
   return {
-    headers: new Headers({ 'x-forwarded-for': ip, 'user-agent': 'test-agent' }),
+    headers: new Headers({ [headerName]: ip, 'user-agent': 'test-agent' }),
     payload: {
       find: vi.fn(),
     },
@@ -91,5 +91,31 @@ describe('rateLimitFormSubmissions', () => {
     await rateLimitFormSubmissions({ operation: 'create', req, args } as any);
 
     expect(args.data.ipHash).toBeDefined();
+  });
+
+  it('prefers x-vercel-forwarded-for over user-controlled x-forwarded-for (B7 spoof-resistance)', async () => {
+    const req = {
+      headers: new Headers({
+        'x-forwarded-for': '6.6.6.6',
+        'x-vercel-forwarded-for': '1.2.3.4',
+        'user-agent': 'test',
+      }),
+      payload: { find: vi.fn().mockResolvedValueOnce({ totalDocs: 0 }) },
+    } as any;
+    const argsSpoofed: any = { data: {} };
+    await rateLimitFormSubmissions({ operation: 'create', req, args: argsSpoofed } as any);
+
+    const req2 = {
+      headers: new Headers({
+        'x-vercel-forwarded-for': '1.2.3.4',
+        'user-agent': 'test',
+      }),
+      payload: { find: vi.fn().mockResolvedValueOnce({ totalDocs: 0 }) },
+    } as any;
+    const argsClean: any = { data: {} };
+    await rateLimitFormSubmissions({ operation: 'create', req: req2, args: argsClean } as any);
+
+    // Same Vercel IP → same hash, regardless of spoofed `x-forwarded-for`
+    expect(argsSpoofed.data.ipHash).toBe(argsClean.data.ipHash);
   });
 });

@@ -44,6 +44,10 @@ const LeadForm: React.FC<{ source?: LeadSource; formId: string }> = ({ source = 
                 fields: {
                     name: name.trim(),
                     phone: phone.replaceAll(' ', ''),
+                    // `agreement` помечен required: true в seeded Forms — отправляем явно
+                    // как часть submissionData. Иначе при включении server-side schema-валидации
+                    // в Payload (см. audit C1/B2) submit падает 400.
+                    agreement: 'true',
                     source,
                     ...(roistat ? { roistatVisit: roistat } : {}),
                 },

@@ -3,7 +3,12 @@ import { isValidStoredCart } from './validate-stored-cart';
 
 const validEntry = () => ({
   itemCartId: 'cart-1',
-  item: { _id: 'p1', slug: 'foo', name: 'Foo' },
+  item: {
+    _id: 'p1',
+    slug: 'foo',
+    name: 'Foo',
+    sizes: [{ name: 'M', qty: 10, userQty: 1 }],
+  },
   printConfig: {
     location: 'front',
     files: {
@@ -122,5 +127,31 @@ describe('isValidStoredCart', () => {
   it('отвергает повреждённый JSON-форматный объект (не массив, как top-level)', () => {
     // Если кто-то случайно сохранил { order: [...] } вместо самого массива
     expect(isValidStoredCart({ order: [validEntry()] })).toBe(false);
+  });
+
+  // Регрессия audit B3: legacy / corrupted item без `sizes` ломал /checkout
+  // (`elem.item.sizes.reduce(...)` → "Application error: client-side exception").
+  it('отвергает item без массива sizes', () => {
+    const e = validEntry();
+    delete (e.item as Record<string, unknown>).sizes;
+    expect(isValidStoredCart([e])).toBe(false);
+  });
+
+  it('отвергает item где sizes не массив', () => {
+    const e = validEntry();
+    (e.item as Record<string, unknown>).sizes = 'M' as unknown as never;
+    expect(isValidStoredCart([e])).toBe(false);
+  });
+
+  it('отвергает item без name (минимум полей для render не выполнен)', () => {
+    const e = validEntry();
+    delete (e.item as Record<string, unknown>).name;
+    expect(isValidStoredCart([e])).toBe(false);
+  });
+
+  it('отвергает size без name или qty', () => {
+    const e = validEntry();
+    (e.item as Record<string, unknown>).sizes = [{ name: 'M' }];
+    expect(isValidStoredCart([e])).toBe(false);
   });
 });

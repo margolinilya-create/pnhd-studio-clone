@@ -181,10 +181,25 @@ export default buildConfig({
       tabbedUI: true,
     }),
   ],
+  // Fallback list синхронизирован с src/lib/security/allowed-origins.ts.
+  // Если выставлен ALLOWED_ORIGINS env — он перекрывает fallback.
+  // Закрывает audit B9 — CSRF whitelist не включал Vercel-aliases.
   cors: process.env.ALLOWED_ORIGINS
     ? process.env.ALLOWED_ORIGINS.split(',').map((s) => s.trim()).filter(Boolean)
-    : ['http://localhost:3000', 'https://studio.pnhd.ru'],
+    : [
+        'http://localhost:3000',
+        'https://studio.pnhd.ru',
+        'https://pnhd-studio-clone.vercel.app',
+        'https://pnhd-studio-clone-margolinilya-creates-projects.vercel.app',
+        'https://pnhd-studio-clone-git-main-margolinilya-creates-projects.vercel.app',
+      ],
   csrf: process.env.ALLOWED_ORIGINS
     ? process.env.ALLOWED_ORIGINS.split(',').map((s) => s.trim()).filter(Boolean)
-    : ['http://localhost:3000', 'https://studio.pnhd.ru'],
+    : [
+        'http://localhost:3000',
+        'https://studio.pnhd.ru',
+        'https://pnhd-studio-clone.vercel.app',
+        'https://pnhd-studio-clone-margolinilya-creates-projects.vercel.app',
+        'https://pnhd-studio-clone-git-main-margolinilya-creates-projects.vercel.app',
+      ],
 });

@@ -9,6 +9,7 @@ import { Metadata } from 'next';
 import { CDN_URL } from "@/app/utils/constants";
 import { SITE_INFO } from "@/app/constants";
 import { buildMetadata } from "@/app/_lib/build-metadata";
+import MarkupScript from "@/components/shared-components/markup-script/markup-script";
 
 type TMetadataProps = {
     params: Promise<{ slug: string }>,
@@ -106,11 +107,7 @@ const ProductPage: React.FC<{
     return (
         <>
             {productJsonLd(item).map((ld, i) => (
-                <script
-                    key={i}
-                    type="application/ld+json"
-                    dangerouslySetInnerHTML={{ __html: JSON.stringify(ld) }}
-                />
+                <MarkupScript key={i} jsonLd={ld as Record<string, unknown>} />
             ))}
             <section className={styles.screen}>
                 <div className={styles.photo_box}>

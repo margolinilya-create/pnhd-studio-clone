@@ -6,7 +6,10 @@
     font-family: 'Neue_machina';
     font-style: normal;
     font-weight: 100;
-    font-display: swap;
+    /* audit B14 — `swap` вызывал CLS=0.71 на /shop mobile когда WOFF2 догружался
+       поздно и поднимал footer. `optional` пропускает swap если шрифт не пришёл
+       за 100мс — пользователь видит fallback, но layout стабилен. */
+    font-display: optional;
 }
 
 @font-face {
@@ -17,7 +20,10 @@
     font-family: 'Neue_machina';
     font-style: normal;
     font-weight: 200;
-    font-display: swap;
+    /* audit B14 — `swap` вызывал CLS=0.71 на /shop mobile когда WOFF2 догружался
+       поздно и поднимал footer. `optional` пропускает swap если шрифт не пришёл
+       за 100мс — пользователь видит fallback, но layout стабилен. */
+    font-display: optional;
 }
 
 @font-face {
@@ -28,7 +34,10 @@
     font-family: 'Neue_machina';
     font-style: normal;
     font-weight: 400;
-    font-display: swap;
+    /* audit B14 — `swap` вызывал CLS=0.71 на /shop mobile когда WOFF2 догружался
+       поздно и поднимал footer. `optional` пропускает swap если шрифт не пришёл
+       за 100мс — пользователь видит fallback, но layout стабилен. */
+    font-display: optional;
 }
 
 @font-face {
@@ -39,7 +48,10 @@
     font-family: 'Neue_machina';
     font-style: normal;
     font-weight: 500;
-    font-display: swap;
+    /* audit B14 — `swap` вызывал CLS=0.71 на /shop mobile когда WOFF2 догружался
+       поздно и поднимал footer. `optional` пропускает swap если шрифт не пришёл
+       за 100мс — пользователь видит fallback, но layout стабилен. */
+    font-display: optional;
 }
 
 @font-face {
@@ -50,7 +62,10 @@
     font-family: 'Neue_machina';
     font-style: normal;
     font-weight: 600;
-    font-display: swap;
+    /* audit B14 — `swap` вызывал CLS=0.71 на /shop mobile когда WOFF2 догружался
+       поздно и поднимал footer. `optional` пропускает swap если шрифт не пришёл
+       за 100мс — пользователь видит fallback, но layout стабилен. */
+    font-display: optional;
 }
 
 @font-face {
@@ -61,7 +76,10 @@
     font-family: 'Neue_machina';
     font-style: normal;
     font-weight: 700;
-    font-display: swap;
+    /* audit B14 — `swap` вызывал CLS=0.71 на /shop mobile когда WOFF2 догружался
+       поздно и поднимал footer. `optional` пропускает swap если шрифт не пришёл
+       за 100мс — пользователь видит fallback, но layout стабилен. */
+    font-display: optional;
 }
 
 @font-face {
@@ -72,7 +90,10 @@
     font-family: 'Neue_machina';
     font-style: normal;
     font-weight: 800;
-    font-display: swap;
+    /* audit B14 — `swap` вызывал CLS=0.71 на /shop mobile когда WOFF2 догружался
+       поздно и поднимал footer. `optional` пропускает swap если шрифт не пришёл
+       за 100мс — пользователь видит fallback, но layout стабилен. */
+    font-display: optional;
 }
 
 @font-face {
@@ -83,5 +104,8 @@
     
     font-family: 'DrukTextWideCyr-Medium';
     font-style: normal;
-    font-display: swap;
+    /* audit B14 — `swap` вызывал CLS=0.71 на /shop mobile когда WOFF2 догружался
+       поздно и поднимал footer. `optional` пропускает swap если шрифт не пришёл
+       за 100мс — пользователь видит fallback, но layout стабилен. */
+    font-display: optional;
 }

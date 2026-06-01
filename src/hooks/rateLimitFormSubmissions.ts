@@ -5,10 +5,16 @@ export const WINDOW_SECONDS = 60;
 export const MAX_PER_WINDOW = 3;
 
 function extractIp(headers: Headers): string {
-  const fwd = headers.get('x-forwarded-for');
-  if (fwd) return fwd.split(',')[0].trim();
+  // На Vercel клиент-IP попадает в `x-vercel-forwarded-for` — этот заголовок
+  // выставляет edge proxy после того как user-supplied `x-forwarded-for` уже
+  // отброшен. `x-forwarded-for[0]` спуфится rotation'ом (см. audit B7) — лимит
+  // обходился неограниченно. Падаем на `x-real-ip` только за пределами Vercel.
+  const vercelFwd = headers.get('x-vercel-forwarded-for');
+  if (vercelFwd) return vercelFwd.split(',')[0].trim();
   const real = headers.get('x-real-ip');
   if (real) return real;
+  const fwd = headers.get('x-forwarded-for');
+  if (fwd) return fwd.split(',')[0].trim();
   return 'unknown';
 }
 

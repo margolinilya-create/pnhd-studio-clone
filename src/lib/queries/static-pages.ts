@@ -1,6 +1,7 @@
 import 'server-only';
 
 import { getPayloadClient, isPayloadConfigured } from '@/lib/payload/client';
+import { sanitizeHtml } from '@/lib/sanitize-html';
 import type { Page } from '@/payload-types';
 
 export type StaticPage = {
@@ -52,7 +53,7 @@ export const getStaticPage = async (
     : lexicalToHtml(page.body);
   return {
     title: page.title,
-    bodyHtml: html,
+    bodyHtml: sanitizeHtml(html),
     subtitle: page.subtitle ?? null,
   };
 };
