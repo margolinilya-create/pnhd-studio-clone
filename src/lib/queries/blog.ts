@@ -2,6 +2,7 @@ import 'server-only';
 
 import type { TBlogPosts } from '@/app/utils/types';
 import { getPayloadClient, isPayloadConfigured } from '@/lib/payload/client';
+import { sanitizeHtml } from '@/lib/sanitize-html';
 import type { Media, Page } from '@/payload-types';
 
 type Post = TBlogPosts['posts'][number];
@@ -54,7 +55,7 @@ const mapPage = (page: Page, fallbackIndex: number): Post => {
     author: page.author ?? 'PNHD STUDIO',
     likes: page.likes ?? 0,
     hashtags: (page.hashtags ?? []).map((h) => h.tag),
-    blog: { __html: bodyHtml },
+    blog: { __html: sanitizeHtml(bodyHtml) },
     createdAt: formatDate(page.publishedAt ?? page.createdAt),
   };
 };

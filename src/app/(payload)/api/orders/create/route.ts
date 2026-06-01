@@ -1,6 +1,11 @@
 import { NextResponse } from 'next/server';
 
 import { getPayloadClient, isPayloadConfigured } from '@/lib/payload/client';
+import { isAllowedOrigin } from '@/lib/security/allowed-origins';
+import { ipHashFromHeaders, rateLimitInMemory } from '@/lib/security/rate-limit-memory';
+
+const RATE_LIMIT_WINDOW_MS = 60_000;
+const RATE_LIMIT_MAX = 5;
 
 type IncomingItem = {
   productSlug: string;
@@ -26,6 +31,23 @@ type IncomingBody = {
 export const POST = async (req: Request) => {
   if (!isPayloadConfigured()) {
     return NextResponse.json({ error: 'payload_not_configured' }, { status: 503 });
+  }
+
+  // Audit B4 — endpoint был fully open + unrate-limited. Same-origin check блокирует
+  // CSRF / cross-origin DoS из любого браузера за пределами whitelist'а.
+  const origin = req.headers.get('origin') ?? req.headers.get('referer')?.match(/^https?:\/\/[^/]+/)?.[0] ?? null;
+  if (!isAllowedOrigin(origin)) {
+    return NextResponse.json({ error: 'forbidden_origin' }, { status: 403 });
+  }
+
+  // Rate-limit по IP-hash. Глобальный лимит за окно (in-memory, per-instance).
+  const ipHash = ipHashFromHeaders(req.headers as Headers);
+  const limited = rateLimitInMemory(`orders:${ipHash}`, RATE_LIMIT_MAX, RATE_LIMIT_WINDOW_MS);
+  if (!limited.ok) {
+    return NextResponse.json(
+      { error: 'rate_limit_exceeded', retryAfterMs: limited.retryAfterMs },
+      { status: 429, headers: { 'retry-after': String(Math.ceil(limited.retryAfterMs / 1000)) } },
+    );
   }
 
   let body: IncomingBody;
@@ -166,53 +188,74 @@ export const POST = async (req: Request) => {
   const shippingCost = delivery?.cost ?? 0;
   const total = Math.max(0, subtotal - discount + shippingCost);
 
-  const order = await payload.create({
-    collection: 'orders',
-    data: {
-      channel: 'b2c',
-      customer: {
-        name: customer.name,
-        phone: customer.phone,
-        email: customer.email,
-        note: customer.note,
-        roistatVisit: customer.roistatVisit,
-      },
-      ...(delivery
-        ? {
-            delivery: {
-              type: delivery.type,
-              cityCode: delivery.cityCode,
-              cityName: delivery.cityName,
-              address: delivery.address,
-              pvzCode: delivery.pvzCode,
-              cost: delivery.cost ?? 0,
-            },
-          }
-        : {}),
-      ...(promoId ? { promoCode: promoId } : {}),
-      subtotal,
-      discount,
-      shippingCost,
-      total,
-      status: 'draft',
-      paymentStatus: 'unpaid',
-    } as never,
-  });
+  // Audit B5 — раньше Order + order-items создавались без транзакции.
+  // Mid-loop failure → orphan Order + partial items. Payload local API
+  // поддерживает транзакции через `payload.db.beginTransaction()` + req-объект.
+  // На success — commit, на любую ошибку — rollback и 500.
+  const transactionID = await payload.db.beginTransaction?.();
+  const reqContext = transactionID ? { transactionID } : undefined;
 
-  for (const it of resolvedItems) {
-    await payload.create({
-      collection: 'order-items',
-      data: { ...it, order: order.id } as never,
+  try {
+    const order = await payload.create({
+      collection: 'orders',
+      req: reqContext as never,
+      data: {
+        channel: 'b2c',
+        customer: {
+          name: customer.name,
+          phone: customer.phone,
+          email: customer.email,
+          note: customer.note,
+          roistatVisit: customer.roistatVisit,
+        },
+        ...(delivery
+          ? {
+              delivery: {
+                type: delivery.type,
+                cityCode: delivery.cityCode,
+                cityName: delivery.cityName,
+                address: delivery.address,
+                pvzCode: delivery.pvzCode,
+                cost: delivery.cost ?? 0,
+              },
+            }
+          : {}),
+        ...(promoId ? { promoCode: promoId } : {}),
+        subtotal,
+        discount,
+        shippingCost,
+        total,
+        status: 'draft',
+        paymentStatus: 'unpaid',
+      } as never,
     });
-  }
 
-  return NextResponse.json(
-    {
-      id: order.id,
-      orderNumber: (order as { orderNumber?: string }).orderNumber ?? null,
-      total: order.total,
-      paymentUrl: null,
-    },
-    { status: 201 },
-  );
+    for (const it of resolvedItems) {
+      await payload.create({
+        collection: 'order-items',
+        req: reqContext as never,
+        data: { ...it, order: order.id } as never,
+      });
+    }
+
+    if (transactionID && payload.db.commitTransaction) {
+      await payload.db.commitTransaction(transactionID);
+    }
+
+    return NextResponse.json(
+      {
+        id: order.id,
+        orderNumber: (order as { orderNumber?: string }).orderNumber ?? null,
+        total: order.total,
+        paymentUrl: null,
+      },
+      { status: 201 },
+    );
+  } catch (err) {
+    if (transactionID && payload.db.rollbackTransaction) {
+      await payload.db.rollbackTransaction(transactionID).catch(() => undefined);
+    }
+    payload.logger.error({ err }, 'orders/create: failed to create order — transaction rolled back');
+    return NextResponse.json({ error: 'order_create_failed' }, { status: 500 });
+  }
 };

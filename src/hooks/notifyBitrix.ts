@@ -4,6 +4,10 @@ type SubmissionField = { field: string; value: string };
 
 const BITRIX_SOURCE_ID = 'WEB';
 const MAX_ERROR_LENGTH = 500;
+// Без AbortController зависший Bitrix upstream блокировал submission-response
+// до Vercel function-timeout (~60s). Юзер видел "вращающийся submit" минуту.
+// См. audit B10 / code-review C4.
+const FETCH_TIMEOUT_MS = 5000;
 
 function getField(data: SubmissionField[], name: string): string {
   return data.find((f) => f.field === name)?.value ?? '';
@@ -61,12 +65,16 @@ export const notifyBitrix: CollectionAfterChangeHook = async ({ operation, doc, 
 
   const endpoint = url.endsWith('/') ? `${url}crm.lead.add.json` : `${url}/crm.lead.add.json`;
 
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
   try {
     const res = await fetch(endpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ fields }),
+      signal: controller.signal,
     });
+    clearTimeout(timeoutId);
 
     if (!res.ok) {
       const text = await res.text();
@@ -92,7 +100,13 @@ export const notifyBitrix: CollectionAfterChangeHook = async ({ operation, doc, 
       bitrixLeadId: String(body.result),
     });
   } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
+    clearTimeout(timeoutId);
+    const isAbort = err instanceof DOMException && err.name === 'AbortError';
+    const message = isAbort
+      ? `Bitrix timeout (${FETCH_TIMEOUT_MS}ms)`
+      : err instanceof Error
+        ? err.message
+        : String(err);
     await safeUpdateSubmission(req, doc.id, {
       bitrixError: message.slice(0, MAX_ERROR_LENGTH),
     });

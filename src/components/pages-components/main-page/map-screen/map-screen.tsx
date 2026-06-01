@@ -1,7 +1,9 @@
 import React from "react";
 import styles from './map-screen.module.css'
 
-import MapComponent from "./map-component";
+// Lazy-wrapper — yandex-maps SDK (706 KB) грузится только когда компонент
+// реально появляется в viewport. См. audit B15.
+import MapComponent from "./map-component-lazy";
 import Link from "next/link";
 import Image from "next/image";
 import shape from '../../../../../public/map_shape.svg';

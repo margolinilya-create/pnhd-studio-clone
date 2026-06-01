@@ -69,7 +69,9 @@ function Shirt({ backdropStatus }: any) {
 
     const whiteTexture = useTexture('whiteTexture.png');
     //const texture = useTexture('/texture.png');
-    const texture = useTexture('/Glitch2.jpg');
+    // audit B13: было `/Glitch2.jpg` 6.3 MB. Пересжато sharp'ом в 2048x2048
+    // webp quality:75 → 468 KB (-93%). Mobile LCP=20.6s ← это был главный виновник.
+    const texture = useTexture('/Glitch2.webp');
     const ref = useRef(null);
     const refff = useRef(null);
     const { nodes, materials } = useGLTF('/shirt_baked_collapsed.glb')
@@ -132,8 +134,12 @@ function Shirt({ backdropStatus }: any) {
     )
   }
   
-  useGLTF.preload('/shirt_baked_collapsed.glb')
-  ;['/whiteTexture.png', '/Glitch2.jpg'].forEach(useTexture.preload)
+  // audit B13: убраны module-level preload'ы. Раньше при импорте 3d-tee
+  // (даже через next/dynamic({ssr:false})) сразу триггерились загрузки
+  // ~8.6 MB ассетов (texture + HDR + glb) — это блокировало LCP на mobile.
+  // Теперь ассеты лазьт по-настоящему когда Suspense fallback рисуется.
+  // useGLTF.preload('/shirt_baked_collapsed.glb')
+  // ;['/whiteTexture.png', '/Glitch2.webp'].forEach(useTexture.preload)
 
 
 

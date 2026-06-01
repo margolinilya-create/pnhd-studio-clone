@@ -67,8 +67,15 @@ const ContactsWidget = () => {
                     </li>
                 </ul>
             )}
-            <button className={styles.contactsWidget_icon} onClick={toggleMenu}>
-                <svg width="20" height="20" viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <button
+                type="button"
+                className={styles.contactsWidget_icon}
+                onClick={toggleMenu}
+                aria-label={isMenuOpen ? 'Закрыть меню контактов' : 'Открыть меню контактов'}
+                aria-expanded={isMenuOpen}
+                aria-haspopup="menu"
+            >
+                <svg width="20" height="20" viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
                     <path fillRule="evenodd" clipRule="evenodd" d="M57 -1e-07H21C19.35 -1e-07 18 1.35 18 3V33C18 34.65 19.35 36 21 36H37.77L48.9 47.13C49.41 47.67 50.16 48 51 48C52.65 48 54 46.65 54 45V36H57C58.65 36 60 34.65 60 33V3C60 1.35 58.65 -1e-07 57 -1e-07ZM21 39C17.7 39 15 36.3 15 33V12H3C1.35 12 -1e-07 13.35 -1e-07 15V45C-1e-07 46.65 1.35 48 3 48H6V57C6 58.65 7.35 60 9 60C9.84 60 10.59 59.67 11.13 59.13L22.23 48H39C40.65 48 42 46.65 42 45V44.49L36.51 39H21Z" fill="#040404" />
                 </svg>
             </button>

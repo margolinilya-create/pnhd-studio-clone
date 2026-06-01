@@ -10,6 +10,7 @@ import type { Media } from '@/payload-types';
 import { SITE_INFO } from "@/app/constants";
 import { Metadata } from "next";
 import { buildMetadata } from "@/app/_lib/build-metadata";
+import MarkupScript from "@/components/shared-components/markup-script/markup-script";
 
 const cx = classNames.bind(styles);
 
@@ -104,10 +105,7 @@ const PostPage = async (props: {
 
     return (
         <>
-            <script
-                type="application/ld+json"
-                dangerouslySetInnerHTML={{ __html: JSON.stringify(articleJsonLd(post, params.post)) }}
-            />
+            <MarkupScript jsonLd={articleJsonLd(post, params.post) as unknown as Record<string, unknown>} />
             <section className={cx('postPage')}>
                 <div className={cx('postPage__head')}>
                     <div className={cx('postPage__head-block', 'postPage__head-block_left')}>

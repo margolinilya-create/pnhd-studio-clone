@@ -54,6 +54,8 @@ const NoModelBlockForm = ({ formId }: { formId: string }) => {
         fields: {
           name: name.trim(),
           phone: phone.replaceAll(' ', ''),
+          // `agreement` помечен required в seeded Form — см. audit B2/C1.
+          agreement: 'true',
           source: 'shop-no-model',
           ...(email.trim() ? { email: email.trim() } : {}),
           ...(comment.trim() ? { comment: comment.trim() } : {}),
