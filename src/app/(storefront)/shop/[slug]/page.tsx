@@ -6,7 +6,6 @@ import type { Media } from "@/payload-types";
 import Photos from "@/components/pages-components/shop-page/product-photos/product-photos";
 import ProductInfo from "@/components/pages-components/shop-page/product-info/product-info";
 import { Metadata } from 'next';
-import { CDN_URL } from "@/app/utils/constants";
 import { SITE_INFO } from "@/app/constants";
 import { buildMetadata } from "@/app/_lib/build-metadata";
 import MarkupScript from "@/components/shared-components/markup-script/markup-script";
@@ -111,16 +110,13 @@ const ProductPage: React.FC<{
             ))}
             <section className={styles.screen}>
                 <div className={styles.photo_box}>
-                    {item?.galleryPhotos && item.galleryPhotos.length > 0 && item?.galleryPhotos?.map((el, index) => {
-                        return (
+                    {item?.galleryPhotos && item.galleryPhotos.length > 0 ? (
+                        item.galleryPhotos.map((el, index) => (
                             <Photos item={item} el={el} key={index} index={index} />
-                        )
-                    })}
-                    {(!item?.galleryPhotos || item.galleryPhotos.length === 0) && [1, 2, 3, 4].map((el, index) => {
-                        return (
-                            <Photos item={item} el={`${CDN_URL}/${item.slug}_${index}.jpg`} key={el} index={index} />
-                        )
-                    })}
+                        ))
+                    ) : item?.image_url ? (
+                        <Photos item={item} el={item.image_url} index={0} />
+                    ) : null}
                 </div>
                 <Suspense>
                     <ProductInfo item={item} />

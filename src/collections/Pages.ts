@@ -1,6 +1,11 @@
 import type { CollectionConfig } from 'payload';
 
 import { hasRole } from '../access/hasRole.ts';
+import {
+  PREVIEW_BREAKPOINTS,
+  publicReadOrDraftAccess,
+  VERSIONS_WITH_DRAFTS_PER_DOC,
+} from '../lib/payload/shared-config.ts';
 
 export const Pages: CollectionConfig = {
   slug: 'pages',
@@ -15,25 +20,12 @@ export const Pages: CollectionConfig = {
         const path = pageType === 'blog' ? `/blog/${slug}` : `/${slug}`;
         return `${base}${path}?preview=true`;
       },
-      breakpoints: [
-        { name: 'mobile', label: 'Mobile', width: 375, height: 667 },
-        { name: 'tablet', label: 'Tablet', width: 768, height: 1024 },
-        { name: 'desktop', label: 'Desktop', width: 1440, height: 900 },
-      ],
+      breakpoints: PREVIEW_BREAKPOINTS,
     },
   },
-  versions: {
-    drafts: {
-      autosave: { interval: 800 },
-      schedulePublish: true,
-    },
-    maxPerDoc: 20,
-  },
+  versions: VERSIONS_WITH_DRAFTS_PER_DOC,
   access: {
-    read: ({ req: { user } }) => {
-      if (user) return true;
-      return { _status: { equals: 'published' } };
-    },
+    read: publicReadOrDraftAccess,
     create: hasRole('admin', 'marketing'),
     update: hasRole('admin', 'marketing'),
     delete: hasRole('admin'),

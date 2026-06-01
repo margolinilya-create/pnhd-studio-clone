@@ -6,6 +6,9 @@ import * as migration_20260530_075057_pages_drafts_versions from './20260530_075
 import * as migration_20260601_101348_payload_plugin_import_export from './20260601_101348_payload_plugin_import_export';
 import * as migration_20260601_102621_payload_plugin_form_builder from './20260601_102621_payload_plugin_form_builder';
 import * as migration_20260601_110001_payload_form_submissions_extra_fields from './20260601_110001_payload_form_submissions_extra_fields';
+import * as migration_20260601_203622_site_settings_global from './20260601_203622_site_settings_global';
+import * as migration_20260601_210348_navigation_global from './20260601_210348_navigation_global';
+import * as migration_20260601_210820_cookie_bar_global from './20260601_210820_cookie_bar_global';
 
 export const migrations = [
   {
@@ -46,6 +49,21 @@ export const migrations = [
   {
     up: migration_20260601_110001_payload_form_submissions_extra_fields.up,
     down: migration_20260601_110001_payload_form_submissions_extra_fields.down,
-    name: '20260601_110001_payload_form_submissions_extra_fields'
+    name: '20260601_110001_payload_form_submissions_extra_fields',
+  },
+  {
+    up: migration_20260601_203622_site_settings_global.up,
+    down: migration_20260601_203622_site_settings_global.down,
+    name: '20260601_203622_site_settings_global',
+  },
+  {
+    up: migration_20260601_210348_navigation_global.up,
+    down: migration_20260601_210348_navigation_global.down,
+    name: '20260601_210348_navigation_global',
+  },
+  {
+    up: migration_20260601_210820_cookie_bar_global.up,
+    down: migration_20260601_210820_cookie_bar_global.down,
+    name: '20260601_210820_cookie_bar_global'
   },
 ];
