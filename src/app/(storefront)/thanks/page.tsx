@@ -3,12 +3,17 @@ import Link from "next/link";
 import { Metadata } from "next";
 import styles from './page.module.css';
 import { buildMetadata } from "@/app/_lib/build-metadata";
+import { getSiteSettings } from "@/lib/queries/site-settings";
 
-export const metadata: Metadata = buildMetadata({
-    title: 'Заявка отправлена | PINHEAD STUDIO',
-    description: 'Спасибо! Менеджер свяжется в течение 30 минут.',
-    path: '/thanks',
-});
+export async function generateMetadata(): Promise<Metadata> {
+    const settings = await getSiteSettings();
+    const siteName = settings?.siteName ?? 'PINHEAD STUDIO';
+    return await buildMetadata({
+        title: `Заявка отправлена | ${siteName}`,
+        description: 'Спасибо! Менеджер свяжется в течение 30 минут.',
+        path: '/thanks',
+    });
+}
 
 const Page: React.FC = () => {
     return (

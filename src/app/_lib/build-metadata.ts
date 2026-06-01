@@ -1,6 +1,8 @@
 import 'server-only';
 import type { Metadata } from 'next';
-import { SITE_INFO } from '@/app/constants';
+
+import { resolveDomain } from '@/lib/site/domain';
+import { getSiteSettings } from '@/lib/queries/site-settings';
 
 export interface BuildMetadataParams {
     title: string;
@@ -17,27 +19,36 @@ export interface BuildMetadataParams {
 /**
  * Унифицированный билдер Next-metadata: canonical + OpenGraph + Twitter card.
  *
- * Использует абсолютные URL в OG, чтобы не зависеть от наследования metadataBase
- * от root layout (надёжнее при превью-деплоях и сторонних краулерах).
+ * Async — читает siteName из Payload SiteSettings global, domain — из env через
+ * resolveDomain(). Используется только через generateMetadata() (sync-форма
+ * `export const metadata` несовместима с async builder).
+ *
+ *   export async function generateMetadata(): Promise<Metadata> {
+ *     return await buildMetadata({ title: '...', description: '...', path: '/...' });
+ *   }
  */
-export function buildMetadata({
+export async function buildMetadata({
     title,
     description,
     path,
     image,
     type = 'website',
-}: BuildMetadataParams): Metadata {
-    const absoluteUrl = `${SITE_INFO.domain}${path.startsWith('/') ? path : `/${path}`}`;
+}: BuildMetadataParams): Promise<Metadata> {
+    const settings = await getSiteSettings();
+    const domain = resolveDomain();
+    const siteName = settings?.siteName ?? 'PINHEAD STUDIO';
+
+    const absoluteUrl = `${domain}${path.startsWith('/') ? path : `/${path}`}`;
     const absoluteImage = image
         ? image.startsWith('http')
             ? image
-            : `${SITE_INFO.domain}${image.startsWith('/') ? image : `/${image}`}`
+            : `${domain}${image.startsWith('/') ? image : `/${image}`}`
         : undefined;
 
     return {
         title,
         description,
-        metadataBase: new URL(SITE_INFO.domain),
+        metadataBase: new URL(domain),
         alternates: {
             canonical: path,
         },
@@ -45,7 +56,7 @@ export function buildMetadata({
             title,
             description,
             url: absoluteUrl,
-            siteName: SITE_INFO.name,
+            siteName,
             type: type === 'article' ? 'article' : 'website',
             locale: 'ru_RU',
             images: absoluteImage

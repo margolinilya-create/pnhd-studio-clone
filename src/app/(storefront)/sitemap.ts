@@ -1,5 +1,5 @@
 import type { MetadataRoute } from 'next';
-import { SITE_INFO } from '@/app/constants';
+import { resolveDomain } from '@/lib/site/domain';
 import { getAllProductSlugs } from '@/lib/queries/products';
 import { getAllPostSlugs } from '@/lib/queries/blog';
 
@@ -46,7 +46,7 @@ const TEXTILE_SLUGS = [
 ];
 
 function url(path: string): string {
-    return `${SITE_INFO.domain}${path}`;
+    return `${resolveDomain()}${path}`;
 }
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {

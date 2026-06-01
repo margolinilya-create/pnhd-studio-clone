@@ -9,6 +9,7 @@ import * as migration_20260601_110001_payload_form_submissions_extra_fields from
 import * as migration_20260601_203622_site_settings_global from './20260601_203622_site_settings_global';
 import * as migration_20260601_210348_navigation_global from './20260601_210348_navigation_global';
 import * as migration_20260601_210820_cookie_bar_global from './20260601_210820_cookie_bar_global';
+import * as migration_20260601_221521_site_settings_contacts_geo from './20260601_221521_site_settings_contacts_geo';
 
 export const migrations = [
   {
@@ -64,6 +65,11 @@ export const migrations = [
   {
     up: migration_20260601_210820_cookie_bar_global.up,
     down: migration_20260601_210820_cookie_bar_global.down,
-    name: '20260601_210820_cookie_bar_global'
+    name: '20260601_210820_cookie_bar_global',
+  },
+  {
+    up: migration_20260601_221521_site_settings_contacts_geo.up,
+    down: migration_20260601_221521_site_settings_contacts_geo.down,
+    name: '20260601_221521_site_settings_contacts_geo'
   },
 ];

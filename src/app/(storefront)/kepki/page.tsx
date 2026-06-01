@@ -1,8 +1,10 @@
 import { Metadata } from 'next';
-import CategoryPage, { buildMetadata } from '@/components/pages-components/category-page/category-page';
+import CategoryPage, { buildCategoryMetadata } from '@/components/pages-components/category-page/category-page';
 import { config } from './config';
 
-export const metadata: Metadata = buildMetadata(config);
+export async function generateMetadata(): Promise<Metadata> {
+  return await buildCategoryMetadata(config);
+}
 
 export default async function Page() {
   return <CategoryPage config={config} />;

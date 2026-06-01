@@ -3,42 +3,58 @@ import styles from "./page.module.css";
 import {Metadata} from "next";
 import MapScreen from "@/components/pages-components/main-page/map-screen/map-screen";
 import MarkupScript from "@/components/shared-components/markup-script/markup-script";
-import { SITE_INFO, CONTACTS } from "@/app/constants";
+import { resolveDomain } from "@/lib/site/domain";
 import { buildMetadata } from "@/app/_lib/build-metadata";
+import { getSiteSettings } from "@/lib/queries/site-settings";
 
-export const metadata: Metadata = buildMetadata({
-  title: `Контакты ${SITE_INFO.name} — печать на одежде в Санкт-Петербурге`,
-  description: `Контакты студии печати на одежде ${SITE_INFO.legal_name} в Санкт-Петербурге: печать принтов на футболках, создание мерча для брендов, широкоформатная печать.`,
-  path: '/contacts',
-  image: '/opengraph-image.jpg',
-});
+export async function generateMetadata(): Promise<Metadata> {
+  const settings = await getSiteSettings();
+  const siteName = settings?.siteName ?? 'PINHEAD STUDIO';
+  const legalName = settings?.legalName ?? 'ООО ПИНХЭД СТУДИО';
+  return await buildMetadata({
+    title: `Контакты ${siteName} — печать на одежде в Санкт-Петербурге`,
+    description: `Контакты студии печати на одежде ${legalName} в Санкт-Петербурге: печать принтов на футболках, создание мерча для брендов, широкоформатная печать.`,
+    path: '/contacts',
+    image: '/opengraph-image.jpg',
+  });
+}
 
-const Page: React.FC = () => {
+const Page = async () => {
+  const settings = await getSiteSettings();
+  const base = resolveDomain();
+  const phone = settings?.phone ?? '+7 (812) 904 61 56';
+  const phoneRaw = phone.replace(/[^\d+]/g, '');
+  const legalName = settings?.legalName ?? 'ООО ПИНХЭД СТУДИО';
+  const siteName = settings?.siteName ?? 'PINHEAD STUDIO';
+  const email = settings?.contacts?.email ?? 'studio@pnhd.ru';
+  const addr = settings?.contacts?.address;
+  const geo = settings?.geo;
+  const openingHours = settings?.openingHours ?? 'Mo-Fr 11:00-20:00';
 
   const jsonLdLocalBusiness = {
     "@context": "https://schema.org",
     "@type": "LocalBusiness",
-    "@id": `${SITE_INFO.domain}/#localbusiness`,
-    "name": SITE_INFO.legal_name,
-    "alternateName": SITE_INFO.name,
-    "url": SITE_INFO.domain,
+    "@id": `${base}/#localbusiness`,
+    "name": legalName,
+    "alternateName": siteName,
+    "url": base,
     "description": "Студия печати на одежде в Санкт-Петербурге: печать принтов на футболках, создание мерча для брендов, широкоформатная печать.",
-    "image": `${SITE_INFO.domain}/opengraph-image.jpg`,
-    "telephone": CONTACTS.phone.raw,
-    "email": CONTACTS.email,
+    "image": `${base}/opengraph-image.jpg`,
+    "telephone": phoneRaw,
+    "email": email,
     "priceRange": "₽₽",
     "address": {
       "@type": "PostalAddress",
-      "streetAddress": CONTACTS.address.street,
-      "addressLocality": CONTACTS.address.locality,
-      "postalCode": CONTACTS.address.postal_code,
-      "addressCountry": "RU"
+      "streetAddress": addr?.street ?? 'ул. Чапыгина, д. 1',
+      "addressLocality": addr?.locality ?? 'Санкт-Петербург',
+      "postalCode": addr?.postalCode ?? '197022',
+      "addressCountry": addr?.country ?? 'RU',
     },
     "geo": {
       "@type": "GeoCoordinates",
       // Координаты ул. Чапыгина, 1, СПб (Аптекарский остров)
-      "latitude": 59.972,
-      "longitude": 30.318
+      "latitude": geo?.latitude ?? 59.972,
+      "longitude": geo?.longitude ?? 30.318,
     },
     "openingHoursSpecification": [
       {
@@ -48,11 +64,12 @@ const Page: React.FC = () => {
         "closes": "20:00"
       }
     ],
+    "openingHours": [openingHours],
     "contactPoint": {
       "@type": "ContactPoint",
-      "telephone": CONTACTS.phone.raw,
+      "telephone": phoneRaw,
       "contactType": "customer service",
-      "email": CONTACTS.email,
+      "email": email,
       "availableLanguage": ["Russian"]
     },
     "sameAs": [
@@ -68,13 +85,13 @@ const Page: React.FC = () => {
         "@type": "ListItem",
         "position": 1,
         "name": "Главная",
-        "item": "https://studio.pnhd.ru/"
+        "item": `${base}/`
       },
       {
         "@type": "ListItem",
         "position": 2,
         "name": "Контакты",
-        "item": "https://studio.pnhd.ru/contacts"
+        "item": `${base}/contacts`
       }
     ]
   }
