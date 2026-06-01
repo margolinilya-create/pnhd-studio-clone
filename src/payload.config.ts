@@ -10,6 +10,7 @@ import { buildConfig } from 'payload';
 import { fileURLToPath } from 'url';
 
 import { notifyBitrix } from '@/hooks/notifyBitrix';
+import { notifyTelegram } from '@/hooks/notifyTelegram';
 import { rateLimitFormSubmissions } from '@/hooks/rateLimitFormSubmissions';
 import { Categories } from './collections/Categories.ts';
 import { Drops } from './collections/Drops.ts';
@@ -133,7 +134,7 @@ export default buildConfig({
         ],
         hooks: {
           beforeOperation: [rateLimitFormSubmissions],
-          afterChange: [notifyBitrix],
+          afterChange: [notifyBitrix, notifyTelegram],
         },
       },
     }),
