@@ -44,3 +44,8 @@ skills-lock.json
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# launch audit raw artifacts (large JSON dumps + screenshots)
+docs/superpowers/reports/launch-audit-*/raw/
+test-results/
+playwright-report/
