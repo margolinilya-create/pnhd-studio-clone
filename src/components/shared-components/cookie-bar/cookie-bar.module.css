@@ -24,12 +24,17 @@
     gap: 30px;
 
     @media (max-width: 700px) {
-        flex-direction: column;
+        /* audit M2 — на мобиле сжимаем баннер: row → горизонтально,
+           компактные размеры, чтобы он не закрывал CTA на product/cart. */
+        flex-direction: row;
         align-items: center;
+        padding: 12px;
+        gap: 12px;
     }
 
     @media (max-width: 500px) {
-       padding: 16px;
+       padding: 12px;
+       gap: 10px;
     }
 }
 
@@ -45,18 +50,17 @@
     @media (max-width: 1020px) {
         font-size: 34px;
     }
+    /* audit M2 — на мобиле скрываем заголовок: оставляем только tagline+CTA
+       чтобы сэкономить vertical space. */
     @media (max-width: 700px) {
-        text-align: center;
-    }
-    @media (max-width: 500px) {
-        font-size: 26px;
+        display: none;
     }
 }
 .bar__text {
     font-family: 'Neue_machina';
     font-size: 18px;
     font-weight: 400;
-    line-height: 100%;
+    line-height: 1.2;
     margin: 0;
     padding: 0;
     color: black;
@@ -65,10 +69,8 @@
         font-size: 16px;
     }
     @media (max-width: 700px) {
-        text-align: center;
-    }
-    @media (max-width: 500px) {
-        font-size: 14px;
+        text-align: left;
+        font-size: 12px;
     }
 }
 
@@ -89,6 +91,14 @@
     color: black;
     cursor: pointer;
     transition: all .2s ease-out;
+
+    /* audit M2 — на мобиле меньше padding-margin'а */
+    @media (max-width: 700px) {
+        margin-top: 8px;
+        font-size: 12px;
+        padding: 8px 10px;
+        flex-shrink: 0;
+    }
 }
 
 .bar__button:hover {
@@ -118,8 +128,10 @@
     flex-shrink: 0;
     overflow: hidden;
 
+    /* audit M2 — на мобиле компактнее (был 75px → 48px) */
     @media (max-width: 700px) {
-        height: 75px
+        height: 48px;
+        border-width: 3px;
     }
 }
 

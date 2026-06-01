@@ -1,9 +1,17 @@
+import { SITE_INFO } from '@/app/constants';
+
+// Хелпер чтобы все JSON-LD URLs использовали актуальный домен (см. W-SEO-01).
+// Раньше URLs хардкодились на 'studio.pnhd.ru' — после cutover'а на собственный
+// домен они оставались бы битыми.
+const BASE = SITE_INFO.domain.replace(/\/$/, '');
+const u = (path: string): string => `${BASE}${path}`;
+
 export const LocalBusinessJsonLD = {
   "@context": "https://schema.org",
   "@type": "LocalBusiness",
   "name": "PNHD>STUDIO",
   "description": "Печать на одежде на заказ от 1 штуки в Санкт-Петербурге по выгодной цене в ПИНХЭД СТУДИЯ. Сколько стоит печать на одежде смотрите онлайн на нашем сайте.",
-  "url": "https://studio.pnhd.ru/",
+  "url": u('/'),
   "telephone": "+78129046156",
   "email": "studio@pnhd.ru",
   "address": {
@@ -23,7 +31,7 @@ export const WebPageJsonLD = {
   "@type": "WebPage",
   "name": "PNHD>STUDIO",
   "description": "Печать на одежде на заказ от 1 штуки в Санкт-Петербурге по выгодной цене в ПИНХЭД СТУДИЯ. Сколько стоит печать на одежде смотрите онлайн на нашем сайте.",
-  "url": "https://studio.pnhd.ru/",
+  "url": u('/'),
   "mainEntity": {
     "@type": "Service",
     "name": "Печать на одежде",
@@ -83,7 +91,7 @@ export const ServiceJsonLD = {
   "areaServed": "Санкт-Петербург и область",
   "availableChannel": {
     "@type": "ServiceChannel",
-    "serviceUrl": "https://studio.pnhd.ru/",
+    "serviceUrl": u('/'),
     "servicePhone": "+78129046156"
   }
 }
@@ -96,13 +104,13 @@ export const CatalogPageBreadCrumbsJsonLD = {
       "@type": "ListItem",
       "position": 1,
       "name": "Главная",
-      "item": "https://studio.pnhd.ru/"
+      "item": u('/')
     },
     {
       "@type": "ListItem",
       "position": 2,
       "name": "Каталог",
-      "item": "https://studio.pnhd.ru/shop"
+      "item": u('/shop')
     }
   ]
 }
@@ -111,6 +119,6 @@ export const CatalogPageNavigationJsonLD = {
   "@context": "https://schema.org",
   "@type": "SiteNavigationElement",
   "name": "Каталог",
-  "url": "https://studio.pnhd.ru/shop",
+  "url": u('/shop'),
   "description": "Каталог одежды и сумок для печати в Санкт-Петербурге. Печать на футболках,толстовках, шопперах на заказ от 1 штуки по выгодной цене в ПИНХЭД СТУДИЯ"
 }

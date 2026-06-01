@@ -15,8 +15,8 @@ const Header: React.FC = () => {
         <header className={styles.header}>
             <aside className={styles.header__mainRow}>
                 <p className={styles.header__businessTime}>ежедневно, 11:00–20:00</p>
-                <Link href='/' style={{ textDecoration: 'none' }}>
-                    <svg width="264" height="38" viewBox="0 0 264 38" fill="none" xmlns="http://www.w3.org/2000/svg" className={styles.header_svgLogo}>
+                <Link href='/' style={{ textDecoration: 'none' }} aria-label="ПЙНХ’Д СТУДИЯ — на главную">
+                    <svg width="264" height="38" viewBox="0 0 264 38" fill="none" xmlns="http://www.w3.org/2000/svg" className={styles.header_svgLogo} aria-hidden="true" focusable="false">
                         <path fillRule="evenodd" clipRule="evenodd" d="M101.674 26.1738H104.247V36.1652H98.2429V32.283H90.4219V36.1652H84.4183V26.1738H86.9912V5.92537H101.674V26.1738ZM93.2399 26.1738H95.4249V11.8099H93.2399V26.1738Z" fill="black" />
                         <path d="M15.0907 32.3443H8.61744V10.1549H6.28951V32.3443H0.040841L0 5.90494H15.0907V32.3443Z" fill="black" />
                         <path d="M23.2181 17.2653L25.5664 5.92537H32.0602V32.3648H25.8727V22.5981L23.0956 32.3443H16.9898V5.92537H23.2181V17.2653Z" fill="black" />
