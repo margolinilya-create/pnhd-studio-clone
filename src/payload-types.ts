@@ -122,10 +122,12 @@ export interface Config {
   globals: {
     'site-settings': SiteSetting;
     navigation: Navigation;
+    'cookie-bar': CookieBar;
   };
   globalsSelect: {
     'site-settings': SiteSettingsSelect<false> | SiteSettingsSelect<true>;
     navigation: NavigationSelect<false> | NavigationSelect<true>;
+    'cookie-bar': CookieBarSelect<false> | CookieBarSelect<true>;
   };
   locale: null;
   widgets: {
@@ -1715,6 +1717,36 @@ export interface Navigation {
   createdAt?: string | null;
 }
 /**
+ * Текст и кнопка cookie-уведомления. excludedRoutes (на каких страницах не показывать) — захардкожены в коде.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "cookie-bar".
+ */
+export interface CookieBar {
+  id: number;
+  enabled?: boolean | null;
+  title: string;
+  description: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  };
+  buttonLabel: string;
+  _status?: ('draft' | 'published') | null;
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+/**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "site-settings_select".
  */
@@ -1778,6 +1810,20 @@ export interface NavigationSelect<T extends boolean = true> {
         showInMobile?: T;
         id?: T;
       };
+  _status?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "cookie-bar_select".
+ */
+export interface CookieBarSelect<T extends boolean = true> {
+  enabled?: T;
+  title?: T;
+  description?: T;
+  buttonLabel?: T;
   _status?: T;
   updatedAt?: T;
   createdAt?: T;
@@ -1870,7 +1916,7 @@ export interface TaskSchedulePublish {
       relationTo: 'pages';
       value: number | Page;
     } | null;
-    global?: ('site-settings' | 'navigation') | null;
+    global?: ('site-settings' | 'navigation' | 'cookie-bar') | null;
     user?: (number | null) | User;
   };
   output?: unknown;
