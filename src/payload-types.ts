@@ -248,9 +248,47 @@ export interface Category {
   id: number;
   name: string;
   slug: string;
+  /**
+   * Используется на /<slug> landing page. Пусто = страница не используется как landing.
+   */
+  h1?: string | null;
+  metaTitle?: string | null;
+  metaDescription?: string | null;
+  /**
+   * Используется для фильтрации в ProductCardsBlock
+   */
+  productType?: string | null;
+  faqSet?:
+    | {
+        title: string;
+        text: string;
+        id?: string | null;
+      }[]
+    | null;
+  bodyContent?: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  } | null;
+  heroImage?: (number | null) | Media;
+  /**
+   * Если включено — рендерится на /<slug>. Иначе категория только для tagging.
+   */
+  isLanding?: boolean | null;
   parent?: (number | null) | Category;
   updatedAt: string;
   createdAt: string;
+  _status?: ('draft' | 'published') | null;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -1180,9 +1218,24 @@ export interface MediaSelect<T extends boolean = true> {
 export interface CategoriesSelect<T extends boolean = true> {
   name?: T;
   slug?: T;
+  h1?: T;
+  metaTitle?: T;
+  metaDescription?: T;
+  productType?: T;
+  faqSet?:
+    | T
+    | {
+        title?: T;
+        text?: T;
+        id?: T;
+      };
+  bodyContent?: T;
+  heroImage?: T;
+  isLanding?: T;
   parent?: T;
   updatedAt?: T;
   createdAt?: T;
+  _status?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -2091,10 +2144,15 @@ export interface TaskSchedulePublish {
   input: {
     type?: ('publish' | 'unpublish') | null;
     locale?: string | null;
-    doc?: {
-      relationTo: 'pages';
-      value: number | Page;
-    } | null;
+    doc?:
+      | ({
+          relationTo: 'categories';
+          value: number | Category;
+        } | null)
+      | ({
+          relationTo: 'pages';
+          value: number | Page;
+        } | null);
     global?: ('checkout-messages' | 'cookie-bar' | 'navigation' | 'site-settings') | null;
     user?: (number | null) | User;
   };

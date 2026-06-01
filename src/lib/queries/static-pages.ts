@@ -19,14 +19,24 @@ const lexicalToHtml = (input: unknown): string => {
   if (!root || !Array.isArray(root.children)) return '';
   const renderNode = (node: unknown): string => {
     if (!node || typeof node !== 'object') return '';
-    const n = node as { type?: string; text?: string; children?: unknown[]; tag?: string };
+    const n = node as {
+      type?: string;
+      text?: string;
+      children?: unknown[];
+      tag?: string;
+      listType?: string;
+    };
     if (n.type === 'text' && typeof n.text === 'string') {
       return n.text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
     }
     const inner = Array.isArray(n.children) ? n.children.map(renderNode).join('') : '';
     if (n.type === 'paragraph') return `<p>${inner}</p>`;
     if (n.type === 'heading') return `<${n.tag ?? 'h2'}>${inner}</${n.tag ?? 'h2'}>`;
-    if (n.type === 'list') return `<ul>${inner}</ul>`;
+    if (n.type === 'list') {
+      const ordered = n.listType === 'number' || n.tag === 'ol';
+      const tagName = ordered ? 'ol' : 'ul';
+      return `<${tagName}>${inner}</${tagName}>`;
+    }
     if (n.type === 'listitem') return `<li>${inner}</li>`;
     if (n.type === 'linebreak') return '<br>';
     return inner;
