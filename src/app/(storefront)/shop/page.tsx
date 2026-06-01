@@ -5,7 +5,10 @@ import {IProduct} from '@/app/utils/types';
 import { getAllProducts } from '@/lib/queries/products';
 import ProductFilterComp from '@/components/pages-components/shop-page/products-filter/products-filter';
 import MarkupScript from "@/components/shared-components/markup-script/markup-script";
-import {CatalogPageBreadCrumbsJsonLD, CatalogPageNavigationJsonLD} from "@/app/utils/markups";
+import {
+  getCatalogPageBreadCrumbsJsonLD,
+  getCatalogPageNavigationJsonLD,
+} from "@/app/utils/markups";
 import FaqScreen from '@/components/pages-components/main-page/faq-screen/faq-screen';
 import NoModelBlock from '@/components/shared-components/noModelBlock/NoModelBlock';
 import { getFormIdBySlug } from '@/lib/forms/get-form-by-slug';
@@ -48,6 +51,13 @@ const ShopPage: React.FC = async () => {
   } catch (err) {
     console.error('ShopPage: failed to resolve form "shop-no-model"', err);
   }
+
+  // Promise.all — async factories независимы; cache() per-request гарантирует,
+  // что resolveDomain() (cheap) и getSiteSettings (если бы было) дёргаются 1 раз.
+  const [breadcrumbsJsonLd, navigationJsonLd] = await Promise.all([
+    getCatalogPageBreadCrumbsJsonLD(),
+    getCatalogPageNavigationJsonLD(),
+  ]);
   const jsonLdCatalog = {
     "@context": "https://schema.org",
     "@type": "CollectionPage",
@@ -78,8 +88,8 @@ const ShopPage: React.FC = async () => {
       <ProductFilterComp shopData={shopData}>
         {shopData && shopData.length > 0 && <ProductCardsBlock shopData={shopData}/>}
         <MarkupScript jsonLd={jsonLdCatalog} />
-        <MarkupScript jsonLd={CatalogPageBreadCrumbsJsonLD} />
-        <MarkupScript jsonLd={CatalogPageNavigationJsonLD} />
+        <MarkupScript jsonLd={breadcrumbsJsonLd} />
+        <MarkupScript jsonLd={navigationJsonLd} />
       </ProductFilterComp>
       <NoModelBlock formId={noModelFormId} />
       <div style={{ marginTop: '120px', width: '100%' }}>

@@ -14,7 +14,12 @@ import MapScreen from "@/components/pages-components/main-page/map-screen/map-sc
 import { Metadata } from "next";
 import Script from "next/script";
 import MarkupScript from "@/components/shared-components/markup-script/markup-script";
-import {FAQPageJsonLD, LocalBusinessJsonLD, ServiceJsonLD, WebPageJsonLD} from "@/app/utils/markups";
+import {
+    FAQPageJsonLD,
+    getLocalBusinessJsonLD,
+    getServiceJsonLD,
+    getWebPageJsonLD,
+} from "@/app/utils/markups";
 import { SITE_INFO } from "@/app/constants";
 import CatalogLeadScreen from "@/components/pages-components/main-page/catalogLeadScreen/catalogLeadScreen";
 import SinceScreen from "@/components/pages-components/main-page/sinceScreen/sinceScreen";
@@ -35,7 +40,16 @@ export const metadata: Metadata = {
     },
 };
 
-const App: React.FC = () => {
+const App = async () => {
+    // Промисы пускаем в параллель — каждая factory async, но друг от друга
+    // не зависят. cache() внутри markups.ts дедупит getSiteSettings() между
+    // LocalBusiness + Service.
+    const [localBusinessJsonLd, webPageJsonLd, serviceJsonLd] = await Promise.all([
+        getLocalBusinessJsonLD(),
+        getWebPageJsonLD(),
+        getServiceJsonLD(),
+    ]);
+
     return (
         <>
             <MainScreen />
@@ -51,10 +65,10 @@ const App: React.FC = () => {
             <FeedbackScreen />
             <FaqScreen />
             <MapScreen />
-            <MarkupScript jsonLd={LocalBusinessJsonLD} />
-            <MarkupScript jsonLd={WebPageJsonLD} />
+            <MarkupScript jsonLd={localBusinessJsonLd} />
+            <MarkupScript jsonLd={webPageJsonLd} />
             <MarkupScript jsonLd={FAQPageJsonLD} />
-            <MarkupScript jsonLd={ServiceJsonLD} />
+            <MarkupScript jsonLd={serviceJsonLd} />
         </>
     );
 }
