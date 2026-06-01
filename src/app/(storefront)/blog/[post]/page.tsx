@@ -10,6 +10,7 @@ import type { Media } from '@/payload-types';
 import { SITE_INFO } from "@/app/constants";
 import { Metadata } from "next";
 import { buildMetadata } from "@/app/_lib/build-metadata";
+import { getSiteSettings } from "@/lib/queries/site-settings";
 import MarkupScript from "@/components/shared-components/markup-script/markup-script";
 
 const cx = classNames.bind(styles);
@@ -31,14 +32,16 @@ export async function generateMetadata(
     }
 ): Promise<Metadata> {
     const params = await props.params;
-    const [post, seo] = await Promise.all([
+    const [post, seo, settings] = await Promise.all([
         getPostBySlug(params.post),
         getPostSeoBySlug(params.post),
+        getSiteSettings(),
     ]);
+    const siteName = settings?.siteName ?? 'PINHEAD STUDIO';
     if (!post) {
-        return buildMetadata({
-            title: `Статья | ${SITE_INFO.name}`,
-            description: 'Блог PINHEAD STUDIO',
+        return await buildMetadata({
+            title: `Статья | ${siteName}`,
+            description: `Блог ${siteName}`,
             path: `/blog/${params.post}`,
         });
     }
@@ -53,8 +56,8 @@ export async function generateMetadata(
         ? post.subtitle
         : stripHtml(post.blog.__html ?? '').slice(0, 200);
 
-    return buildMetadata({
-        title: metaTitle ?? `${post.title} | ${SITE_INFO.name}`,
+    return await buildMetadata({
+        title: metaTitle ?? `${post.title} | ${siteName}`,
         description: metaDescription ?? fallbackDescription,
         path: `/blog/${params.post}`,
         image: metaImage ?? post.cover ?? undefined,

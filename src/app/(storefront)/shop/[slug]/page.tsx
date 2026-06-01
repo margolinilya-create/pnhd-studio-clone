@@ -36,14 +36,15 @@ export async function generateMetadata(props: TMetadataProps): Promise<Metadata>
         ? (seo.meta.image as Media).url ?? undefined
         : undefined;
 
+    const base = await buildMetadata({
+        title: seo?.meta?.title ?? fallbackTitle,
+        description: seo?.meta?.description ?? fallbackDescription,
+        path: `/shop/${params.slug}`,
+        image: metaImage ?? currItem?.image_url ?? undefined,
+        type: 'product',
+    });
     return {
-        ...buildMetadata({
-            title: seo?.meta?.title ?? fallbackTitle,
-            description: seo?.meta?.description ?? fallbackDescription,
-            path: `/shop/${params.slug}`,
-            image: metaImage ?? currItem?.image_url ?? undefined,
-            type: 'product',
-        }),
+        ...base,
         keywords: currItem ? [currItem.category, currItem.type, currItem.color].filter(Boolean) as string[] : undefined,
     };
 }

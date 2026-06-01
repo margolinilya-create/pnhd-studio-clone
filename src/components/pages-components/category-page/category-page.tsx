@@ -11,6 +11,8 @@ import styles from '@/app/(storefront)/contacts/page.module.css';
 import { SITE_INFO } from '@/app/constants';
 import { IProduct } from '@/app/utils/types';
 import { getAllProducts } from '@/lib/queries/products';
+import { getSiteSettings } from '@/lib/queries/site-settings';
+import { resolveDomain } from '@/lib/site/domain';
 import MarkupScript from '@/components/shared-components/markup-script/markup-script';
 import FaqSection from '@/components/pages-components/main-page/faq-screen/faq-screen';
 import ProductCardsBlock from '@/components/pages-components/shop-page/product-cards-block/product-cards-block';
@@ -34,20 +36,25 @@ export interface ICategoryPageConfig {
 // и хардкодил studio.pnhd.ru. Эти 6 страниц по сути duplicate-content к
 // /shop?type=..., но они существуют как SEO-landings — поэтому canonical
 // указывает на саму страницу, OG + Twitter заполнены.
-export function buildMetadata(config: ICategoryPageConfig): Metadata {
+//
+// Async: siteName читается из Payload SiteSettings, domain — из env через resolveDomain.
+export async function buildCategoryMetadata(config: ICategoryPageConfig): Promise<Metadata> {
+  const settings = await getSiteSettings();
+  const domain = resolveDomain();
+  const siteName = settings?.siteName ?? 'PINHEAD STUDIO';
   const path = `/${config.slug}`;
-  const absoluteUrl = `${SITE_INFO.domain}${path}`;
+  const absoluteUrl = `${domain}${path}`;
   return {
     title: config.metaTitle,
     description: config.metaDescription,
-    metadataBase: new URL(SITE_INFO.domain),
+    metadataBase: new URL(domain),
     alternates: { canonical: path },
     openGraph: {
       type: 'website',
       title: config.metaTitle,
       description: config.metaDescription,
       url: absoluteUrl,
-      siteName: SITE_INFO.name,
+      siteName,
       images: '/opengraph-image.jpg',
     },
     twitter: {
