@@ -1,9 +1,38 @@
-import type { CollectionAfterChangeHook } from 'payload';
+import type { CollectionAfterChangeHook, PayloadRequest } from 'payload';
 
 type SubmissionField = { field: string; value: string };
 
+const BITRIX_SOURCE_ID = 'WEB';
+const MAX_ERROR_LENGTH = 500;
+
 function getField(data: SubmissionField[], name: string): string {
   return data.find((f) => f.field === name)?.value ?? '';
+}
+
+/**
+ * Безопасный write-back в submission. Best-effort hook contract: даже если
+ * запись в БД упадёт (например, БД недоступна), хук НЕ должен throw'ить —
+ * иначе исходный submission уже сохранён, но ошибка всплывёт в caller'е.
+ * Логируем через payload.logger и идём дальше.
+ */
+async function safeUpdateSubmission(
+  req: PayloadRequest,
+  id: string | number,
+  data: Record<string, unknown>,
+): Promise<void> {
+  try {
+    await req.payload.update({
+      collection: 'form-submissions',
+      id,
+      data,
+      depth: 0,
+    });
+  } catch (updateErr) {
+    req.payload.logger.warn(
+      { err: updateErr, submissionId: id, fields: Object.keys(data) },
+      'notifyBitrix: failed to write outcome to submission',
+    );
+  }
 }
 
 export const notifyBitrix: CollectionAfterChangeHook = async ({ operation, doc, req }) => {
@@ -26,7 +55,7 @@ export const notifyBitrix: CollectionAfterChangeHook = async ({ operation, doc, 
     COMMENTS: [comment, referenceUrl && `Референс: ${referenceUrl}`]
       .filter(Boolean)
       .join('\n\n'),
-    SOURCE_ID: 'WEB',
+    SOURCE_ID: BITRIX_SOURCE_ID,
     TITLE: `Лид с сайта (submission ${doc.id})`,
   };
 
@@ -41,39 +70,31 @@ export const notifyBitrix: CollectionAfterChangeHook = async ({ operation, doc, 
 
     if (!res.ok) {
       const text = await res.text();
-      await req.payload.update({
-        collection: 'form-submissions',
-        id: doc.id,
-        data: { bitrixError: `HTTP ${res.status}: ${text.slice(0, 500)}` },
-        depth: 0,
+      await safeUpdateSubmission(req, doc.id, {
+        bitrixError: `HTTP ${res.status}: ${text.slice(0, MAX_ERROR_LENGTH)}`,
       });
       return;
     }
 
-    const body = (await res.json()) as { result?: number | string; error?: string };
-    if (body.result === undefined) {
-      await req.payload.update({
-        collection: 'form-submissions',
-        id: doc.id,
-        data: { bitrixError: `Bitrix returned no result: ${JSON.stringify(body).slice(0, 500)}` },
-        depth: 0,
+    const body = (await res.json()) as { result?: number | string; error?: string; error_description?: string };
+
+    // Bitrix24 возвращает { error, error_description } с HTTP 200 при ошибках валидации/токена.
+    // Эта ветка также покрывает body.result === undefined.
+    if (body.error || body.result === undefined) {
+      const reason = body.error_description ?? body.error ?? JSON.stringify(body);
+      await safeUpdateSubmission(req, doc.id, {
+        bitrixError: `Bitrix error: ${reason.slice(0, MAX_ERROR_LENGTH)}`,
       });
       return;
     }
 
-    await req.payload.update({
-      collection: 'form-submissions',
-      id: doc.id,
-      data: { bitrixLeadId: String(body.result) },
-      depth: 0,
+    await safeUpdateSubmission(req, doc.id, {
+      bitrixLeadId: String(body.result),
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
-    await req.payload.update({
-      collection: 'form-submissions',
-      id: doc.id,
-      data: { bitrixError: message.slice(0, 500) },
-      depth: 0,
+    await safeUpdateSubmission(req, doc.id, {
+      bitrixError: message.slice(0, MAX_ERROR_LENGTH),
     });
   }
 };

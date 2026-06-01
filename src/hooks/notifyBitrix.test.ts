@@ -25,7 +25,10 @@ function makeReq() {
 
 describe('notifyBitrix', () => {
   beforeEach(() => {
+    // vi.restoreAllMocks() возвращает spies, vi.unstubAllGlobals() убирает stubGlobal —
+    // нужны оба, иначе fetch-стаб из предыдущего теста остаётся живым и no-op тест ложно проходит.
     vi.restoreAllMocks();
+    vi.unstubAllGlobals();
     delete process.env.BITRIX_WEBHOOK_URL;
   });
 
@@ -124,6 +127,40 @@ describe('notifyBitrix', () => {
       expect.objectContaining({
         data: expect.objectContaining({ bitrixError: expect.stringContaining('network down') }),
       }),
+    );
+  });
+
+  it('writes bitrixError with error_description when Bitrix returns 200 + error envelope', async () => {
+    process.env.BITRIX_WEBHOOK_URL = 'https://example.bitrix24.ru/rest/1/abc/';
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ error: 'INVALID_TOKEN', error_description: 'токен истёк' }),
+    }));
+
+    const req = makeReq();
+    await notifyBitrix({ operation: 'create', doc: makeDoc(), req } as any);
+
+    expect(req.payload.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ bitrixError: expect.stringContaining('токен истёк') }),
+      }),
+    );
+  });
+
+  it('does not throw when secondary payload.update also fails (best-effort contract)', async () => {
+    process.env.BITRIX_WEBHOOK_URL = 'https://example.bitrix24.ru/rest/1/abc/';
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('network down')));
+
+    const req = makeReq();
+    req.payload.update.mockRejectedValueOnce(new Error('db unreachable'));
+
+    await expect(
+      notifyBitrix({ operation: 'create', doc: makeDoc(), req } as any),
+    ).resolves.toBeUndefined();
+
+    expect(req.payload.logger.warn).toHaveBeenCalledWith(
+      expect.objectContaining({ submissionId: 'sub-1' }),
+      expect.stringContaining('failed to write outcome'),
     );
   });
 });
