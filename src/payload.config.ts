@@ -1,4 +1,5 @@
 import { postgresAdapter } from '@payloadcms/db-postgres';
+import { formBuilderPlugin } from '@payloadcms/plugin-form-builder';
 import { importExportPlugin } from '@payloadcms/plugin-import-export';
 import { redirectsPlugin } from '@payloadcms/plugin-redirects';
 import { seoPlugin } from '@payloadcms/plugin-seo';
@@ -79,6 +80,33 @@ export default buildConfig({
           group: 'System',
         },
       }),
+    }),
+    formBuilderPlugin({
+      fields: {
+        text: true,
+        textarea: true,
+        email: true,
+        checkbox: true,
+        select: true,
+        number: false,
+        message: true,
+        country: false,
+        state: false,
+        payment: false,
+      },
+      // redirectRelationships omitted (empty array [] is truthy → causes Payload to create a
+      // "reference" relationship field with empty relationTo, which fails sanitization).
+      // Omitting the key keeps the field absent entirely; redirect after submit is handled on the frontend.
+      formOverrides: {
+        admin: { group: 'Forms' },
+      },
+      formSubmissionOverrides: {
+        admin: {
+          group: 'Forms',
+          defaultColumns: ['form', 'createdAt'],
+        },
+        // hooks (rate-limit, Bitrix, Telegram) добавляются в последующих задачах 3.4-3.6
+      },
     }),
     s3Storage({
       collections: {

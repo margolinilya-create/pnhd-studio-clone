@@ -4,6 +4,7 @@ import * as migration_20260530_064450_payload_redirects from './20260530_064450_
 import * as migration_20260530_071720_order_customer_note from './20260530_071720_order_customer_note';
 import * as migration_20260530_075057_pages_drafts_versions from './20260530_075057_pages_drafts_versions';
 import * as migration_20260601_101348_payload_plugin_import_export from './20260601_101348_payload_plugin_import_export';
+import * as migration_20260601_102621_payload_plugin_form_builder from './20260601_102621_payload_plugin_form_builder';
 
 export const migrations = [
   {
@@ -34,6 +35,11 @@ export const migrations = [
   {
     up: migration_20260601_101348_payload_plugin_import_export.up,
     down: migration_20260601_101348_payload_plugin_import_export.down,
-    name: '20260601_101348_payload_plugin_import_export'
+    name: '20260601_101348_payload_plugin_import_export',
+  },
+  {
+    up: migration_20260601_102621_payload_plugin_form_builder.up,
+    down: migration_20260601_102621_payload_plugin_form_builder.down,
+    name: '20260601_102621_payload_plugin_form_builder'
   },
 ];
