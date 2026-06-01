@@ -29,9 +29,20 @@ export default async function StorefrontLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // Soft-fail: если seed-forms ещё не прогнан или Forms-коллекция недоступна (DB outage),
+  // не валим весь storefront — LeadForm получит пустой formId и submit упадёт на API-уровне
+  // у конкретного юзера, но страница отрендерится. Логируем для observability.
+  const resolveFormId = async (slug: 'footer-lead' | 'popup-lead'): Promise<string> => {
+    try {
+      return await getFormIdBySlug(slug);
+    } catch (err) {
+      console.error(`StorefrontLayout: failed to resolve form "${slug}"`, err);
+      return '';
+    }
+  };
   const [footerFormId, popupFormId] = await Promise.all([
-    getFormIdBySlug('footer-lead'),
-    getFormIdBySlug('popup-lead'),
+    resolveFormId('footer-lead'),
+    resolveFormId('popup-lead'),
   ]);
 
   return (
