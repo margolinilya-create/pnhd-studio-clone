@@ -10,7 +10,6 @@ import CartIcon from "@/components/shared-components/cart-icon/cart-icon";
 import Popup from "@/components/shared-components/popup/popup";
 import Script from "next/script";
 import CookieBar from "@/components/shared-components/cookie-bar/cookie-bar";
-import { SITE_INFO } from "@/app/constants";
 import ContactsWidget from "@/components/shared-components/contactsWidget/contactsWidget";
 import AgentationLoader from "@/components/shared-components/agentation-loader/agentation-loader";
 import { getFormIdBySlug } from "@/lib/forms/get-form-by-slug";
@@ -32,7 +31,7 @@ export async function generateMetadata(): Promise<Metadata> {
 
   return {
     verification: yandexVerify ? { yandex: yandexVerify } : undefined,
-    metadataBase: new URL(SITE_INFO.domain),
+    metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? 'https://pnhd-studio-clone.vercel.app'),
     openGraph: ogImageUrl ? { images: [{ url: ogImageUrl }] } : undefined,
   };
 }
