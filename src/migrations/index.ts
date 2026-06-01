@@ -52,6 +52,6 @@ export const migrations = [
   {
     up: migration_20260601_203622_site_settings_global.up,
     down: migration_20260601_203622_site_settings_global.down,
-    name: '20260601_203622_site_settings_global'
+    name: '20260601_203622_site_settings_global',
   },
 ];

@@ -1,12 +1,12 @@
 import type { GlobalConfig } from 'payload';
 
 import { hasRole } from '../access/hasRole.ts';
-
-const previewUrl = () => {
-  const base = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://pnhd-studio-clone.vercel.app';
-  const secret = process.env.PREVIEW_SECRET ?? '';
-  return `${base}/api/preview?secret=${secret}&path=/`;
-};
+import {
+  buildPreviewUrl,
+  PREVIEW_BREAKPOINTS,
+  publicReadOrDraftAccess,
+  VERSIONS_WITH_DRAFTS,
+} from '../lib/payload/shared-config.ts';
 
 export const SiteSettings: GlobalConfig = {
   slug: 'site-settings',
@@ -16,28 +16,15 @@ export const SiteSettings: GlobalConfig = {
     description:
       'Контактные данные, лейблы CTA, аналитика и social-ссылки. Видно на каждой странице сайта.',
     livePreview: {
-      url: previewUrl,
-      breakpoints: [
-        { name: 'mobile', label: 'Mobile', width: 375, height: 667 },
-        { name: 'tablet', label: 'Tablet', width: 768, height: 1024 },
-        { name: 'desktop', label: 'Desktop', width: 1440, height: 900 },
-      ],
+      url: () => buildPreviewUrl('/'),
+      breakpoints: PREVIEW_BREAKPOINTS,
     },
   },
   access: {
-    read: ({ req: { user } }) => {
-      if (user) return true;
-      return { _status: { equals: 'published' } };
-    },
+    read: publicReadOrDraftAccess,
     update: hasRole('admin', 'marketing'),
   },
-  versions: {
-    drafts: {
-      autosave: { interval: 800 },
-      schedulePublish: true,
-    },
-    max: 20,
-  },
+  versions: VERSIONS_WITH_DRAFTS,
   fields: [
     // === Business info ===
     {
