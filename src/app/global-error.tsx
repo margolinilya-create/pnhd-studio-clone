@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import * as Sentry from '@sentry/nextjs';
+import Link from 'next/link';
 
 // audit W-SEO-04: Root-level error boundary — единственный обработчик когда
 // корневой layout сам падает. Должен сам рендерить <html>+<body> поскольку
@@ -27,12 +28,12 @@ export default function GlobalError({
           <p style={{ color: '#555', marginBottom: 24 }}>
             Произошла критическая ошибка. Пожалуйста, перезагрузите страницу. Если проблема повторяется — напишите нам.
           </p>
-          <a
+          <Link
             href="/"
             style={{ padding: '12px 20px', background: '#000', color: '#fff', textDecoration: 'none', display: 'inline-block' }}
           >
             На главную
-          </a>
+          </Link>
         </main>
       </body>
     </html>
