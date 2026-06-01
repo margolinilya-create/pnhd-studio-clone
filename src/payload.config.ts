@@ -134,6 +134,8 @@ export default buildConfig({
         ],
         hooks: {
           beforeOperation: [rateLimitFormSubmissions],
+          // Порядок важен: Bitrix — DB write-back (bitrixLeadId/bitrixError на сабмишене),
+          // Telegram — fire-and-forget оповещение. Не менять местами без причины.
           afterChange: [notifyBitrix, notifyTelegram],
         },
       },

@@ -19,15 +19,16 @@ export const notifyTelegram: CollectionAfterChangeHook = async ({ operation, doc
   const email = getField(data, 'email');
   const comment = getField(data, 'comment');
 
-  const text = [
+  // Сборка через массив строк: пустая строка '' даёт визуальный отступ
+  // (blank line) после `.join('\n')`. Никаких embedded '\n' в самих строках.
+  const lines: string[] = [
     `🆕 Новая заявка (submission ${doc.id})`,
     `Имя: ${name || '—'}`,
     `Телефон: ${phone || '—'}`,
-    email && `Email: ${email}`,
-    comment && `\nКомментарий: ${comment}`,
-  ]
-    .filter(Boolean)
-    .join('\n');
+  ];
+  if (email) lines.push(`Email: ${email}`);
+  if (comment) lines.push('', `Комментарий: ${comment}`);
+  const text = lines.join('\n');
 
   try {
     const res = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {

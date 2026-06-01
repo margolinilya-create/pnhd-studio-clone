@@ -60,6 +60,9 @@ describe('notifyTelegram', () => {
     expect(body.chat_id).toBe('123');
     expect(body.text).toContain('Иван');
     expect(body.text).toContain('+79991234567');
+    // Comment present → blank line separator before "Комментарий:", no embedded \n in line content.
+    expect(body.text).toMatch(/Телефон: \+79991234567\n\nКомментарий: тест-комментарий/);
+    expect(body.text).not.toMatch(/\n\n\n/); // no triple-newlines anywhere
   });
 
   it('logs warn on HTTP failure without throwing', async () => {
@@ -72,5 +75,20 @@ describe('notifyTelegram', () => {
       notifyTelegram({ operation: 'create', doc: makeDoc(), req } as any),
     ).resolves.toBeUndefined();
     expect(req.payload.logger.warn).toHaveBeenCalled();
+  });
+
+  it('logs warn on fetch network exception without throwing', async () => {
+    process.env.TELEGRAM_BOT_TOKEN = 'TOKEN';
+    process.env.TELEGRAM_CHAT_ID = '123';
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('DNS failure')));
+
+    const req = makeReq();
+    await expect(
+      notifyTelegram({ operation: 'create', doc: makeDoc(), req } as any),
+    ).resolves.toBeUndefined();
+    expect(req.payload.logger.warn).toHaveBeenCalledWith(
+      expect.objectContaining({ err: expect.any(Error), submissionId: 'sub-1' }),
+      expect.stringContaining('Telegram fetch threw'),
+    );
   });
 });
