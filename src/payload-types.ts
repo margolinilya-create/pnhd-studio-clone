@@ -452,6 +452,8 @@ export interface Promo {
   createdAt: string;
 }
 /**
+ * Архив лидов до перехода на @payloadcms/plugin-form-builder. Новые submissions падают в коллекцию Form Submissions (группа Forms). Эта коллекция read-only — кнопка Create скрыта, но существующие записи доступны для просмотра/обработки/удаления.
+ *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "leads".
  */
