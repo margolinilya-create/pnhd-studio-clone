@@ -466,8 +466,39 @@ NEXT_PUBLIC_SENTRY_DSN=<тот же DSN>
 **Env vars в Vercel** (Production + Preview):
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- `DATABASE_URI` (Supabase transaction pooler — Payload)
+- `PAYLOAD_SECRET`
+- `S3_*` (Supabase Storage credentials для Payload `media` collection)
+- `BITRIX_WEBHOOK_URL` (опционально — для `notifyBitrix` hook; пуст → no-op)
+- `TELEGRAM_BOT_TOKEN` + `TELEGRAM_CHAT_ID` (опционально — для `notifyTelegram` hook; обе нужны)
+- `SENTRY_DSN` — server-side + edge runtime (instrumentation.ts)
+- `NEXT_PUBLIC_SENTRY_DSN` — client-side runtime (sentry.client.config.ts). **Нужно ставить обе переменные с одним и тем же DSN** — server и client читают разные env namespace'ы (client не видит non-public). Если выставить только `SENTRY_DSN` — browser-ошибки не дойдут до Sentry.
 
 `next.config.mjs` whitelistит image-хосты: `cdn.pnhd.ru`, `pnhdstudioapi.ru` (legacy, сейчас 502), `almfjmiygtnzngkayhdv.supabase.co`, `placehold.co`.
+
+### Release checklist (когда мёржишь Payload-фичу с миграциями)
+
+Обязательный порядок. Если задеплоить раньше чем применить миграции — submission endpoint вернёт 500 на каждый запрос пока column missing.
+
+1. **Применить Payload миграции против prod БД**. Локально с production `DATABASE_URI` в `.env.local`:
+   ```bash
+   npm run payload migrate
+   ```
+   Альтернатива: пройтись по `src/migrations/<timestamp>_<name>.ts` файлам и применить SQL через Supabase Dashboard → SQL Editor.
+
+2. **Выставить новые Vercel env vars** (если фича их вводит). Например для form-builder батча 2026-06-01 — `BITRIX_WEBHOOK_URL`, `TELEGRAM_*`, `SENTRY_*`.
+
+3. **Смёрджить PR в `main`** → Vercel auto-deploy → дождаться `Ready`.
+
+4. **Запустить seed-скрипты** (если фича их вводит). Для form-builder:
+   ```bash
+   npx tsx --env-file=.env.production scripts/seed-forms.ts
+   ```
+   Idempotent — повторный запуск пропускает уже созданные.
+
+5. **Smoke-test**: footer-форма → submit → Payload admin `Form Submissions` → запись присутствует с заполненным `ipHash`. Если `BITRIX_WEBHOOK_URL` выставлен — через ~1 сек должен появиться `bitrixLeadId` или `bitrixError`.
+
+Шаги 1 и 4 — блокирующие для lead capture. Без шага 1 form-submission endpoint падает с 500. Без шага 4 — `(storefront)/layout.tsx` soft-fail отдаёт `formId=''` → submit падает с 400 на API → юзер видит ошибку.
 
 ---
 
