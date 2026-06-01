@@ -8,6 +8,8 @@
 
 ## Verdict: 🔴 **NO-GO** for public launch
 
+> **2026-06-01 17:17 UTC** — B1 RESOLVED. Payload form-builder migrations applied to prod + 5 forms seeded. `POST /api/form-submissions` → 201 (verified). Remaining: **15 🔴 blockers**.
+
 **16 🔴 blockers across 6 доменов.** Несколько из них критичны прямо для core revenue flow:
 - **Lead capture полностью сломан на проде** (form-submissions endpoint = 500) → каждая заполненная форма теряется
 - **Checkout client-side crash'ит** на странице оплаты при наличии товара в корзине → юзер не может купить
@@ -42,11 +44,11 @@ Rejoin после фикса blocker'ов + smoke-revalidation. ETA фиксов
 
 ### Lead capture / forms
 
-#### B1. Lead capture endpoint возвращает 500 — `payload."form-submissions"` таблицы нет на проде
+#### ~~B1. Lead capture endpoint возвращает 500~~ ✅ **RESOLVED 2026-06-01 17:17 UTC**
 - **Detail:** [06-db-rls-findings.md → B1](./06-db-rls-findings.md) + [07-functional-smoke.md → F1](./07-functional-smoke.md) + [09-cms-payload-sanity.md → CMS1](./09-cms-payload-sanity.md)
-- **Impact:** все 5 lead-форм (footer, popup, NoModelBlock, product-page, methods-consultation) теряют каждую заявку
-- **Repro:** `curl -X POST https://pnhd-studio-clone.vercel.app/api/form-submissions -d '{}'` → 500
-- **Fix:** `npm run payload migrate` против prod `DATABASE_URI` + `npx tsx scripts/seed-forms.ts`
+- **Action taken:** `npm run payload migrate` applied 3 pending migrations (import_export, form_builder, form_submissions_extra_fields). `scripts/seed-forms.ts` создал 5 форм (Footer Lead, Popup Lead, Shop — нет модели, Product Page Consultation, Methods — консультация)
+- **Verification:** `curl -X POST .../api/form-submissions` → 201 с proper submission doc; `ipHash` + `userAgent` populated по hook'ам; `bitrixLeadId: null` (BITRIX_WEBHOOK_URL не выставлен на prod — лиды НЕ загажены в CRM)
+- **Gotcha:** Payload `bin/loadEnv.js` имеет ESM-interop bug с новой `@next/env` версией (нет default export) — `import nextEnvImport from '@next/env'` → `undefined`. Workaround: patch `loadEnv.js` строку 1 на `import * as nextEnvImport from '@next/env'`. Patch временный (восстанавливается при `npm install`). **TODO:** upstream PR в Payload, или wrap workaround в `scripts/seed-forms.ts`.
 
 #### B2. `LeadForm` не отправляет required `agreement` field
 - **Detail:** [05-code-review-findings.md → C1](./05-code-review-findings.md)
