@@ -47,3 +47,21 @@ export async function uploadPrintFile(file: File): Promise<IPrintFileRef> {
     path,
   };
 }
+
+/**
+ * Удаляет pre-cart файл из user-uploads, когда юзер заменил/убрал картинку
+ * до коммита в Redux (cart-orphan-cleanup не видит pre-cart state). См. audit C8.
+ *
+ * Best-effort: ошибка не throw'ит наружу — Storage будет подметён nightly sweeper'ом
+ * (`cleanup-user-uploads` cron job, 14-day cutoff).
+ */
+export async function deletePrintFile(path: string): Promise<void> {
+  if (typeof window === 'undefined') return;
+  if (!path) return;
+  try {
+    const supabase = getSupabaseClient();
+    await supabase.storage.from(BUCKET).remove([path]);
+  } catch {
+    // swallow — sweeper подметёт через 14 дней
+  }
+}

@@ -33,6 +33,12 @@ cartOrphanCleanupMiddleware.startListening({
     cartActions.resetCart,
     // updateCartItem может заменить принт-файлы — старые становятся orphan
     cartActions.updateCartItem,
+    // audit C9 — `setPrintFile` заменяет файл на той же стороне, старый
+    // становится orphan. `setPrintLocation` смена 'both' → 'front' тоже
+    // оставляет файлы на других сторонах висеть. Раньше эти reducers не
+    // были в matcher'е — dead code в orphan-cleanup. Сейчас покрыты diff'ом.
+    cartActions.setPrintFile,
+    cartActions.setPrintLocation,
   ),
   effect: async (_action, listenerApi) => {
     if (typeof window === 'undefined') return;

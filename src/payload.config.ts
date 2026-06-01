@@ -145,7 +145,12 @@ export default buildConfig({
     sentryPlugin({
       Sentry,
       options: {
-        captureErrors: [400, 403, 404, 408, 429, 500, 502, 503, 504],
+        // audit Sec — раньше 429 был в captureErrors → каждое rate-limited
+        // submission попадало в Sentry как issue. DoS-attack → quota burn.
+        // 429 — expected response. 400/404 в обычном flow (валидация, missing
+        // slug) тоже не error'ы. Оставляем только 5xx + 408 — реальные
+        // application failures.
+        captureErrors: [408, 500, 502, 503, 504],
       },
     }),
     s3Storage({

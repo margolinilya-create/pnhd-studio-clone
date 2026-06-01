@@ -9,36 +9,37 @@ import Image from "next/image";
 
 
 
+// audit M3 — final fallback на локальный SVG (cdn.pnhd.ru/no%20photo.png тоже битый).
+const LOCAL_PLACEHOLDER = '/product-placeholder.svg';
+
 const Photos: React.FC<{ item: IProduct, el: string, index: number }> = ({ item, el, index }) => {
   const [imageSrc, setImageSrc] = useState(`${CDN_URL}/${item.slug}_${index}.jpg`);
-  // const [imageSrc, setImageSrc] = useState(`${CDN_URL}/test.jpg`);
   const [imageError, setImageError] = useState(false);
 
   useEffect(() => {
     if (imageError) {
-      setImageSrc(`${CDN_URL}/no%20photo.png`);
+      setImageSrc(LOCAL_PLACEHOLDER);
     }
-  }, [imageError]); 
+  }, [imageError]);
 
   return (
     <div className={styles.photo_wrapper}>
-      {/* <img className={styles.photo} src={`${apiBaseUrl}${el}`} alt={name} /> */}
       <Image
         src={imageSrc}
-        alt="card pic"
+        alt={item.name ?? 'product photo'}
         className={styles.photo}
         width={371}
         height={556}
-        loading="lazy"
-        unoptimized
-        onError={(e) => {
+        loading={index === 0 ? 'eager' : 'lazy'}
+        priority={index === 0}
+        // unoptimized убран — даём next/image оптимизировать (webp/avif).
+        onError={() => {
           if (imageSrc.includes('cdn.pnhd.ru') && !imageError) {
             setImageSrc(`${apiBaseUrl}${el}`);
           } else if (!imageSrc.includes('cdn.pnhd.ru') && !imageError) {
             setImageError(true);
           }
         }}
-        style={{ display: imageError ? 'none' : 'block' }}
       />
     </div>
   )
