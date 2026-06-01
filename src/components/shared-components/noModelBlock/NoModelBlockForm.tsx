@@ -9,8 +9,10 @@ import Checkbox from '@mui/material/Checkbox';
 import Link from 'next/link';
 import Image from 'next/image';
 import RU_FLAG from '../../../../public/ru_flag.webp';
-import { useCreateLeadMutation } from '@/api/api';
+import { submitForm } from '@/lib/forms/submit-form';
 import { getRoistatVisit } from '@/lib/analytics/roistat';
+
+type SubmitStatus = 'idle' | 'submitting' | 'success' | 'error' | 'rate-limit';
 
 const muiFieldSx = {
   '& .MuiInputLabel-root': { fontFamily: 'Neue_machina' },
@@ -21,40 +23,56 @@ const muiFieldSx = {
   '& .MuiOutlinedInput-root': { fontFamily: 'Neue_machina' },
 } as const;
 
-const NoModelBlockForm = () => {
+const NoModelBlockForm = ({ formId }: { formId: string }) => {
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [comment, setComment] = useState('');
   const [isAgreed, setIsAgreed] = useState(false);
-  const [createLead, { isSuccess, isError, isLoading, reset }] = useCreateLeadMutation();
+  const [status, setStatus] = useState<SubmitStatus>('idle');
 
   useEffect(() => {
-    if (!isSuccess) return;
-    const t = setTimeout(() => reset(), 2000);
-    return () => clearTimeout(t);
-  }, [isSuccess, reset]);
-
-  const submitHandler = async (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    if (isLoading || !isAgreed) return;
-    try {
-      await createLead({
-        source: 'shop-no-model',
-        name: name.trim(),
-        phone: phone.replaceAll(' ', ''),
-        ...(email.trim() ? { email: email.trim() } : {}),
-        ...(comment.trim() ? { comment: comment.trim() } : {}),
-        roistat_visit: getRoistatVisit() || undefined,
-      }).unwrap();
+    if (status !== 'success') return;
+    const t = setTimeout(() => {
+      setStatus('idle');
       setName('');
       setPhone('');
       setEmail('');
       setComment('');
-    } catch {
-      /* статус покажет RTK mutation */
+    }, 2000);
+    return () => clearTimeout(t);
+  }, [status]);
+
+  const submitHandler = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (status === 'submitting' || !isAgreed) return;
+    setStatus('submitting');
+    try {
+      const roistat = getRoistatVisit();
+      await submitForm({
+        formId,
+        fields: {
+          name: name.trim(),
+          phone: phone.replaceAll(' ', ''),
+          source: 'shop-no-model',
+          ...(email.trim() ? { email: email.trim() } : {}),
+          ...(comment.trim() ? { comment: comment.trim() } : {}),
+          ...(roistat ? { roistatVisit: roistat } : {}),
+        },
+      });
+      setStatus('success');
+    } catch (err) {
+      if (err instanceof Error && err.message === 'rate-limit') {
+        setStatus('rate-limit');
+      } else {
+        setStatus('error');
+      }
     }
   };
+
+  const isLoading = status === 'submitting';
+  const isSuccess = status === 'success';
+  const isError = status === 'error' || status === 'rate-limit';
 
   return (
     <form className={styles.customOrderForm} onSubmit={submitHandler}>
@@ -146,7 +164,9 @@ const NoModelBlockForm = () => {
       {isSuccess && <p className={styles.formStatus}>Заявка отправлена!</p>}
       {isError && (
         <p className={styles.formStatus} role="alert">
-          Что-то пошло не так. Попробуйте ещё раз.
+          {status === 'rate-limit'
+            ? 'Слишком много заявок, подождите минуту и попробуйте снова.'
+            : 'Что-то пошло не так. Попробуйте ещё раз.'}
         </p>
       )}
     </form>

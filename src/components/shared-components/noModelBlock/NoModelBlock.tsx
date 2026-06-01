@@ -2,7 +2,7 @@ import styles from './NoModelBlock.module.css';
 import Image from 'next/image';
 import NoModelBlockForm from './NoModelBlockForm';
 
-const NoModelBlock = () => {
+const NoModelBlock = ({ formId }: { formId: string }) => {
     return (
         <section className={styles.noModelBlock}>
             <div className={styles.noModelBlock_content}>
@@ -16,7 +16,7 @@ const NoModelBlock = () => {
                 </div>
             </div>
             <div className={styles.noModelBlock_form}>
-                <NoModelBlockForm />
+                <NoModelBlockForm formId={formId} />
             </div>
         </section>
     )
