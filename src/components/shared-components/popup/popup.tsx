@@ -10,7 +10,7 @@ import { actions as utilsActions } from '@/redux/utils-slice/utils.slice';
 
 
 
-const Popup = () => {
+const Popup = ({ formId }: { formId: string }) => {
     const dispatch = useAppDispatch()
     const { isPopupVisible, popupTitle, popupType } = useAppSelector(store => store.utils)
     const popupStyles = isPopupVisible ? styles.popup : styles.popup__disabled;
@@ -33,7 +33,7 @@ const Popup = () => {
                 <p className={styles.popup_title}>
                     {popupTitle}
                 </p>
-                {popupType === 'lead' && <LeadForm />}
+                {popupType === 'lead' && <LeadForm formId={formId} />}
             </div>
         </div>
     )

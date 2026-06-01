@@ -13,6 +13,7 @@ import CookieBar from "@/components/shared-components/cookie-bar/cookie-bar";
 import { SITE_INFO } from "@/app/constants";
 import ContactsWidget from "@/components/shared-components/contactsWidget/contactsWidget";
 import AgentationLoader from "@/components/shared-components/agentation-loader/agentation-loader";
+import { getFormIdBySlug } from "@/lib/forms/get-form-by-slug";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -23,11 +24,16 @@ export const metadata: Metadata = {
   metadataBase: new URL(SITE_INFO.domain),
 };
 
-export default function StorefrontLayout({
+export default async function StorefrontLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const [footerFormId, popupFormId] = await Promise.all([
+    getFormIdBySlug('footer-lead'),
+    getFormIdBySlug('popup-lead'),
+  ]);
+
   return (
     <div className={inter.className}>
       <ContactsWidget />
@@ -37,14 +43,14 @@ export default function StorefrontLayout({
       <Suspense>
         <CookieBar />
       </Suspense>
-      <Popup />
+      <Popup formId={popupFormId} />
       <MobileMenu />
       <main>
         <CartIcon />
 
         <Header />
         {children}
-        <Footer />
+        <Footer formId={footerFormId} />
       </main>
       <Script id='roistat'>
         {`(function(w, d, s, h, id) {
