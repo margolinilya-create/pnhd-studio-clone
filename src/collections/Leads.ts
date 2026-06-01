@@ -1,6 +1,7 @@
 import type { CollectionConfig } from 'payload';
 
 import { hasRole } from '../access/hasRole.ts';
+import { isAuthenticated } from '../access/isAuthenticated.ts';
 
 export const Leads: CollectionConfig = {
   slug: 'leads',
@@ -15,7 +16,7 @@ export const Leads: CollectionConfig = {
     // Создание запрещено: лиды теперь идут через form-submissions (плагин form-builder).
     // Чтение/обновление/удаление остаются для обработки исторических записей.
     create: () => false,
-    read: hasRole('admin', 'operations', 'marketing'),
+    read: isAuthenticated,
     update: hasRole('admin', 'operations', 'marketing'),
     delete: hasRole('admin'),
   },

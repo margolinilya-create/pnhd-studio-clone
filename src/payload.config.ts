@@ -11,6 +11,8 @@ import path from 'path';
 import { buildConfig } from 'payload';
 import { fileURLToPath } from 'url';
 
+import { hasRole } from '@/access/hasRole';
+import { isAuthenticated } from '@/access/isAuthenticated';
 import { notifyBitrix } from '@/hooks/notifyBitrix';
 import { notifyTelegram } from '@/hooks/notifyTelegram';
 import { rateLimitFormSubmissions } from '@/hooks/rateLimitFormSubmissions';
@@ -104,11 +106,27 @@ export default buildConfig({
       // Omitting the key keeps the field absent entirely; redirect after submit is handled on the frontend.
       formOverrides: {
         admin: { group: 'Forms' },
+        // Forms (определения форм) — read для всех залогиненных, write только admin/marketing
+        // (по аналогии с Pages — формы концептуально из той же области).
+        access: {
+          read: isAuthenticated,
+          create: hasRole('admin', 'marketing'),
+          update: hasRole('admin', 'marketing'),
+          delete: hasRole('admin'),
+        },
       },
       formSubmissionOverrides: {
         admin: {
           group: 'Forms',
           defaultColumns: ['form', 'createdAt'],
+        },
+        // create остаётся открытым — публичный POST /api/form-submissions от форм на сайте
+        // защищён через rateLimitFormSubmissions hook. Read — все залогиненные сотрудники.
+        access: {
+          create: () => true,
+          read: isAuthenticated,
+          update: hasRole('admin', 'operations', 'marketing'),
+          delete: hasRole('admin'),
         },
         fields: ({ defaultFields }) => [
           ...defaultFields,

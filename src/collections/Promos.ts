@@ -1,6 +1,7 @@
 import type { CollectionConfig } from 'payload';
 
 import { hasRole } from '../access/hasRole.ts';
+import { isAuthenticated } from '../access/isAuthenticated.ts';
 
 export const Promos: CollectionConfig = {
   slug: 'promos',
@@ -9,7 +10,7 @@ export const Promos: CollectionConfig = {
     defaultColumns: ['code', 'discountType', 'discountValue', 'validFrom', 'validUntil', 'usageCount'],
   },
   access: {
-    read: hasRole('admin', 'marketing', 'operations'),
+    read: isAuthenticated,
     create: hasRole('admin', 'marketing'),
     update: hasRole('admin', 'marketing'),
     delete: hasRole('admin'),
