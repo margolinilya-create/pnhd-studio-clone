@@ -10,7 +10,11 @@ import CartSummary from "@/components/pages-components/cart-page/cart-summary/ca
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
-const Cart: React.FC = () => {
+interface CartClientProps {
+    disclaimer?: string | null;
+}
+
+const Cart: React.FC<CartClientProps> = ({ disclaimer }) => {
     const { order, isHydrated } = useAppSelector((store) => store.cart);
     const router = useRouter();
 
@@ -41,6 +45,7 @@ const Cart: React.FC = () => {
                 </div>
             ))}
             <CartSummary />
+            {disclaimer && <p className={styles.cart_disclaimer}>{disclaimer}</p>}
             <Link href={'/checkout'} className={styles.cart_checkoutLink}>
                 <button type="button" className={styles.cart_checkoutButton}>оформить заказ</button>
             </Link>

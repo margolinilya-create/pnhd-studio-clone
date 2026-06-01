@@ -79,6 +79,15 @@
     margin-right: 20px;
 }
 
+.cart_disclaimer {
+    align-self: flex-end;
+    margin: 0 20px 0 0;
+    color: #777;
+    font-family: 'Neue_machina', sans-serif;
+    font-size: 12px;
+    line-height: 16px;
+}
+
 @media (max-width: 1020px) {
     .cart_products {
         display: grid;

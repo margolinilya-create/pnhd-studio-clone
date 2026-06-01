@@ -120,14 +120,16 @@ export interface Config {
   };
   fallbackLocale: null;
   globals: {
-    'site-settings': SiteSetting;
-    navigation: Navigation;
+    'checkout-messages': CheckoutMessage;
     'cookie-bar': CookieBar;
+    navigation: Navigation;
+    'site-settings': SiteSetting;
   };
   globalsSelect: {
-    'site-settings': SiteSettingsSelect<false> | SiteSettingsSelect<true>;
-    navigation: NavigationSelect<false> | NavigationSelect<true>;
+    'checkout-messages': CheckoutMessagesSelect<false> | CheckoutMessagesSelect<true>;
     'cookie-bar': CookieBarSelect<false> | CookieBarSelect<true>;
+    navigation: NavigationSelect<false> | NavigationSelect<true>;
+    'site-settings': SiteSettingsSelect<false> | SiteSettingsSelect<true>;
   };
   locale: null;
   widgets: {
@@ -1641,6 +1643,106 @@ export interface PayloadMigrationsSelect<T extends boolean = true> {
   createdAt?: T;
 }
 /**
+ * Тексты для корзины, чекаута и страницы благодарности. Меняем wording без редеплоя.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "checkout-messages".
+ */
+export interface CheckoutMessage {
+  id: number;
+  cartPageTitle: string;
+  cartManagerDisclaimer?: string | null;
+  checkoutSubmitLabel: string;
+  checkoutDisclaimer?: string | null;
+  thanksHeading: string;
+  thanksBody: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  };
+  thanksCallbackPromiseMinutes?: number | null;
+  thanksCTAs?:
+    | {
+        label: string;
+        href: string;
+        id?: string | null;
+      }[]
+    | null;
+  _status?: ('draft' | 'published') | null;
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+/**
+ * Текст и кнопка cookie-уведомления. excludedRoutes (на каких страницах не показывать) — захардкожены в коде.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "cookie-bar".
+ */
+export interface CookieBar {
+  id: number;
+  enabled?: boolean | null;
+  title: string;
+  description: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  };
+  buttonLabel: string;
+  _status?: ('draft' | 'published') | null;
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+/**
+ * Единый список пунктов меню для шапки / подвала / мобильного меню. Visibility-флаги контролируют где элемент показывается. Порядок в массиве = порядок отображения.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "navigation".
+ */
+export interface Navigation {
+  id: number;
+  items?:
+    | {
+        label: string;
+        /**
+         * Внутренние: /shop, /contacts. Внешние: https://… (поставь isExternal).
+         */
+        href: string;
+        /**
+         * Опционально: например feedback → /?#feedback
+         */
+        hash?: string | null;
+        isExternal?: boolean | null;
+        showInHeader?: boolean | null;
+        showInFooter?: boolean | null;
+        showInMobile?: boolean | null;
+        id?: string | null;
+      }[]
+    | null;
+  _status?: ('draft' | 'published') | null;
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+/**
  * Контактные данные, лейблы CTA, аналитика и social-ссылки. Видно на каждой странице сайта.
  *
  * This interface was referenced by `Config`'s JSON-Schema
@@ -1707,64 +1809,64 @@ export interface SiteSetting {
   createdAt?: string | null;
 }
 /**
- * Единый список пунктов меню для шапки / подвала / мобильного меню. Visibility-флаги контролируют где элемент показывается. Порядок в массиве = порядок отображения.
- *
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "navigation".
+ * via the `definition` "checkout-messages_select".
  */
-export interface Navigation {
-  id: number;
-  items?:
+export interface CheckoutMessagesSelect<T extends boolean = true> {
+  cartPageTitle?: T;
+  cartManagerDisclaimer?: T;
+  checkoutSubmitLabel?: T;
+  checkoutDisclaimer?: T;
+  thanksHeading?: T;
+  thanksBody?: T;
+  thanksCallbackPromiseMinutes?: T;
+  thanksCTAs?:
+    | T
     | {
-        label: string;
-        /**
-         * Внутренние: /shop, /contacts. Внешние: https://… (поставь isExternal).
-         */
-        href: string;
-        /**
-         * Опционально: например feedback → /?#feedback
-         */
-        hash?: string | null;
-        isExternal?: boolean | null;
-        showInHeader?: boolean | null;
-        showInFooter?: boolean | null;
-        showInMobile?: boolean | null;
-        id?: string | null;
-      }[]
-    | null;
-  _status?: ('draft' | 'published') | null;
-  updatedAt?: string | null;
-  createdAt?: string | null;
+        label?: T;
+        href?: T;
+        id?: T;
+      };
+  _status?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
 }
 /**
- * Текст и кнопка cookie-уведомления. excludedRoutes (на каких страницах не показывать) — захардкожены в коде.
- *
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "cookie-bar".
+ * via the `definition` "cookie-bar_select".
  */
-export interface CookieBar {
-  id: number;
-  enabled?: boolean | null;
-  title: string;
-  description: {
-    root: {
-      type: string;
-      children: {
-        type: any;
-        version: number;
-        [k: string]: unknown;
-      }[];
-      direction: ('ltr' | 'rtl') | null;
-      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
-      indent: number;
-      version: number;
-    };
-    [k: string]: unknown;
-  };
-  buttonLabel: string;
-  _status?: ('draft' | 'published') | null;
-  updatedAt?: string | null;
-  createdAt?: string | null;
+export interface CookieBarSelect<T extends boolean = true> {
+  enabled?: T;
+  title?: T;
+  description?: T;
+  buttonLabel?: T;
+  _status?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "navigation_select".
+ */
+export interface NavigationSelect<T extends boolean = true> {
+  items?:
+    | T
+    | {
+        label?: T;
+        href?: T;
+        hash?: T;
+        isExternal?: T;
+        showInHeader?: T;
+        showInFooter?: T;
+        showInMobile?: T;
+        id?: T;
+      };
+  _status?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -1828,42 +1930,6 @@ export interface SiteSettingsSelect<T extends boolean = true> {
         defaultOGImage?: T;
         siteLang?: T;
       };
-  _status?: T;
-  updatedAt?: T;
-  createdAt?: T;
-  globalType?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "navigation_select".
- */
-export interface NavigationSelect<T extends boolean = true> {
-  items?:
-    | T
-    | {
-        label?: T;
-        href?: T;
-        hash?: T;
-        isExternal?: T;
-        showInHeader?: T;
-        showInFooter?: T;
-        showInMobile?: T;
-        id?: T;
-      };
-  _status?: T;
-  updatedAt?: T;
-  createdAt?: T;
-  globalType?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "cookie-bar_select".
- */
-export interface CookieBarSelect<T extends boolean = true> {
-  enabled?: T;
-  title?: T;
-  description?: T;
-  buttonLabel?: T;
   _status?: T;
   updatedAt?: T;
   createdAt?: T;
@@ -1956,7 +2022,7 @@ export interface TaskSchedulePublish {
       relationTo: 'pages';
       value: number | Page;
     } | null;
-    global?: ('site-settings' | 'navigation' | 'cookie-bar') | null;
+    global?: ('checkout-messages' | 'cookie-bar' | 'navigation' | 'site-settings') | null;
     user?: (number | null) | User;
   };
   output?: unknown;

@@ -1,12 +1,24 @@
 import { Metadata } from "next";
+
+import { buildMetadata } from "@/app/_lib/build-metadata";
+import { getCheckoutMessages } from "@/lib/queries/checkout-messages";
+
 import CheckoutClient from "./checkoutClient";
 
-export const metadata: Metadata = {
-    title: "Оформление заказа | Studio PNHD",
-    description: "Оформите заказ на сайте Studio PNHD. Удобный процесс покупки с выбором способов оплаты и доставки",
-    metadataBase: new URL("https://studio.pnhd.ru"),
-};
+export async function generateMetadata(): Promise<Metadata> {
+    return await buildMetadata({
+        title: 'Оформление заказа',
+        description: 'Оформите заказ на сайте Studio PNHD. Удобный процесс покупки с выбором способов оплаты и доставки',
+        path: '/checkout',
+    });
+}
 
-export default function Page() {
-    return <CheckoutClient />;
+export default async function Page() {
+    const messages = await getCheckoutMessages();
+    return (
+        <CheckoutClient
+            submitLabel={messages?.checkoutSubmitLabel ?? 'Оформить заявку'}
+            disclaimer={messages?.checkoutDisclaimer ?? null}
+        />
+    );
 }
