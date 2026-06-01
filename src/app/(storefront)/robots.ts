@@ -1,7 +1,8 @@
 import type { MetadataRoute } from 'next';
-import { SITE_INFO } from '@/app/constants';
+import { resolveDomain } from '@/lib/site/domain';
 
 export default function robots(): MetadataRoute.Robots {
+    const domain = resolveDomain();
     return {
         rules: [
             {
@@ -19,7 +20,7 @@ export default function robots(): MetadataRoute.Robots {
                 ],
             },
         ],
-        sitemap: `${SITE_INFO.domain}/sitemap.xml`,
-        host: SITE_INFO.domain,
+        sitemap: `${domain}/sitemap.xml`,
+        host: domain,
     };
 }
