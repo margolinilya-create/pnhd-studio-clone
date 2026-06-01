@@ -1,16 +1,4 @@
-// Закрывает audit W-SEO-01 — раньше домен был зашит как 'studio.pnhd.ru'
-// (домен оригинального сайта), все canonical/og:url/JSON-LD `url` указывали на
-// чужой сайт → текущий Vercel-deployment effectively не индексируется поисковиками.
-//
-// Источник правды:
-// 1. NEXT_PUBLIC_SITE_URL — явный env var (Vercel должен его выставить на cutover)
-// 2. NEXT_PUBLIC_VERCEL_URL — авто-Vercel domain без protocol (fallback для preview)
-// 3. 'https://studio.pnhd.ru' — final fallback на момент cutover'а
-const resolveDomain = (): string => {
-    if (process.env.NEXT_PUBLIC_SITE_URL) return process.env.NEXT_PUBLIC_SITE_URL;
-    if (process.env.NEXT_PUBLIC_VERCEL_URL) return `https://${process.env.NEXT_PUBLIC_VERCEL_URL}`;
-    return 'https://studio.pnhd.ru';
-};
+import { resolveDomain } from '@/lib/site/domain';
 
 export const SITE_INFO = {
     domain: resolveDomain(),
