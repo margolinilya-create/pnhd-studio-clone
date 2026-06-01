@@ -2,9 +2,11 @@ import { postgresAdapter } from '@payloadcms/db-postgres';
 import { formBuilderPlugin } from '@payloadcms/plugin-form-builder';
 import { importExportPlugin } from '@payloadcms/plugin-import-export';
 import { redirectsPlugin } from '@payloadcms/plugin-redirects';
+import { sentryPlugin } from '@payloadcms/plugin-sentry';
 import { seoPlugin } from '@payloadcms/plugin-seo';
 import { lexicalEditor } from '@payloadcms/richtext-lexical';
 import { s3Storage } from '@payloadcms/storage-s3';
+import * as Sentry from '@sentry/nextjs';
 import path from 'path';
 import { buildConfig } from 'payload';
 import { fileURLToPath } from 'url';
@@ -138,6 +140,12 @@ export default buildConfig({
           // Telegram — fire-and-forget оповещение. Не менять местами без причины.
           afterChange: [notifyBitrix, notifyTelegram],
         },
+      },
+    }),
+    sentryPlugin({
+      Sentry,
+      options: {
+        captureErrors: [400, 403, 404, 408, 429, 500, 502, 503, 504],
       },
     }),
     s3Storage({
