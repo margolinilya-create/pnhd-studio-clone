@@ -16,22 +16,6 @@ export type LeadSource =
   | 'methods-consultation'
   | 'checkout';
 
-export interface ILeadAttachment {
-  side: string;
-  url: string;
-  filename?: string;
-}
-
-export interface ICreateLeadPayload {
-  name: string;
-  phone: string;
-  email?: string;
-  comment?: string;
-  reference_url?: string;
-  source: LeadSource;
-  roistat_visit?: string;
-  attachments?: ILeadAttachment[];
-}
 
 export const api = createApi({
   reducerPath: "api",
@@ -106,29 +90,6 @@ export const api = createApi({
         },
       }),
     }),
-    createLead: builder.mutation<{ leadId: string }, ICreateLeadPayload>({
-      // Payload REST: POST /api/leads. Маппинг snake_case → camelCase для коллекции.
-      query: (data) => ({
-        url: '/api/leads',
-        method: 'POST',
-        body: JSON.stringify({
-          name: data.name,
-          phone: data.phone,
-          email: data.email,
-          comment: data.comment,
-          referenceUrl: data.reference_url,
-          source: data.source,
-          roistatVisit: data.roistat_visit,
-          attachments: data.attachments,
-        }),
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      }),
-      transformResponse: (resp: { doc?: { id: string } }) => ({
-        leadId: resp.doc?.id ?? '',
-      }),
-    }),
     promocodeValidation: builder.mutation<unknown, {user_promocode: string}>({
       query: (data) => ({
         url: '/api/promocodes/',
@@ -149,6 +110,5 @@ export const {
   useGetCdekPointsQuery,
   useGetCdekDeliveryPriceQuery,
   useCreateOrderMutation,
-  useCreateLeadMutation,
   usePromocodeValidationMutation,
 } = api;

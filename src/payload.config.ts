@@ -1,12 +1,19 @@
 import { postgresAdapter } from '@payloadcms/db-postgres';
+import { formBuilderPlugin } from '@payloadcms/plugin-form-builder';
+import { importExportPlugin } from '@payloadcms/plugin-import-export';
 import { redirectsPlugin } from '@payloadcms/plugin-redirects';
+import { sentryPlugin } from '@payloadcms/plugin-sentry';
 import { seoPlugin } from '@payloadcms/plugin-seo';
 import { lexicalEditor } from '@payloadcms/richtext-lexical';
 import { s3Storage } from '@payloadcms/storage-s3';
+import * as Sentry from '@sentry/nextjs';
 import path from 'path';
 import { buildConfig } from 'payload';
 import { fileURLToPath } from 'url';
 
+import { notifyBitrix } from '@/hooks/notifyBitrix';
+import { notifyTelegram } from '@/hooks/notifyTelegram';
+import { rateLimitFormSubmissions } from '@/hooks/rateLimitFormSubmissions';
 import { Categories } from './collections/Categories.ts';
 import { Drops } from './collections/Drops.ts';
 import { Leads } from './collections/Leads.ts';
@@ -56,6 +63,89 @@ export default buildConfig({
           description:
             'Перенаправления URL. From — старый путь (например /old-product). To — внутренний документ или внешний URL. Применяется через middleware на storefront.',
         },
+      },
+    }),
+    importExportPlugin({
+      collections: [
+        { slug: 'products' },
+        { slug: 'pages' },
+        { slug: 'leads' },
+      ],
+      overrideExportCollection: ({ collection }) => ({
+        ...collection,
+        admin: {
+          ...collection.admin,
+          group: 'System',
+        },
+      }),
+      overrideImportCollection: ({ collection }) => ({
+        ...collection,
+        admin: {
+          ...collection.admin,
+          group: 'System',
+        },
+      }),
+    }),
+    formBuilderPlugin({
+      fields: {
+        text: true,
+        textarea: true,
+        email: true,
+        checkbox: true,
+        select: true,
+        number: false,
+        message: true,
+        country: false,
+        state: false,
+        payment: false,
+      },
+      // redirectRelationships omitted (empty array [] is truthy → causes Payload to create a
+      // "reference" relationship field with empty relationTo, which fails sanitization).
+      // Omitting the key keeps the field absent entirely; redirect after submit is handled on the frontend.
+      formOverrides: {
+        admin: { group: 'Forms' },
+      },
+      formSubmissionOverrides: {
+        admin: {
+          group: 'Forms',
+          defaultColumns: ['form', 'createdAt'],
+        },
+        fields: ({ defaultFields }) => [
+          ...defaultFields,
+          {
+            name: 'ipHash',
+            type: 'text',
+            admin: { readOnly: true, position: 'sidebar' },
+            index: true,
+          },
+          {
+            name: 'userAgent',
+            type: 'text',
+            admin: { readOnly: true, position: 'sidebar', hidden: true },
+          },
+          {
+            name: 'bitrixLeadId',
+            type: 'text',
+            admin: { readOnly: true, position: 'sidebar' },
+          },
+          {
+            name: 'bitrixError',
+            type: 'textarea',
+            admin: { readOnly: true, position: 'sidebar' },
+          },
+        ],
+        hooks: {
+          beforeOperation: [rateLimitFormSubmissions],
+          // Порядок важен: Bitrix — DB write-back (bitrixLeadId/bitrixError на сабмишене),
+          // Telegram — fire-and-forget оповещение. Не менять местами без причины.
+          afterChange: [notifyBitrix, notifyTelegram],
+        },
+      },
+    }),
+    sentryPlugin({
+      Sentry,
+      options: {
+        captureErrors: [400, 403, 404, 408, 429, 500, 502, 503, 504],
       },
     }),
     s3Storage({

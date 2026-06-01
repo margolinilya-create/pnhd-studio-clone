@@ -13,6 +13,7 @@ import CookieBar from "@/components/shared-components/cookie-bar/cookie-bar";
 import { SITE_INFO } from "@/app/constants";
 import ContactsWidget from "@/components/shared-components/contactsWidget/contactsWidget";
 import AgentationLoader from "@/components/shared-components/agentation-loader/agentation-loader";
+import { getFormIdBySlug } from "@/lib/forms/get-form-by-slug";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -23,11 +24,27 @@ export const metadata: Metadata = {
   metadataBase: new URL(SITE_INFO.domain),
 };
 
-export default function StorefrontLayout({
+export default async function StorefrontLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // Soft-fail: если seed-forms ещё не прогнан или Forms-коллекция недоступна (DB outage),
+  // не валим весь storefront — LeadForm получит пустой formId и submit упадёт на API-уровне
+  // у конкретного юзера, но страница отрендерится. Логируем для observability.
+  const resolveFormId = async (slug: 'footer-lead' | 'popup-lead'): Promise<string> => {
+    try {
+      return await getFormIdBySlug(slug);
+    } catch (err) {
+      console.error(`StorefrontLayout: failed to resolve form "${slug}"`, err);
+      return '';
+    }
+  };
+  const [footerFormId, popupFormId] = await Promise.all([
+    resolveFormId('footer-lead'),
+    resolveFormId('popup-lead'),
+  ]);
+
   return (
     <div className={inter.className}>
       <ContactsWidget />
@@ -37,14 +54,14 @@ export default function StorefrontLayout({
       <Suspense>
         <CookieBar />
       </Suspense>
-      <Popup />
+      <Popup formId={popupFormId} />
       <MobileMenu />
       <main>
         <CartIcon />
 
         <Header />
         {children}
-        <Footer />
+        <Footer formId={footerFormId} />
       </main>
       <Script id='roistat'>
         {`(function(w, d, s, h, id) {

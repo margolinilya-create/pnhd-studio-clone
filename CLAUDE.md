@@ -308,8 +308,16 @@ API оригинала `pnhdstudioapi.ru/api/products` отдаёт 502. Скр�
 | [src/components/shared-components/lead-form/lead-form.tsx](src/components/shared-components/lead-form/lead-form.tsx) | Footer + popup-форма (принимает `source` prop) |
 | [src/components/shared-components/noModelBlock/NoModelBlockForm.tsx](src/components/shared-components/noModelBlock/NoModelBlockForm.tsx) | Форма «не нашли модель» на /shop |
 | [supabase/migrations/](supabase/migrations/) | SQL миграции (10 штук) |
-| [supabase/functions/create-lead/index.ts](supabase/functions/create-lead/index.ts) | Edge Function |
+| [supabase/functions/create-lead/index.ts](supabase/functions/create-lead/index.ts) | Edge Function (УДАЛЕНА — функционал перенесён в `src/hooks/` на Payload) |
 | [supabase/functions/cleanup-user-uploads/index.ts](supabase/functions/cleanup-user-uploads/index.ts) | Edge Function-sweeper для bucket `user-uploads/prints/` |
+| [src/hooks/notifyBitrix.ts](src/hooks/notifyBitrix.ts) | `afterChange` hook form-submissions → Bitrix24 CRM (POST `/crm.lead.add.json`). На success → `bitrixLeadId`, на failure → `bitrixError`. Handle 200-error envelope. Best-effort через `safeUpdateSubmission` |
+| [src/hooks/notifyTelegram.ts](src/hooks/notifyTelegram.ts) | `afterChange` hook → Telegram Bot API `sendMessage`. Fire-and-forget, без write-back. Тихо warn'ит при failure |
+| [src/hooks/rateLimitFormSubmissions.ts](src/hooks/rateLimitFormSubmissions.ts) | `beforeOperation` hook: 3/мин по SHA-256 hash IP. Throws `APIError(429)` при превышении. Инжектит `ipHash` + `userAgent` в submission |
+| [src/lib/forms/get-form-by-slug.ts](src/lib/forms/get-form-by-slug.ts) | `getFormIdBySlug(slug)` — server-only resolver короткий-код → form ID через Payload local API + module-level cache |
+| [src/lib/forms/submit-form.ts](src/lib/forms/submit-form.ts) | Frontend submit helper. POST `/api/form-submissions` с `{ form, submissionData }`. Throws `Error('rate-limit')` на 429 |
+| [scripts/seed-forms.ts](scripts/seed-forms.ts) | Idempotent seed 5 Form-документов. Запуск: `npx tsx --env-file=.env.local scripts/seed-forms.ts` |
+| [sentry.client.config.ts](sentry.client.config.ts) | Client-side Sentry init. Server+edge — в [instrumentation.ts](instrumentation.ts) |
+| [src/middleware.ts](src/middleware.ts) | Next.js middleware — резолвит Redirects collection (308/307 по `to.type`) |
 
 ### Удалено (после батча 2026-05-27)
 
@@ -353,6 +361,22 @@ API оригинала `pnhdstudioapi.ru/api/products` отдаёт 502. Скр�
 - [x] 6 категорийных страниц → один `<CategoryPage>` + 6 локальных `config.tsx`
 - [x] Active-link highlighting в admin sidebar (`usePathname` + `selected`)
 
+### 🟢 Сделано (батч 2026-06-01, payload-plugins)
+- [x] **plugin-redirects** уже подключён через PR #26 + `src/middleware.ts` consume коллекции Redirects (`from` → 308/307 в зависимости от `to.type`).
+- [x] **plugin-import-export** подключён к `products`/`pages`/`leads` collections — Export/Import action'ы в админке. Exports + Imports auto-collections в группе `System`. Idempotent through-line: `overrideExportCollection` и `overrideImportCollection` возвращают новый объект (без in-place мутации).
+- [x] **plugin-form-builder** — полная миграция lead-pipeline:
+  - 5 seeded Form-документов через `scripts/seed-forms.ts` (footer-lead, popup-lead, shop-no-model, product-page, methods-consultation). Idempotent по `title`.
+  - `getFormIdBySlug` helper (`src/lib/forms/get-form-by-slug.ts`) — server-only + module-level cache.
+  - Submissions в `form-submissions` collection.
+  - Hooks восстановлены как Payload-hooks вместо удалённой Edge Function `create-lead`:
+    - `rateLimitFormSubmissions` (beforeOperation): 3/мин по `ipHash` (SHA-256), 7 unit-тестов.
+    - `notifyBitrix` (afterChange): POST в Bitrix24 CRM, на успех пишет `bitrixLeadId`, на ошибку `bitrixError`. Handle 200-error envelope (Bitrix возвращает `{error, error_description}` с HTTP 200 при invalid token). Best-effort: `safeUpdateSubmission` wrapper гарантирует что DB-write failure не throw'ит из hook'а. 8 тестов.
+    - `notifyTelegram` (afterChange): fire-and-forget Bot API, без write-back. 5 тестов.
+  - Frontend (LeadForm + NoModelBlockForm) переключены на `POST /api/form-submissions` через `submitForm` helper. `formId` резолвится server-side в RSC layouts (`(storefront)/layout.tsx` + `shop/page.tsx`) с soft-fail на missing seed.
+  - `createLead` мутация, `ICreateLeadPayload`, `ILeadAttachment` удалены из `src/api/api.ts`.
+  - Legacy `Leads` collection: `access.create: false`, group `Legacy` — read-only архив исторических записей.
+- [x] **plugin-sentry** подключён + `sentry.client.config.ts` для browser runtime. Server+edge уже инитились через `instrumentation.ts`. `withSentryConfig` обёртка в `next.config.mjs`. Без DSN — full no-op.
+
 ### 🟡 Известные косяки (open)
 
 | Severity | Issue | Где |
@@ -389,8 +413,18 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=<берётся из Supabase Dashboard → Settin
 ```
 
 Для Edge Functions секреты выставляются в Supabase Dashboard → Edge Functions → Secrets (не в Next.js env):
-- `BITRIX_WEBHOOK_URL`, `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`, `ALLOWED_ORIGINS` — для `create-lead`
 - `CLEANUP_SECRET` — для `cleanup-user-uploads` (тот же hex продублирован в `vault.secrets` под именем `edge_function_cleanup_secret`)
+
+Для Payload-hooks (батч 2026-06-01, form-builder) переменные живут в Vercel env (Production/Preview/Development), читаются server-side через `process.env`:
+- `BITRIX_WEBHOOK_URL` — `notifyBitrix` hook. Формат `https://<portal>.bitrix24.ru/rest/<user>/<token>/`. Если пуст — hook no-op.
+- `TELEGRAM_BOT_TOKEN` + `TELEGRAM_CHAT_ID` — `notifyTelegram` hook. Если хотя бы один пуст — no-op.
+
+Для Sentry — обе переменные нужны (server + client):
+```
+SENTRY_DSN=https://<key>@<org>.ingest.sentry.io/<project>
+NEXT_PUBLIC_SENTRY_DSN=<тот же DSN>
+```
+Без DSN — Sentry no-op'ит везде (`instrumentation.ts` и `sentry.client.config.ts` оба проверяют наличие DSN перед `Sentry.init`).
 
 ### Добавить новый товар
 
@@ -404,6 +438,18 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=<берётся из Supabase Dashboard → Settin
 Вариант Б — миграцией:
 1. Добавь `supabase/migrations/00X_new_products.sql`
 2. Применить через MCP `apply_migration` или `supabase db push`
+
+### Bulk-edit / экспорт каталога
+
+Через плагин `@payloadcms/plugin-import-export` (зарегистрирован для `products`, `pages`, `leads`):
+
+1. Payload admin → Products → action **Export** → CSV.
+2. Правка в Excel (массовое изменение цен, переименование, etc.).
+3. Action **Import** → загрузить отредактированный CSV.
+
+Идентификация строк — по `id`. **Если удалить колонку `id` или строку из CSV — плагин может попытаться создать дубликаты или пропустить апдейт.** Перед массовым импортом всегда делай предварительный export как backup.
+
+Экспортированные CSV хранятся в служебной коллекции `Exports` (группа `System` в админке) и в S3 bucket — оттуда же скачиваются. Доступ управляется через access control коллекции `exports`, не через access на исходную коллекцию.
 
 ---
 
@@ -420,8 +466,39 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=<берётся из Supabase Dashboard → Settin
 **Env vars в Vercel** (Production + Preview):
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- `DATABASE_URI` (Supabase transaction pooler — Payload)
+- `PAYLOAD_SECRET`
+- `S3_*` (Supabase Storage credentials для Payload `media` collection)
+- `BITRIX_WEBHOOK_URL` (опционально — для `notifyBitrix` hook; пуст → no-op)
+- `TELEGRAM_BOT_TOKEN` + `TELEGRAM_CHAT_ID` (опционально — для `notifyTelegram` hook; обе нужны)
+- `SENTRY_DSN` — server-side + edge runtime (instrumentation.ts)
+- `NEXT_PUBLIC_SENTRY_DSN` — client-side runtime (sentry.client.config.ts). **Нужно ставить обе переменные с одним и тем же DSN** — server и client читают разные env namespace'ы (client не видит non-public). Если выставить только `SENTRY_DSN` — browser-ошибки не дойдут до Sentry.
 
 `next.config.mjs` whitelistит image-хосты: `cdn.pnhd.ru`, `pnhdstudioapi.ru` (legacy, сейчас 502), `almfjmiygtnzngkayhdv.supabase.co`, `placehold.co`.
+
+### Release checklist (когда мёржишь Payload-фичу с миграциями)
+
+Обязательный порядок. Если задеплоить раньше чем применить миграции — submission endpoint вернёт 500 на каждый запрос пока column missing.
+
+1. **Применить Payload миграции против prod БД**. Локально с production `DATABASE_URI` в `.env.local`:
+   ```bash
+   npm run payload migrate
+   ```
+   Альтернатива: пройтись по `src/migrations/<timestamp>_<name>.ts` файлам и применить SQL через Supabase Dashboard → SQL Editor.
+
+2. **Выставить новые Vercel env vars** (если фича их вводит). Например для form-builder батча 2026-06-01 — `BITRIX_WEBHOOK_URL`, `TELEGRAM_*`, `SENTRY_*`.
+
+3. **Смёрджить PR в `main`** → Vercel auto-deploy → дождаться `Ready`.
+
+4. **Запустить seed-скрипты** (если фича их вводит). Для form-builder:
+   ```bash
+   npx tsx --env-file=.env.production scripts/seed-forms.ts
+   ```
+   Idempotent — повторный запуск пропускает уже созданные.
+
+5. **Smoke-test**: footer-форма → submit → Payload admin `Form Submissions` → запись присутствует с заполненным `ipHash`. Если `BITRIX_WEBHOOK_URL` выставлен — через ~1 сек должен появиться `bitrixLeadId` или `bitrixError`.
+
+Шаги 1 и 4 — блокирующие для lead capture. Без шага 1 form-submission endpoint падает с 500. Без шага 4 — `(storefront)/layout.tsx` soft-fail отдаёт `formId=''` → submit падает с 400 на API → юзер видит ошибку.
 
 ---
 

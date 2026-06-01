@@ -7,9 +7,14 @@ export const Leads: CollectionConfig = {
   admin: {
     useAsTitle: 'name',
     defaultColumns: ['name', 'phone', 'source', 'status', 'createdAt'],
+    group: 'Legacy',
+    description:
+      'Архив лидов до перехода на @payloadcms/plugin-form-builder. Новые submissions падают в коллекцию Form Submissions (группа Forms). Эта коллекция read-only — кнопка Create скрыта, но существующие записи доступны для просмотра/обработки/удаления.',
   },
   access: {
-    create: () => true,
+    // Создание запрещено: лиды теперь идут через form-submissions (плагин form-builder).
+    // Чтение/обновление/удаление остаются для обработки исторических записей.
+    create: () => false,
     read: hasRole('admin', 'operations', 'marketing'),
     update: hasRole('admin', 'operations', 'marketing'),
     delete: hasRole('admin'),

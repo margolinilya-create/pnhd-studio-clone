@@ -10,7 +10,7 @@ import RU_FLAG from '../../../../public/ru_flag.webp';
 
 
 
-const Footer: React.FC = () => {
+const Footer: React.FC<{ formId: string }> = ({ formId }) => {
 
     return (
         <footer className={styles.footer}>
@@ -36,7 +36,7 @@ const Footer: React.FC = () => {
 
             <div className={styles.footer_columnTwo}>
                 <div className={styles.columnTwo_formWrapper}>
-                    <LeadForm source="footer" />
+                    <LeadForm source="footer" formId={formId} />
                 </div>
 
                 <div className={styles.columnTwo_logoWrapper}>

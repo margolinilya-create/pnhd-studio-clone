@@ -1,5 +1,5 @@
 'use client'
-import React, { ChangeEvent, FormEvent, useEffect } from "react"
+import React, { ChangeEvent, FormEvent, useEffect, useState } from "react"
 import styles from './lead-form.module.css'
 import { useAppDispatch, useAppSelector } from "@/redux/redux-hooks";
 import TextField from '@mui/material/TextField';
@@ -7,47 +7,68 @@ import { MuiTelInput } from 'mui-tel-input'
 import FormControlLabel from '@mui/material/FormControlLabel';
 import Checkbox from '@mui/material/Checkbox';
 import { actions as leadActions } from "@/redux/lead-slice/lead.slice";
-import { useCreateLeadMutation, type LeadSource } from "@/api/api";
+import { type LeadSource } from "@/api/api";
 import { getRoistatVisit } from "@/lib/analytics/roistat";
+import { submitForm } from "@/lib/forms/submit-form";
 import Link from "next/link";
 import Image from "next/image";
 import RU_FLAG from '../../../../public/ru_flag.webp';
 
+type SubmitStatus = 'idle' | 'submitting' | 'success' | 'error' | 'rate-limit';
 
-const LeadForm: React.FC<{ source?: LeadSource }> = ({ source = 'popup' }) => {
+const LeadForm: React.FC<{ source?: LeadSource; formId: string }> = ({ source = 'popup', formId }) => {
 
     const dispatch = useAppDispatch();
     const { name, phone, isAgreedWithPrivacyPolicy } = useAppSelector(store => store.leads);
-    const [ createLead, { isSuccess, isError, isLoading, reset} ] = useCreateLeadMutation();
+    const [status, setStatus] = useState<SubmitStatus>('idle');
 
     useEffect(() => {
-        if (!isSuccess) return;
-        const timeout = setTimeout(() => { reset(); dispatch(leadActions.resetLeadData()); }, 2000);
+        if (status !== 'success') return;
+        const timeout = setTimeout(() => {
+            setStatus('idle');
+            dispatch(leadActions.resetLeadData());
+        }, 2000);
         return () => { clearTimeout(timeout) };
-    }, [isSuccess, reset, dispatch])
+    }, [status, dispatch])
 
     const submitHandler = async (e: FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-        if (isLoading) return;
+        if (status === 'submitting') return;
         if (!isAgreedWithPrivacyPolicy) return;
+
+        setStatus('submitting');
         try {
-            await createLead({
-                name: name.trim(),
-                phone: phone.replaceAll(' ', ''),
-                source,
-                roistat_visit: getRoistatVisit() || undefined,
-            }).unwrap();
-        } catch {
-            /* статус отрисует RTK mutation */
+            const roistat = getRoistatVisit();
+            await submitForm({
+                formId,
+                fields: {
+                    name: name.trim(),
+                    phone: phone.replaceAll(' ', ''),
+                    source,
+                    ...(roistat ? { roistatVisit: roistat } : {}),
+                },
+            });
+            setStatus('success');
+        } catch (err) {
+            if (err instanceof Error && err.message === 'rate-limit') {
+                setStatus('rate-limit');
+            } else {
+                setStatus('error');
+            }
         }
     }
+
+    const isLoading = status === 'submitting';
+    const isSuccess = status === 'success';
+    const isError = status === 'error';
+    const isRateLimit = status === 'rate-limit';
 
     return (
                     <form className={styles.footer_form} onSubmit={submitHandler}>
                         <span className={styles.form_title}>Заполни форму, мы
                             свяжемся для консультации
                         </span>
-                        <TextField 
+                        <TextField
                             id='name'
                             required
                             autoComplete='off'
@@ -57,7 +78,7 @@ const LeadForm: React.FC<{ source?: LeadSource }> = ({ source = 'popup' }) => {
                             value={name}
                             sx={{
                                 "& .MuiInputLabel-root": { fontFamily: 'Neue_machina' },
-                                "& .MuiInputLabel-root.Mui-focused": { color: 'rgb(57,57,57)' }, 
+                                "& .MuiInputLabel-root.Mui-focused": { color: 'rgb(57,57,57)' },
                                 "& .MuiOutlinedInput-root.Mui-focused": {
                                   "& > fieldset": { borderColor: 'rgb(57,57,57)' },
                                 },
@@ -77,7 +98,7 @@ const LeadForm: React.FC<{ source?: LeadSource }> = ({ source = 'popup' }) => {
                             sx={{
                                 fontFamily: 'Neue_machina',
                                 "& .MuiInputLabel-root": { fontFamily: 'Neue_machina' },
-                                "& .MuiInputLabel-root.Mui-focused": { color: 'rgb(57,57,57)' }, 
+                                "& .MuiInputLabel-root.Mui-focused": { color: 'rgb(57,57,57)' },
                                 "& .MuiOutlinedInput-root.Mui-focused": {
                                   "& > fieldset": { borderColor: 'rgb(57,57,57)' },
                                 },
@@ -87,7 +108,7 @@ const LeadForm: React.FC<{ source?: LeadSource }> = ({ source = 'popup' }) => {
                               }}
                             onChange={(newValue: string) => { dispatch(leadActions.setUserData({ id: 'phone', value: newValue })) }}
                         />
-                        <FormControlLabel 
+                        <FormControlLabel
                             control={
                             <Checkbox
                                 checked={isAgreedWithPrivacyPolicy}
@@ -114,11 +135,12 @@ const LeadForm: React.FC<{ source?: LeadSource }> = ({ source = 'popup' }) => {
                              disabled={!isAgreedWithPrivacyPolicy || isLoading}
                              className={styles.form_submitButton}
                            >
-                             {isLoading ? 'Отправляем…' : isError ? 'Попробовать ещё раз' : 'проконсультироваться'}
+                             {isLoading ? 'Отправляем…' : (isError || isRateLimit) ? 'Попробовать ещё раз' : 'проконсультироваться'}
                            </button>
                          )}
                          {isSuccess && <p className={styles.form_statusText}>Заявка отправлена!</p>}
                          {isError && <p className={styles.form_statusText} role='alert'>Что-то пошло не так. Попробуйте ещё раз.</p>}
+                         {isRateLimit && <p className={styles.form_statusText} role='alert'>Слишком много заявок, подождите минуту и попробуйте снова.</p>}
                     </form>
     )
 }

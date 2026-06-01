@@ -8,6 +8,7 @@ import MarkupScript from "@/components/shared-components/markup-script/markup-sc
 import {CatalogPageBreadCrumbsJsonLD, CatalogPageNavigationJsonLD} from "@/app/utils/markups";
 import FaqScreen from '@/components/pages-components/main-page/faq-screen/faq-screen';
 import NoModelBlock from '@/components/shared-components/noModelBlock/NoModelBlock';
+import { getFormIdBySlug } from '@/lib/forms/get-form-by-slug';
 
 
 export const metadata: Metadata = {
@@ -25,6 +26,15 @@ export const metadata: Metadata = {
 const ShopPage: React.FC = async () => {
 
   const shopData: Array<IProduct> = await getAllProducts();
+
+  // Soft-fail: если Forms-коллекция недоступна, страница всё равно отрендерится.
+  // Форма получит пустой formId и зафейлится на уровне API у конкретного юзера.
+  let noModelFormId = '';
+  try {
+    noModelFormId = await getFormIdBySlug('shop-no-model');
+  } catch (err) {
+    console.error('ShopPage: failed to resolve form "shop-no-model"', err);
+  }
   const jsonLdCatalog = {
     "@context": "https://schema.org",
     "@type": "CollectionPage",
@@ -58,7 +68,7 @@ const ShopPage: React.FC = async () => {
         <MarkupScript jsonLd={CatalogPageBreadCrumbsJsonLD} />
         <MarkupScript jsonLd={CatalogPageNavigationJsonLD} />
       </ProductFilterComp>
-      <NoModelBlock />
+      <NoModelBlock formId={noModelFormId} />
       <div style={{ marginTop: '120px', width: '100%' }}>
       <FaqScreen />
       </div>
