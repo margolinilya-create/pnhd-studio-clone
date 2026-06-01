@@ -2,8 +2,10 @@
 
 Этот файл — единый источник правды для будущих ИИ-сессий. Если ты — Claude или другой агент, начни отсюда.
 
-> **Last full update:** 2026-05-27 после батча «tech-debt frontend — 3D dynamic-import + CategoryPage refactor + admin active-link».
+> **Last full update:** 2026-06-01 после launch-readiness audit + 4 PR'а fix'ов (#33-#38 + hotfix).
 > Если правишь — синхронизируй разделы 4, 5, 6, 7, 9, 10 одновременно с кодом.
+
+> **🟡 Текущий launch-blocker (не код, а Vercel):** Hobby plan auto DDoS Mitigation challenge'ит ~50% запросов на prod. Single-IP audit-traffic разогнал heuristic. Решения: (1) Upgrade Vercel Pro $20/mo + добавить IP bypass rule, (2) подождать 1-2 часа no-traffic, (3) cutover на custom domain. См. [docs/superpowers/reports/launch-audit-2026-06-01-rerun/README.md](docs/superpowers/reports/launch-audit-2026-06-01-rerun/README.md).
 
 ---
 
@@ -36,8 +38,8 @@
 
 | Слой | Технология | Версия |
 |---|---|---|
-| Framework | Next.js (App Router) | 14.2.35 |
-| Runtime | React | 18 |
+| Framework | Next.js (App Router) | **15.4.11** (was 14.2.35 — bumped в Payload phase) |
+| Runtime | React | **19** (with Next.js 15) |
 | Язык | TypeScript (strict) | 5 |
 | Стиль | CSS Modules + MUI v7 `sx` + Emotion | — |
 | State | Redux Toolkit + RTK Query + **listener middleware для persist** | 2.x |
@@ -211,6 +213,29 @@ resetCart() / setDelivery / setCdek... / setUserData / setPaymentURL / setUserPr
 9. `20260527000009_leads_retention.sql` — pg_cron job daily DELETE leads >90 дней
 10. `20260527000010_user_uploads_sweeper.sql` — pg_cron + pg_net вызов `cleanup-user-uploads` daily, секрет из Vault
 
+### Payload migrations (`src/migrations/`)
+
+Применяются через `npm run payload migrate` (с prod `DATABASE_URI` в `.env.local`):
+
+1. `20260528_232600` — initial Payload schema (Users + Categories + Products + Variants + Prices + Pages + Drops + Promos + Leads + Orders + OrderItems)
+2. `20260530_062122_payload_seo_meta` — SEO plugin tab fields
+3. `20260530_064450_payload_redirects` — Redirects collection
+4. `20260530_071720_order_customer_note` — customer.note field
+5. `20260530_075057_pages_drafts_versions` — drafts + versions для Pages
+6. `20260601_101348_payload_plugin_import_export` — Import/Export plugin (applied 2026-06-01 audit fix)
+7. `20260601_102621_payload_plugin_form_builder` — Form Builder plugin (applied 2026-06-01 audit fix)
+8. `20260601_110001_payload_form_submissions_extra_fields` — `ipHash`/`userAgent`/`bitrixLeadId`/`bitrixError` columns (applied 2026-06-01)
+
+### Direct prod-SQL applied via Supabase MCP (2026-06-01 audit)
+
+- `drop_admin_auth` — `DROP FUNCTION is_admin()` + `DROP TABLE admin_users` + dropped 11 admin-write policies (storage.objects × 3 + public.* × 8). См. §15.
+- `drop_svg_mime_from_buckets` — SVG MIME убран из `gallery-images` + `payload-media` allowed_mime_types
+- `price_qty_nonnegative_checks` — `prices.amount >= 0` + `variants.stock_qty >= 0` CHECK constraints
+- `drop_leads_source_idx` — низко-полезный index дропнут
+- `drop_unused_rate_limit_log` — table + cron-job (legacy от Edge Function lead-pipeline) удалены
+
+> **⚠️ Schema drift между local-`supabase/migrations/` и prod:** drop_admin_auth существует как файл `20260529000002_drop_admin_auth.sql` (idempotent), но также applied отдельно через MCP под именем `drop_admin_auth_v2`. На fresh DB обе версии идемпотентно сработают одинаково.
+
 ---
 
 ## 7. Лид-пайплайн (полный flow)
@@ -318,6 +343,24 @@ API оригинала `pnhdstudioapi.ru/api/products` отдаёт 502. Скр�
 | [scripts/seed-forms.ts](scripts/seed-forms.ts) | Idempotent seed 5 Form-документов. Запуск: `npx tsx --env-file=.env.local scripts/seed-forms.ts` |
 | [sentry.client.config.ts](sentry.client.config.ts) | Client-side Sentry init. Server+edge — в [instrumentation.ts](instrumentation.ts) |
 | [src/middleware.ts](src/middleware.ts) | Next.js middleware — резолвит Redirects collection (308/307 по `to.type`) |
+| [src/lib/sanitize-html.ts](src/lib/sanitize-html.ts) | **NEW (audit B6)** — DOMPurify whitelist sanitize для admin-rendered HTML (blog body + static pages). Applied в `lib/queries/blog.ts` + `lib/queries/static-pages.ts` |
+| [src/lib/security/allowed-origins.ts](src/lib/security/allowed-origins.ts) | **NEW (audit B9)** — Helper для Origin-allowlist. Env: `ALLOWED_ORIGINS` (CSV) → fallback на статичный list + Vercel preview regex |
+| [src/lib/security/rate-limit-memory.ts](src/lib/security/rate-limit-memory.ts) | **NEW (audit B4)** — In-memory rate-limit + `ipHashFromHeaders` (использует `x-vercel-forwarded-for` spoof-resistant). Применяется в orders/create endpoint |
+| [src/lib/storage/upload-print.ts](src/lib/storage/upload-print.ts) | `uploadPrintFile()` + **NEW** `deletePrintFile()` (audit C8 pre-cart orphan cleanup, best-effort) |
+| [src/components/shared-components/markup-script/markup-script.tsx](src/components/shared-components/markup-script/markup-script.tsx) | JSON-LD wrapper с `</script>` escape — обязателен для всех JSON-LD блоков (audit B8) |
+| [src/components/pages-components/main-page/map-screen/map-component-lazy.tsx](src/components/pages-components/main-page/map-screen/map-component-lazy.tsx) | **NEW (audit B15)** — `next/dynamic({ssr:false})` обёртка для Yandex Maps. Используется в `map-screen.tsx` вместо прямого импорта |
+| [public/Glitch2.webp](public/Glitch2.webp) | **3D Tee texture** (audit B13) — был `Glitch2.jpg` 6.3MB; пересжат через sharp в 2048×2048 webp q75 = 468KB (-93%). См. `src/components/shared-components/3d-tee/3d-tee.tsx:72` |
+| [public/product-placeholder.svg](public/product-placeholder.svg) | **NEW (audit M3)** — Local placeholder для битых cdn.pnhd.ru images. Применяется в `product-card.tsx` + `product-photos.tsx` как final fallback |
+| [tests/e2e/launch-smoke.spec.ts](tests/e2e/launch-smoke.spec.ts) | Playwright smoke (9 сценариев). Запуск: `AUDIT_BASE_URL=... npx playwright test tests/e2e/launch-smoke.spec.ts` |
+| [tests/e2e/axe-scan.spec.ts](tests/e2e/axe-scan.spec.ts) | axe-core a11y scan на 5 страницах |
+| [tests/e2e/mobile-screenshots.spec.ts](tests/e2e/mobile-screenshots.spec.ts) | Pixel 7 + iPhone 14 device emulation screenshots |
+| [docs/superpowers/reports/launch-audit-2026-06-01/](docs/superpowers/reports/launch-audit-2026-06-01/) | Initial launch audit report (10 per-domain findings + README) |
+| [docs/superpowers/reports/launch-audit-2026-06-01-rerun/](docs/superpowers/reports/launch-audit-2026-06-01-rerun/) | Re-audit after fix-deploy + before/after Lighthouse delta |
+
+### Удалено (после launch-audit'а 2026-06-01)
+
+- `src/lib/supabase/admin-server.ts` — legacy service-role client (Payload Users заменил admin auth) — см. §15
+- `public/Glitch2.jpg` 6.3MB → заменён на `Glitch2.webp` 468KB
 
 ### Удалено (после батча 2026-05-27)
 
@@ -377,21 +420,50 @@ API оригинала `pnhdstudioapi.ru/api/products` отдаёт 502. Скр�
   - Legacy `Leads` collection: `access.create: false`, group `Legacy` — read-only архив исторических записей.
 - [x] **plugin-sentry** подключён + `sentry.client.config.ts` для browser runtime. Server+edge уже инитились через `instrumentation.ts`. `withSentryConfig` обёртка в `next.config.mjs`. Без DSN — full no-op.
 
-### 🟡 Известные косяки (open)
+### 🟢 Закрыто launch-audit'ом 2026-06-01 (PR #33-#38 + hotfix)
+
+**16 🔴 blockers + 33 🟡 warnings закрыто.** Полная сводка: [docs/superpowers/reports/launch-audit-2026-06-01/](docs/superpowers/reports/launch-audit-2026-06-01/) + rerun [./launch-audit-2026-06-01-rerun/](docs/superpowers/reports/launch-audit-2026-06-01-rerun/).
+
+Ключевые изменения:
+- ✅ **Lead capture работает** — POST /api/form-submissions = 201 (Payload form-builder migration applied + 5 forms seeded)
+- ✅ **XSS закрыт** — DOMPurify через `src/lib/sanitize-html.ts` применён на blog + static pages; JSON-LD через `MarkupScript` helper
+- ✅ **Orders endpoint защищён** — Origin allowlist + in-memory rate-limit + transaction wrapper (`src/lib/security/allowed-origins.ts` + `rate-limit-memory.ts`)
+- ✅ **Rate-limit hardened** — `rateLimitFormSubmissions` использует `x-vercel-forwarded-for` (spoof-resistant)
+- ✅ **AbortController** на `notifyBitrix` + `notifyTelegram` (5s timeout) — никакого больше 60s блока на submission
+- ✅ **`is_admin()` function + `admin_users` table dropped** через `drop_admin_auth` migration — legacy Supabase admin удалён полностью
+- ✅ **rate_limit_log table dropped** + cron-job — legacy от удалённой Edge Function
+- ✅ **3D Tee mobile LCP fix** — Glitch2.jpg 6.3MB → Glitch2.webp 468KB (sharp 2048×2048, q75); eager preload убран → LCP home mobile 20.6s→10.5s (-49%), TBT 24s→3.7s (-85%)
+- ✅ **Yandex Maps** dynamic-import через `map-component-lazy.tsx`
+- ✅ **Fonts** `font-display: optional` (closes CLS 0.71 → 0)
+- ✅ **OG-images compressed** — 813KB+653KB+451KB → 125KB+99KB+51KB через sharp
+- ✅ **CSP enforce** (был Report-Only) + HSTS + `unsafe-eval` убран + `object-src 'none'`
+- ✅ **Storage buckets**: SVG MIME убран из gallery-images + payload-media; marketing role убрана из Media write
+- ✅ **A11y**: ContactsWidget aria-label, header logo aria-label, контраст #9a9a9a/#8a8a8a → #595959, cookie Escape + role=region
+- ✅ **SEO**: 6 категорий полная metadata (canonical/OG/Twitter), /admin X-Robots-Tag, /prints + /textile noindex+drop sitemap, /shop metadataBase fix, SITE_INFO.domain env-driven
+- ✅ **CSRF whitelist** Vercel-aliases (fallback расширен + готов под `ALLOWED_ORIGINS` env)
+- ✅ **DB**: `prices.amount` + `variants.stock_qty` CHECK >=0; `leads_source_idx` dropped
+- ✅ **Sentry**: 400/403/404/429 убраны из captureErrors (DoS quota burn fix)
+- ✅ **Validate-stored-cart** теперь требует `item.sizes[]` shape — defensive against malformed sessionStorage
+
+### 🟡 Известные косяки (open после audit'а)
 
 | Severity | Issue | Где |
 |---|---|---|
-| Low | 15/25 товаров с битым `image_url` на cdn.pnhd.ru — нужны исходники для заливки в `product-images` bucket. | `products.image_url` |
-| Low | `dangerouslySetInnerHTML` × 6 без санитизации (методы, текстиль, принты, блог). | various |
-| Low | RTK Query baseUrl всё ещё `https://pnhdstudioapi.ru` (мёртвый) — `createLead` обходит через `queryFn`, остальные эндпоинты (orders, CDEK, promocodes) пока бьются в пустоту. Когда подключим — поменять baseUrl или вынести в queryFn. | [src/api/api.ts](src/api/api.ts) |
+| 🟡 LAUNCH | **Vercel Hobby DDoS Mitigation challenge** ~50% запросов после audit-traffic. Single-click disable только на Pro plan. См. шапку файла. | Vercel project settings |
+| Med | 15/25 товаров с битым `cdn.pnhd.ru` URL — fallback на `/product-placeholder.svg`. Залить реальные в `product-images` bucket когда будут исходники. | `products.image_url` |
+| Low | RTK Query baseUrl всё ещё `''` (relative). `createOrder` идёт через `queryFn` на Payload `/api/orders/create`. CDEK + promocodes endpoints мёртвые (referenced в RTK Query но pnhdstudioapi.ru = 502). Очистить когда CDEK заменим. | [src/api/api.ts](src/api/api.ts) |
+| Low | Distributed rate-limit (form-submissions + orders) пока in-memory per Vercel-instance. На Pro/Enterprise — миграция на Upstash/Redis. | C5/C6 в audit |
+| Low | CSP `unsafe-inline` остаётся (для inline styles + tracker scripts) — nonce-based refactor требует переписать MUI sx + tracker bootstrap. | next.config.mjs |
+| Low | Cookie banner не имеет full focus-trap (только Escape + role=region) — нужен Dialog refactor для WCAG 2.1 AA strict. | cookie-bar.tsx |
+| Low | `dangerouslySetInnerHTML` в methods/textile/prints — это static TS-data (доверенный источник, не из БД), не XSS-vector. Если в будущем поле станет user-editable — DOMPurify обязателен. | various |
 
 ### 🟠 Большие куски (требуют решения)
 
-- **CDEK + платёжный шлюз**: чекаут сейчас demo-alert. Нужны Edge Functions `cdek-cities`, `cdek-points`, `cdek-calculate`, `create-order` + интеграция с YooKassa/Robokassa.
-- **Bitrix24 access**: Edge Function готова, ждёт URL webhook'а от заказчика. Когда появится — выставить `BITRIX_WEBHOOK_URL` в Supabase secrets.
-- **Тесты + CI**: 0 тестов на repo, нет GitHub Actions. Если идём в продакшен — нужны хотя бы typecheck+build на PR. Vitest target: cart-slice + restore validation + Edge Function валидаторы.
-- **Sentry**: production-ошибки никуда не пишутся.
-- **Tracking IDs**: Roistat/Metrica/uiscom стоят с оригинальными ID. Если клиент новый — заменить.
+- **CDEK + платёжный шлюз**: `/api/orders/create` уже принимает orders (auth + transaction wrapped, audit B4/B5), но `paymentUrl: null` возвращается — нужны Edge Functions `cdek-cities`, `cdek-points`, `cdek-calculate` + интеграция с YooKassa/Robokassa.
+- **Bitrix24 access**: Payload hook `notifyBitrix` готов, ждёт URL webhook'а от заказчика. Когда появится — выставить `BITRIX_WEBHOOK_URL` в Vercel env. На текущем prod env var пустой → no-op (verified).
+- **Vercel plan upgrade**: Hobby → Pro для (1) отключить DDoS challenge, (2) IP bypass rules, (3) custom domain SSL.
+- **Custom domain**: cutover на свой production domain (studio.pnhd.ru или новый). После этого выставить `NEXT_PUBLIC_SITE_URL` env var → SITE_INFO.domain auto-pick'ит → все canonical URLs become correct.
+- **CDN refresh для product images**: 15 битых slug'ов на cdn.pnhd.ru — нужны исходники → upload в Supabase `product-images` bucket.
 
 ---
 
@@ -520,7 +592,22 @@ NEXT_PUBLIC_SENTRY_DSN=<тот же DSN>
 
 ---
 
-## 15. Admin panel (shipped — в production)
+## 15. Admin panel — **REPLACED by Payload admin** (2026-06-01)
+
+> **⚠️ Этот раздел описывает legacy Supabase-based админку, которая удалена в audit-fix батчах (PR #34, #38).**
+>
+> **Что сейчас:** админка работает через Payload CMS на `/admin` (Payload routes). Auth = Payload Users collection + cookie session. Свежий admin создаётся через `scripts/seed-admin-user.ts`.
+>
+> **Что удалено:**
+> - `public.admin_users` table — `DROP TABLE` через migration `20260529000002_drop_admin_auth.sql` (applied 2026-06-01)
+> - `public.is_admin()` function — `DROP FUNCTION` (был callable by anon → security issue, см. audit B11)
+> - 11 admin-write RLS policies на public.*/storage.objects — dropped
+> - `src/lib/supabase/admin-server.ts` — file removed
+> - Legacy `/admin/login` route + `safeNextPath` + `requireAdmin()` — removed (Payload routes теперь обрабатывают `/admin`)
+>
+> Если в коде где-то ещё видишь `requireAdmin`, `admin-server.ts`, `safeNextPath`, `is_admin()` — это устаревшие референсы, нужно удалить.
+
+### Legacy ниже (для архива)
 
 Внутренний кабинет на `/admin/*` — CRUD товаров, блога, галереи + просмотр лидов. **Смержен в main** через [PR #1](https://github.com/margolinilya-create/pnhd-studio-clone/pull/1) (42 коммита) и работает на production: **https://pnhd-studio-clone.vercel.app/admin/login**.
 
