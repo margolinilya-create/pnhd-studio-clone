@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="371" height="556" viewBox="0 0 371 556" role="img" aria-label="Фото скоро появится">
+  <rect width="371" height="556" fill="#f3f3f3"/>
+  <g fill="none" stroke="#cccccc" stroke-width="2">
+    <rect x="60" y="180" width="251" height="196" rx="4"/>
+    <circle cx="135" cy="240" r="22"/>
+    <path d="M70 360 L155 280 L210 320 L300 220 L300 365 L70 365 Z" fill="#e6e6e6" stroke="none"/>
+  </g>
+  <text x="185" y="430" font-family="system-ui, -apple-system, sans-serif" font-size="16" fill="#888" text-anchor="middle">Фото скоро появится</text>
+</svg>

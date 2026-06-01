@@ -15,13 +15,18 @@ type TCardProps = {
 }
 
 
+// audit M3 — раньше fallback цепочка: cdn.pnhd.ru/${slug}_0.jpg → img prop
+// → cdn.pnhd.ru/no%20photo.png. Сам final placeholder тоже на cdn.pnhd.ru
+// (часть 15 of 25 битых). Теперь fallback в локальный SVG placeholder.
+const LOCAL_PLACEHOLDER = '/product-placeholder.svg';
+
 const ProductCard: React.FC<TCardProps> = ({ title, price, img, sizes, slug }) => {
   const [imageSrc, setImageSrc] = useState(`${CDN_URL}/${slug}_0.jpg`);
   const [imageError, setImageError] = useState(false);
 
   useEffect(() => {
     if (imageError) {
-      setImageSrc(`${CDN_URL}/no%20photo.png`);
+      setImageSrc(LOCAL_PLACEHOLDER);
     }
   }, [imageError]);
 
@@ -32,20 +37,19 @@ const ProductCard: React.FC<TCardProps> = ({ title, price, img, sizes, slug }) =
       )}
       <Image
         src={imageSrc}
-        alt="card pic"
+        alt={title.toString() || 'product photo'}
         className={styles.card_image}
         width={371}
         height={556}
         loading="lazy"
-        unoptimized
+        // unoptimized убран — теперь next/image даст webp/avif + lazy через _next/image
         onError={() => {
           if (imageSrc.includes('cdn.pnhd.ru') && !imageError) {
-            setImageSrc(img ?? '');
+            setImageSrc(img ?? LOCAL_PLACEHOLDER);
           } else if (!imageSrc.includes('cdn.pnhd.ru') && !imageError) {
             setImageError(true);
           }
         }}
-      // style={{ display: imageError ? 'none' : 'block' }}
       />
       <div className={styles.card_caption}>
         <p className={styles.card_title}>{title}</p>

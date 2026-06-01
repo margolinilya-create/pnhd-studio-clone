@@ -20,7 +20,7 @@ import {
 import { useAppDispatch, useAppSelector } from '@/redux/redux-hooks';
 import { actions as cartActions } from '@/redux/cart-slice/cart.slice';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { uploadPrintFile } from '@/lib/storage/upload-print';
+import { uploadPrintFile, deletePrintFile } from '@/lib/storage/upload-print';
 import { SIDES_FOR_LOCATION, PRINT_PRICE_TABLE } from './print-config';
 
 const formatRub = (n: number) => new Intl.NumberFormat('ru-RU').format(n) + ' ₽';
@@ -98,6 +98,14 @@ const ProductInfoInner: React.FC<{
     file: File,
   ): Promise<IPrintFileRef> => {
     const ref = await uploadPrintFile(file);
+    // audit C8 — pre-cart orphan: если на этом side уже был файл (юзер
+    // перезагрузил без commit'а в Redux), удаляем старый из Storage.
+    // cart-orphan-cleanup middleware не видит pre-cart state, поэтому
+    // делаем это локально.
+    const previousRef = printConfig.files[side];
+    if (previousRef?.path && previousRef.path !== ref.path) {
+      void deletePrintFile(previousRef.path);
+    }
     setPrintConfig((prev) => ({
       ...prev,
       files: { ...prev.files, [side]: ref },
@@ -108,6 +116,11 @@ const ProductInfoInner: React.FC<{
   const handleClearFile = (side: TPrintSide) => {
     setPrintConfig((prev) => {
       const next = { ...prev.files };
+      // audit C8 — при clear-up до cart-commit'а удаляем из Storage.
+      const removed = prev.files[side];
+      if (removed?.path) {
+        void deletePrintFile(removed.path);
+      }
       delete next[side];
       return { ...prev, files: next };
     });
