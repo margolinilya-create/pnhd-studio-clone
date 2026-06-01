@@ -1,7 +1,6 @@
 'use client'
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import styles from './product-card.module.css';
-import { CDN_URL } from "@/app/utils/constants";
 import Image from "next/image";
 
 
@@ -15,20 +14,10 @@ type TCardProps = {
 }
 
 
-// audit M3 — раньше fallback цепочка: cdn.pnhd.ru/${slug}_0.jpg → img prop
-// → cdn.pnhd.ru/no%20photo.png. Сам final placeholder тоже на cdn.pnhd.ru
-// (часть 15 of 25 битых). Теперь fallback в локальный SVG placeholder.
 const LOCAL_PLACEHOLDER = '/product-placeholder.svg';
 
-const ProductCard: React.FC<TCardProps> = ({ title, price, img, sizes, slug }) => {
-  const [imageSrc, setImageSrc] = useState(`${CDN_URL}/${slug}_0.jpg`);
-  const [imageError, setImageError] = useState(false);
-
-  useEffect(() => {
-    if (imageError) {
-      setImageSrc(LOCAL_PLACEHOLDER);
-    }
-  }, [imageError]);
+const ProductCard: React.FC<TCardProps> = ({ title, price, img, sizes }) => {
+  const [imageSrc, setImageSrc] = useState(img || LOCAL_PLACEHOLDER);
 
   return (
     <div className={styles.card}>
@@ -42,14 +31,7 @@ const ProductCard: React.FC<TCardProps> = ({ title, price, img, sizes, slug }) =
         width={371}
         height={556}
         loading="lazy"
-        // unoptimized убран — теперь next/image даст webp/avif + lazy через _next/image
-        onError={() => {
-          if (imageSrc.includes('cdn.pnhd.ru') && !imageError) {
-            setImageSrc(img ?? LOCAL_PLACEHOLDER);
-          } else if (!imageSrc.includes('cdn.pnhd.ru') && !imageError) {
-            setImageError(true);
-          }
-        }}
+        onError={() => setImageSrc(LOCAL_PLACEHOLDER)}
       />
       <div className={styles.card_caption}>
         <p className={styles.card_title}>{title}</p>

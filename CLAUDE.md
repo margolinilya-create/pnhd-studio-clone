@@ -287,10 +287,15 @@ API оригинала `pnhdstudioapi.ru/api/products` отдаёт 502. Скр�
 
 ### Image hosting
 
-`image_url` и `product_gallery_photos.url` указывают на `https://cdn.pnhd.ru/<slug>_<n>.jpg`. Половина (10/25) реально открывается на CDN, остальные 15 (шопперы, кепки, kids-футболки) отдают 404 — это data-quality самого оригинала. Варианты исправления:
-- Залить файлы в наш Supabase Storage bucket `product-images` (нужны исходники)
-- Подставить placeholder через Next/Image fallback
-- Сейчас: оставлено как есть
+**Image hosting — обновлено 2026-06-01**: все 25 товаров теперь хостятся в Supabase Storage `product-images/imported/<slug>/<filename>`.
+
+Изначально 15/25 товаров (шопперы, кепки, kids-футболки, SUPEROVERSIZE, белый мужской лонгслив) имели битый `cdn.pnhd.ru` URL — 404. Реальные фото найдены в RSC-payload оригинала по пути `pnhdstudioapi.ru/images/<категория>/<цвет>_main.{jpg,png}` + numbered (`<цвет>1`, `<цвет>2`, `<цвет>3`). Раньше думали, что весь `pnhdstudioapi.ru` мёртв — но 502 был только на `/api/*` (REST), статика на `/images/*` живая.
+
+Скачали 49 фото с битых slug'ов + 40 с живых cdn.pnhd.ru = 89 файлов, залили в Supabase Storage `product-images/imported/<slug>/`, обновили `products.image_url` и `product_gallery_photos.url` в legacy таблицах `public.*`. Один slug бедный — `futbolka-oversize-chernaya-man` имеет только 1 фото (на оригинале тоже одно).
+
+**Payload wiring (2026-06-01)**: legacy `public.products` / `public.product_gallery_photos` — orphan, storefront читает Payload. До этой даты `payload.products`: 25 строк, **0 с cover_media_id**, `products_gallery_media`: **0** строк → каждый product рендерился как placeholder в проде. Скрипт [scripts/fix-product-media.ts](scripts/fix-product-media.ts) ходит за URL'ами из Supabase `public.*`, загружает через Payload local API (s3Storage adapter → bucket `payload-media/media/`), связывает `cover_media_id` + insert'ит в `products_gallery_media`. Запуск: `NODE_ENV=production npx tsx --env-file=.env.local scripts/fix-product-media.ts`. Идемпотентен по наличию cover/gallery — повторный запуск пропустит готовое. После прогона: `payload.media` содержит 114 product-media (25 covers + 89 gallery), все 25 products связаны.
+
+**Compute-эффект на frontend**: legacy fallback chain (`product-card.tsx`/`product-photos.tsx`/`cart-page/product-image.tsx` пытались сначала `cdn.pnhd.ru/<slug>_0.jpg` → 404 → fallback на `image_url`) удалён. Initial src теперь `image_url || LOCAL_PLACEHOLDER`. `CDN_URL` константа удалена из `src/app/utils/constants.ts`, `cdn.pnhd.ru` убран из `next.config.mjs` images.remotePatterns + CSP img-src.
 
 `editor_*_view` (3D mockup paths) проставлены NULL — конструктора больше нет.
 
@@ -450,7 +455,7 @@ API оригинала `pnhdstudioapi.ru/api/products` отдаёт 502. Скр�
 | Severity | Issue | Где |
 |---|---|---|
 | 🟡 LAUNCH | **Vercel Hobby DDoS Mitigation challenge** ~50% запросов после audit-traffic. Single-click disable только на Pro plan. См. шапку файла. | Vercel project settings |
-| Med | 15/25 товаров с битым `cdn.pnhd.ru` URL — fallback на `/product-placeholder.svg`. Залить реальные в `product-images` bucket когда будут исходники. | `products.image_url` |
+| Low | `futbolka-oversize-chernaya-man` имеет только 1 фото в галерее (на оригинале studio.pnhd.ru тоже одно). Остальные 24 товара — 2-5 фото. | `product_gallery_photos` |
 | Low | RTK Query baseUrl всё ещё `''` (relative). `createOrder` идёт через `queryFn` на Payload `/api/orders/create`. CDEK + promocodes endpoints мёртвые (referenced в RTK Query но pnhdstudioapi.ru = 502). Очистить когда CDEK заменим. | [src/api/api.ts](src/api/api.ts) |
 | Low | Distributed rate-limit (form-submissions + orders) пока in-memory per Vercel-instance. На Pro/Enterprise — миграция на Upstash/Redis. | C5/C6 в audit |
 | Low | CSP `unsafe-inline` остаётся (для inline styles + tracker scripts) — nonce-based refactor требует переписать MUI sx + tracker bootstrap. | next.config.mjs |

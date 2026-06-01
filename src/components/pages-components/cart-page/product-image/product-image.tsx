@@ -1,31 +1,15 @@
 'use client'
-import React, { useState, useMemo } from "react";
+import React, { useState } from "react";
 import Link from "next/link";
 import styles from './product-image.module.css';
 import { ICartOrderElement } from "@/app/utils/types";
-import { CDN_URL } from "@/app/utils/constants";
+
+const LOCAL_PLACEHOLDER = '/product-placeholder.svg';
 
 const ProductImage: React.FC<{ elem: ICartOrderElement }> = ({ elem }) => {
-    // Источники в порядке убывания доверия:
-    //   1. Supabase product.image_url (после PR #3 — это абсолютный URL на cdn.pnhd.ru / Storage)
-    //   2. cdn.pnhd.ru/<slug>_0.jpg (legacy convention из импорта)
-    //   3. /no-photo.png placeholder
-    const candidates = useMemo(() => {
-        const list: string[] = [];
-        if (elem?.item?.image_url) list.push(elem.item.image_url);
-        list.push(`${CDN_URL}/${elem.item.slug}_0.jpg`);
-        list.push(`${CDN_URL}/no-photo.png`);
-        return list;
-    }, [elem?.item?.image_url, elem.item.slug]);
+    const [imageSrc, setImageSrc] = useState(elem?.item?.image_url || LOCAL_PLACEHOLDER);
 
-    const [srcIndex, setSrcIndex] = useState(0);
-    const imageSrc = candidates[srcIndex];
-
-    const handleError = () => {
-        if (srcIndex < candidates.length - 1) {
-            setSrcIndex(srcIndex + 1);
-        }
-    };
+    const handleError = () => setImageSrc(LOCAL_PLACEHOLDER);
 
     return (
         <div className={styles.cart_productImageWrapper}>

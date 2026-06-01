@@ -3,8 +3,6 @@
 // CDEK/promocodes endpoints пока не реализованы (вернут 404 — это TODO).
 export const apiBaseUrl = '';
 
-export const CDN_URL = 'https://cdn.pnhd.ru';
-
 export const ACQUIRE_RATIO = 0.965; //комиссия эквайринга
 
 export const tumblers = [ 'DTG', 'DTF', 'ТЕРМОПЕРЕНОС', 'ВЫШИВКА' ];

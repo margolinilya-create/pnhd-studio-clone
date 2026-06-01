@@ -12,7 +12,7 @@ const CSP_ENFORCE = [
     "default-src 'self'",
     "script-src 'self' 'unsafe-inline' https://cloud.roistat.com https://mc.yandex.ru https://app.uiscom.ru https://*.uiscom.ru https://browser.sentry-cdn.com https://*.sentry.io",
     "style-src 'self' 'unsafe-inline'",
-    "img-src 'self' data: blob: https://cdn.pnhd.ru https://*.supabase.co https://mc.yandex.ru https://placehold.co https://yastatic.net",
+    "img-src 'self' data: blob: https://*.supabase.co https://mc.yandex.ru https://placehold.co https://yastatic.net",
     "font-src 'self' data:",
     "connect-src 'self' https://*.supabase.co https://mc.yandex.ru https://cloud.roistat.com https://*.uiscom.ru https://*.sentry.io https://*.ingest.sentry.io",
     "frame-src 'self' https://www.youtube.com https://yandex.ru https://*.yandex.ru",
@@ -110,18 +110,8 @@ const nextConfig = {
     },
     images: {
         remotePatterns: [
-            // audit DB-warning — cdn.pnhd.ru исторически держал legacy product
-            // фото (15 из 25 импортированных). Host раздаёт 404 → next/image
-            // зря дёргает, ловит ошибку, пишет в Sentry. После заливки реальных
-            // фото в product-images bucket → host можно дропнуть. Пока оставляем
-            // ОДНУ запись для не сломанных 10 фото, но если потеряются — лучше
-            // явно перезалить в Supabase. TODO: убрать после image-refresh sprint'а.
-            {
-                protocol: 'https',
-                hostname: 'cdn.pnhd.ru',
-                pathname: '/**',
-            },
-            // Supabase Storage public objects
+            // Supabase Storage public objects — основной источник product photos
+            // (после 2026-06-01 wired в Payload Media + связаны с products).
             {
                 protocol: 'https',
                 hostname: 'almfjmiygtnzngkayhdv.supabase.co',
