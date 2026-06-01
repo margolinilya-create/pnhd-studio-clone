@@ -26,8 +26,11 @@ import { Products } from './collections/Products.ts';
 import { Promos } from './collections/Promos.ts';
 import { Users } from './collections/Users.ts';
 import { Variants } from './collections/Variants.ts';
+import { SiteSettings } from './globals/SiteSettings.ts';
 
 const collections = [Users, Media, Categories, Products, Variants, Prices, Pages, Drops, Promos, Leads, Orders, OrderItems];
+
+const globals = [SiteSettings];
 
 const filename = fileURLToPath(import.meta.url);
 const dirname = path.dirname(filename);
@@ -43,6 +46,7 @@ export default buildConfig({
     graphQLPlayground: '/graphql-playground',
   },
   collections,
+  globals,
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET || '',
   typescript: {

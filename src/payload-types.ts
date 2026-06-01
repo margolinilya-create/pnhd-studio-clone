@@ -119,8 +119,12 @@ export interface Config {
     defaultIDType: number;
   };
   fallbackLocale: null;
-  globals: {};
-  globalsSelect: {};
+  globals: {
+    'site-settings': SiteSetting;
+  };
+  globalsSelect: {
+    'site-settings': SiteSettingsSelect<false> | SiteSettingsSelect<true>;
+  };
   locale: null;
   widgets: {
     collections: CollectionsWidget;
@@ -1633,6 +1637,99 @@ export interface PayloadMigrationsSelect<T extends boolean = true> {
   createdAt?: T;
 }
 /**
+ * Контактные данные, лейблы CTA, аналитика и social-ссылки. Видно на каждой странице сайта.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "site-settings".
+ */
+export interface SiteSetting {
+  id: number;
+  businessHours: string;
+  phone: string;
+  siteName: string;
+  legalName: string;
+  inn: string;
+  kpp: string;
+  copyrightStartYear: string;
+  headerCTALabel: string;
+  mobileCTALabel: string;
+  defaultPopupTitle: string;
+  madeinRussiaLabel?: string | null;
+  madeinRussiaEnabled?: boolean | null;
+  wholesaleUrl: string;
+  social?: {
+    telegramUrl?: string | null;
+    telegramLabel?: string | null;
+    whatsappUrl?: string | null;
+    whatsappLabel?: string | null;
+    maxUrl?: string | null;
+    maxLabel?: string | null;
+  };
+  /**
+   * IDs сторонних трекеров. Пусто = не подключать.
+   */
+  analytics?: {
+    roistatId?: string | null;
+    yandexMetricaId?: string | null;
+    uiscomKey?: string | null;
+    yandexVerification?: string | null;
+  };
+  seo?: {
+    defaultOGImage?: (number | null) | Media;
+    siteLang?: ('ru' | 'en') | null;
+  };
+  _status?: ('draft' | 'published') | null;
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "site-settings_select".
+ */
+export interface SiteSettingsSelect<T extends boolean = true> {
+  businessHours?: T;
+  phone?: T;
+  siteName?: T;
+  legalName?: T;
+  inn?: T;
+  kpp?: T;
+  copyrightStartYear?: T;
+  headerCTALabel?: T;
+  mobileCTALabel?: T;
+  defaultPopupTitle?: T;
+  madeinRussiaLabel?: T;
+  madeinRussiaEnabled?: T;
+  wholesaleUrl?: T;
+  social?:
+    | T
+    | {
+        telegramUrl?: T;
+        telegramLabel?: T;
+        whatsappUrl?: T;
+        whatsappLabel?: T;
+        maxUrl?: T;
+        maxLabel?: T;
+      };
+  analytics?:
+    | T
+    | {
+        roistatId?: T;
+        yandexMetricaId?: T;
+        uiscomKey?: T;
+        yandexVerification?: T;
+      };
+  seo?:
+    | T
+    | {
+        defaultOGImage?: T;
+        siteLang?: T;
+      };
+  _status?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
+}
+/**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "collections_widget".
  */
@@ -1719,7 +1816,7 @@ export interface TaskSchedulePublish {
       relationTo: 'pages';
       value: number | Page;
     } | null;
-    global?: string | null;
+    global?: 'site-settings' | null;
     user?: (number | null) | User;
   };
   output?: unknown;
