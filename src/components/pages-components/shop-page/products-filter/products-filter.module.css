@@ -21,7 +21,8 @@
   font-family: 'Neue_machina', sans-serif;
   font-size: 12px;
   line-height: 1.4;
-  color: #9a9a9a;
+  /* audit A3: было #9a9a9a (2.81:1) — fail WCAG AA. #595959 = 7:1 на #fff. */
+  color: #595959;
   margin: 0 0 12px;
   font-weight: 400;
 }
@@ -88,7 +89,8 @@
   font-size: 11px;
   line-height: 1;
   font-weight: 400;
-  color: #9a9a9a;
+  /* audit A3: было #9a9a9a (2.81:1) — fail WCAG AA. #595959 = 7:1 на #fff. */
+  color: #595959;
 }
 
 .pills {

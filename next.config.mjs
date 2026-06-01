@@ -1,11 +1,16 @@
 import { withSentryConfig } from '@sentry/nextjs';
 import { withPayload } from '@payloadcms/next/withPayload';
 
-// Content-Security-Policy в Report-Only режиме (PR #6).
-// Через 1-2 недели после наблюдения за report'ами — переключить в enforce.
-const CSP_REPORT_ONLY = [
+// audit Sec-warning: убран `unsafe-eval` из script-src. Yandex Metrica
+// исторически просила его — современная версия (v.r) больше не использует
+// eval. Если внезапно появятся report'ы — добавим `'wasm-unsafe-eval'`
+// специально для нужного источника.
+//
+// Также убран Report-Only режим — теперь enforce. Один лишний listing в CI
+// если найдётся новое нарушение, но лучше fail-fast чем silent leak.
+const CSP_ENFORCE = [
     "default-src 'self'",
-    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cloud.roistat.com https://mc.yandex.ru https://app.uiscom.ru https://*.uiscom.ru https://browser.sentry-cdn.com https://*.sentry.io",
+    "script-src 'self' 'unsafe-inline' https://cloud.roistat.com https://mc.yandex.ru https://app.uiscom.ru https://*.uiscom.ru https://browser.sentry-cdn.com https://*.sentry.io",
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: blob: https://cdn.pnhd.ru https://*.supabase.co https://mc.yandex.ru https://placehold.co https://yastatic.net",
     "font-src 'self' data:",
@@ -14,6 +19,7 @@ const CSP_REPORT_ONLY = [
     "frame-ancestors 'none'",
     "base-uri 'self'",
     "form-action 'self'",
+    "object-src 'none'",
 ].join('; ');
 
 /** @type {import('next').NextConfig} */
@@ -29,7 +35,11 @@ const nextConfig = {
                     { key: 'X-Content-Type-Options', value: 'nosniff' },
                     { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
                     { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=(), interest-cohort=()' },
-                    { key: 'Content-Security-Policy-Report-Only', value: CSP_REPORT_ONLY },
+                    // audit Sec — HSTS + preload (после cutover'а на свой домен можно добавить preload).
+                    // 1 год = 31536000. includeSubDomains покрывает potential vercel subdomain'ы.
+                    { key: 'Strict-Transport-Security', value: 'max-age=31536000; includeSubDomains' },
+                    // audit Sec — CSP теперь enforce (был Report-Only). Без unsafe-eval.
+                    { key: 'Content-Security-Policy', value: CSP_ENFORCE },
                 ],
             },
         ];
