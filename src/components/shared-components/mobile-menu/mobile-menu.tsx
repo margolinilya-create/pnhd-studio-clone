@@ -1,13 +1,25 @@
 "use client";
-import React, { useState } from "react";
+import React, { useEffect } from "react";
 import styles from "./mobile-menu.module.css";
 import { useAppSelector, useAppDispatch } from "@/redux/redux-hooks";
 import { actions as utilsActions } from "@/redux/utils-slice/utils.slice";
+import { usePathname } from "next/navigation";
 import Link from "next/link";
 
 const MobileMenu: React.FC = () => {
     const dispatch = useAppDispatch();
     const { isMobileMenuActive } = useAppSelector((store) => store.utils);
+    const pathname = usePathname();
+
+    // audit C11 — раньше menu state не reset'ился при programmatic navigation
+    // (Link click внутри меню → route смена → меню остаётся открытым). Теперь
+    // pathname-effect закрывает меню при каждой смене URL.
+    useEffect(() => {
+        if (isMobileMenuActive) {
+            dispatch(utilsActions.setMobileMenuActive(false));
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [pathname]);
 
     const closeMenuHandler = () => {
         dispatch(utilsActions.setMobileMenuActive(false));
@@ -120,8 +132,21 @@ const MobileMenu: React.FC = () => {
                             </li>
                         </ul>
                         <div className={styles.menu_buttonsWrapper}>
-                            <Link className={styles.menu_phoneButton} href='https://pnhd.ru'>корпоративный отдел</Link>                           
-                            <button className={styles.menu_leadButton}>проконсультироваться</button>
+                            <Link className={styles.menu_phoneButton} href='https://pnhd.ru'>корпоративный отдел</Link>
+                            {/* audit C11 — раньше button без onClick (dead button). Теперь
+                                открывает popup-форму лида и закрывает меню. */}
+                            <button
+                                type="button"
+                                className={styles.menu_leadButton}
+                                onClick={() => {
+                                    dispatch(utilsActions.setPopupType('lead'));
+                                    dispatch(utilsActions.setPopupTitle('Получите консультацию'));
+                                    dispatch(utilsActions.setPopupVisibility());
+                                    closeMenuHandler();
+                                }}
+                            >
+                                проконсультироваться
+                            </button>
                         </div>
                     </div>
                 </div>

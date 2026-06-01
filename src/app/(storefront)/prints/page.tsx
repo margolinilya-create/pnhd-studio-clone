@@ -1,20 +1,14 @@
 import React from "react";
-import styles from './page.module.css';
-import PrintMethodsScreen from "@/components/pages-components/main-page/print-methods-screen/print-methods-screen";
+import { Metadata } from "next";
 
-
-
-
-
-
+// audit W-SEO-05 — index-страница /prints пустая (`<></>`). До тех пор пока
+// её не заполнят контентом — помечаем noindex и убираем из sitemap.
+export const metadata: Metadata = {
+    robots: { index: false, follow: true },
+};
 
 const Page: React.FC = () => {
-
-    return (
-        <></>
-
-        
-    )
-}
+    return <></>;
+};
 
 export default Page;
