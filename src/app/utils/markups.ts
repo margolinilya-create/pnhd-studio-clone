@@ -10,10 +10,9 @@ import { resolveDomain } from '@/lib/site/domain';
 const toRawPhone = (phone: string): string => phone.replace(/[^\d+]/g, '');
 
 // Конвертация JSON-LD в async-factories (см. W-SEO-01 / Wave 0.1.5 task D):
-// раньше эти константы дёргали SITE_INFO.domain + хардкодили phone/email/address
-// модулем-импортом. После задачи A в SiteSettings лежат contacts/openingHours,
-// читаем оттуда. cache() — per-request dedupe, если один и тот же JSON-LD
-// импортируется на нескольких subtree'ах.
+// после задачи A в SiteSettings лежат contacts/openingHours, читаем оттуда.
+// cache() — per-request dedupe, если один и тот же JSON-LD импортируется на
+// нескольких subtree'ах.
 
 export const getLocalBusinessJsonLD = cache(async () => {
   const settings = await getSiteSettings();

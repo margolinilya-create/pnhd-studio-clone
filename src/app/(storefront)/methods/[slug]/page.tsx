@@ -12,13 +12,17 @@ import {prices} from "@/app/utils/constants";
 import MarkupScript from "@/components/shared-components/markup-script/markup-script";
 import PrintMethodsScreen from "@/components/pages-components/main-page/print-methods-screen/print-methods-screen";
 import {type} from "node:os";
-import { SITE_INFO } from "@/app/constants";
+import { resolveDomain } from "@/lib/site/domain";
+import { getSiteSettings } from "@/lib/queries/site-settings";
 import AdvantagesComponent from "@/components/pages-components/method-page/advantages/advantages";
 
 export const generateMetadata = async (props: { params: Promise<{ slug: string }> }): Promise<Metadata> => {
   const params = await props.params;
   const method = methodsData.find((item) => item.slug === params.slug);
-  const currentUrl = SITE_INFO.domain+'/methods/'+params.slug
+  const settings = await getSiteSettings();
+  const base = resolveDomain();
+  const siteName = settings?.siteName ?? 'PINHEAD STUDIO';
+  const currentUrl = base+'/methods/'+params.slug
 
   return {
     title: method?.meta.metaTitle,
@@ -29,7 +33,7 @@ export const generateMetadata = async (props: { params: Promise<{ slug: string }
       url: currentUrl,
       title: method?.ruName,
       description: method?.brief_subtitle,
-      siteName: SITE_INFO.name,
+      siteName,
     },
     alternates: {
       canonical: currentUrl,
@@ -38,10 +42,14 @@ export const generateMetadata = async (props: { params: Promise<{ slug: string }
 }
 
 
-const MethodPage: React.FC<{
+const MethodPage = async (props: {
   params: Promise<{ slug: string }>;
-}> = async props => {
+}) => {
   const params = await props.params;
+  const settings = await getSiteSettings();
+  const base = resolveDomain();
+  const legalName = settings?.legalName ?? 'ООО ПИНХЭД СТУДИО';
+  const addr = settings?.contacts?.address;
 
   const method = methodsData.find((item) => item.slug === params.slug);
   const options = ssOptions.filter((item) => item.parent === method?.name);
@@ -51,7 +59,7 @@ const MethodPage: React.FC<{
     "@type": "WebPage",
     "name": method?.main_title ?? "",
     "description": method?.meta.metaDescription ?? "",
-    "url": `https://studio.pnhd.ru/methods/${method?.slug}`
+    "url": `${base}/methods/${method?.slug}`
     ,
     "mainEntity": {
       "@type": "Service",
@@ -59,7 +67,7 @@ const MethodPage: React.FC<{
     },
     "primaryImageOfPage": {
       "@type": "ImageObject",
-      "url": `https://studio.pnhd.ru${method?.images.main.src ?? ""}`,
+      "url": `${base}${method?.images.main.src ?? ""}`,
     }
   }
   const offers: object[] = [];
@@ -102,11 +110,11 @@ const MethodPage: React.FC<{
     "description": method?.brief_subtitle ?? "",
     "provider": {
       "@type": "LocalBusiness",
-      "name": "PNHD>STUDIO",
+      "name": legalName,
       "address": {
         "@type": "PostalAddress",
-        "addressLocality": "Санкт-Петербург",
-        "streetAddress": "ул. Чапыгина, д. 1"
+        "addressLocality": addr?.locality ?? "Санкт-Петербург",
+        "streetAddress": addr?.street ?? "ул. Чапыгина, д. 1"
       }
     },
     "areaServed": "Санкт-Петербург",
@@ -120,19 +128,19 @@ const MethodPage: React.FC<{
         "@type": "ListItem",
         "position": 1,
         "name": "Главная",
-        "item": "https://studio.pnhd.ru/"
+        "item": `${base}/`
       },
       {
         "@type": "ListItem",
         "position": 2,
         "name": "Методы печати",
-        "item": "https://studio.pnhd.ru/methods"
+        "item": `${base}/methods`
       },
       {
         "@type": "ListItem",
         "position": 3,
         "name": `${method?.main_title ?? ""}`,
-        "item": `https://studio.pnhd.ru/methods/${method?.slug ?? ""}`
+        "item": `${base}/methods/${method?.slug ?? ""}`
       }
     ]
   }

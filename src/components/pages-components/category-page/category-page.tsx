@@ -8,7 +8,6 @@ import React from 'react';
 import Link from 'next/link';
 import { Metadata } from 'next';
 import styles from '@/app/(storefront)/contacts/page.module.css';
-import { SITE_INFO } from '@/app/constants';
 import { IProduct } from '@/app/utils/types';
 import { getAllProducts } from '@/lib/queries/products';
 import { getSiteSettings } from '@/lib/queries/site-settings';
@@ -68,10 +67,11 @@ export async function buildCategoryMetadata(config: ICategoryPageConfig): Promis
 
 async function CategoryPage({ config }: { config: ICategoryPageConfig }) {
   const shopData: Array<IProduct> = await getAllProducts({ type: config.productType });
+  const base = resolveDomain();
 
   const breadcrumbItems = [
-    { '@type': 'ListItem', position: 1, name: 'Главная', item: SITE_INFO.domain },
-    { '@type': 'ListItem', position: 2, name: config.h1, item: `${SITE_INFO.domain}/${config.slug}` },
+    { '@type': 'ListItem', position: 1, name: 'Главная', item: base },
+    { '@type': 'ListItem', position: 2, name: config.h1, item: `${base}/${config.slug}` },
   ];
 
   const jsonLdBreadcrumbList = {
@@ -85,7 +85,7 @@ async function CategoryPage({ config }: { config: ICategoryPageConfig }) {
     '@type': 'WebPage',
     name: config.h1,
     description: config.metaDescription,
-    url: `${SITE_INFO.domain}/${config.slug}`,
+    url: `${base}/${config.slug}`,
     breadcrumb: { '@type': 'BreadcrumbList', itemListElement: breadcrumbItems },
   };
 

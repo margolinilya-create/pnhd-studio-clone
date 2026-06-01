@@ -6,7 +6,8 @@ import type { Media } from "@/payload-types";
 import Photos from "@/components/pages-components/shop-page/product-photos/product-photos";
 import ProductInfo from "@/components/pages-components/shop-page/product-info/product-info";
 import { Metadata } from 'next';
-import { SITE_INFO } from "@/app/constants";
+import { resolveDomain } from "@/lib/site/domain";
+import { getSiteSettings } from "@/lib/queries/site-settings";
 import { buildMetadata } from "@/app/_lib/build-metadata";
 import MarkupScript from "@/components/shared-components/markup-script/markup-script";
 
@@ -22,12 +23,14 @@ export const generateStaticParams = async () => {
 
 export async function generateMetadata(props: TMetadataProps): Promise<Metadata> {
     const params = await props.params;
-    const [currItem, seo] = await Promise.all([
+    const [currItem, seo, settings] = await Promise.all([
         getProductBySlug(params.slug),
         getProductSeoBySlug(params.slug),
+        getSiteSettings(),
     ]);
+    const siteName = settings?.siteName ?? 'PINHEAD STUDIO';
 
-    const fallbackTitle = currItem ? `${currItem.name} — печать на одежде | ${SITE_INFO.name}` : `Товар | ${SITE_INFO.name}`;
+    const fallbackTitle = currItem ? `${currItem.name} — печать на одежде | ${siteName}` : `Товар | ${siteName}`;
     const fallbackDescription = currItem?.description
         ? `${currItem.name}. ${currItem.description}`.slice(0, 300)
         : `${currItem?.name ?? 'Товар'} с печатью под заказ. Доставка по России.`;
@@ -49,8 +52,13 @@ export async function generateMetadata(props: TMetadataProps): Promise<Metadata>
     };
 }
 
-function productJsonLd(item: NonNullable<Awaited<ReturnType<typeof getProductBySlug>>>) {
-    const productUrl = `${SITE_INFO.domain}/shop/${item.slug}`;
+function productJsonLd(
+    item: NonNullable<Awaited<ReturnType<typeof getProductBySlug>>>,
+    base: string,
+    siteName: string,
+    legalName: string,
+) {
+    const productUrl = `${base}/shop/${item.slug}`;
     const inStock = (item.sizes ?? []).some((s) => s.qty > 0);
 
     const product = {
@@ -66,7 +74,7 @@ function productJsonLd(item: NonNullable<Awaited<ReturnType<typeof getProductByS
         sku: item._id,
         brand: {
             '@type': 'Brand',
-            name: SITE_INFO.name,
+            name: siteName,
         },
         offers: {
             '@type': 'Offer',
@@ -78,7 +86,7 @@ function productJsonLd(item: NonNullable<Awaited<ReturnType<typeof getProductByS
                 : 'https://schema.org/OutOfStock',
             seller: {
                 '@type': 'Organization',
-                name: SITE_INFO.legal_name,
+                name: legalName,
             },
         },
     };
@@ -87,8 +95,8 @@ function productJsonLd(item: NonNullable<Awaited<ReturnType<typeof getProductByS
         '@context': 'https://schema.org',
         '@type': 'BreadcrumbList',
         itemListElement: [
-            { '@type': 'ListItem', position: 1, name: 'Главная', item: SITE_INFO.domain },
-            { '@type': 'ListItem', position: 2, name: 'Магазин', item: `${SITE_INFO.domain}/shop` },
+            { '@type': 'ListItem', position: 1, name: 'Главная', item: base },
+            { '@type': 'ListItem', position: 2, name: 'Магазин', item: `${base}/shop` },
             { '@type': 'ListItem', position: 3, name: item.name, item: productUrl },
         ],
     };
@@ -96,17 +104,23 @@ function productJsonLd(item: NonNullable<Awaited<ReturnType<typeof getProductByS
     return [product, breadcrumbs];
 }
 
-const ProductPage: React.FC<{
+const ProductPage = async (props: {
     params: Promise<{ slug: string }>;
     searchParams: Promise<{ id: string }>;
-}> = async props => {
+}) => {
     const params = await props.params;
 
-    const item = await getProductBySlug(params.slug);
+    const [item, settings] = await Promise.all([
+        getProductBySlug(params.slug),
+        getSiteSettings(),
+    ]);
     if (!item) notFound();
+    const base = resolveDomain();
+    const siteName = settings?.siteName ?? 'PINHEAD STUDIO';
+    const legalName = settings?.legalName ?? 'ООО ПИНХЭД СТУДИО';
     return (
         <>
-            {productJsonLd(item).map((ld, i) => (
+            {productJsonLd(item, base, siteName, legalName).map((ld, i) => (
                 <MarkupScript key={i} jsonLd={ld as Record<string, unknown>} />
             ))}
             <section className={styles.screen}>

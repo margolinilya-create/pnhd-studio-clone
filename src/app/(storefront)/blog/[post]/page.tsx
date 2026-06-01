@@ -7,7 +7,7 @@ import styles from './page.module.scss';
 import classNames from 'classnames/bind';
 import { getAllPostSlugs, getPostBySlug, getPostSeoBySlug } from '@/lib/queries/blog';
 import type { Media } from '@/payload-types';
-import { SITE_INFO } from "@/app/constants";
+import { resolveDomain } from "@/lib/site/domain";
 import { Metadata } from "next";
 import { buildMetadata } from "@/app/_lib/build-metadata";
 import { getSiteSettings } from "@/lib/queries/site-settings";
@@ -71,8 +71,14 @@ export const generateStaticParams = async () => {
 }
 export const dynamicParams = true;
 
-function articleJsonLd(post: NonNullable<Awaited<ReturnType<typeof getPostBySlug>>>, slug: string) {
-    const url = `${SITE_INFO.domain}/blog/${slug}`;
+function articleJsonLd(
+    post: NonNullable<Awaited<ReturnType<typeof getPostBySlug>>>,
+    slug: string,
+    base: string,
+    siteName: string,
+    legalName: string,
+) {
+    const url = `${base}/blog/${slug}`;
     const datePublished = parseRuDate(post.createdAt);
     return {
         '@context': 'https://schema.org',
@@ -84,11 +90,11 @@ function articleJsonLd(post: NonNullable<Awaited<ReturnType<typeof getPostBySlug
         dateModified: datePublished,
         author: post.author
             ? { '@type': 'Person', name: post.author }
-            : { '@type': 'Organization', name: SITE_INFO.name },
+            : { '@type': 'Organization', name: siteName },
         publisher: {
             '@type': 'Organization',
-            name: SITE_INFO.legal_name,
-            logo: { '@type': 'ImageObject', url: `${SITE_INFO.domain}/main_screen_shape_one.svg` },
+            name: legalName,
+            logo: { '@type': 'ImageObject', url: `${base}/main_screen_shape_one.svg` },
         },
         mainEntityOfPage: { '@type': 'WebPage', '@id': url },
         keywords: post.hashtags?.join(', '),
@@ -103,12 +109,18 @@ const PostPage = async (props: {
     const params = await props.params;
     const searchParams = (await props.searchParams) ?? {};
     const preview = searchParams.preview === 'true';
-    const post = await getPostBySlug(params.post, { preview });
+    const [post, settings] = await Promise.all([
+        getPostBySlug(params.post, { preview }),
+        getSiteSettings(),
+    ]);
     if (!post) notFound();
+    const base = resolveDomain();
+    const siteName = settings?.siteName ?? 'PINHEAD STUDIO';
+    const legalName = settings?.legalName ?? 'ООО ПИНХЭД СТУДИО';
 
     return (
         <>
-            <MarkupScript jsonLd={articleJsonLd(post, params.post) as unknown as Record<string, unknown>} />
+            <MarkupScript jsonLd={articleJsonLd(post, params.post, base, siteName, legalName) as unknown as Record<string, unknown>} />
             <section className={cx('postPage')}>
                 <div className={cx('postPage__head')}>
                     <div className={cx('postPage__head-block', 'postPage__head-block_left')}>
