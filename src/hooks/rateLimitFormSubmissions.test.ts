@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { rateLimitFormSubmissions } from './rateLimitFormSubmissions';
+import { MAX_PER_WINDOW, rateLimitFormSubmissions } from './rateLimitFormSubmissions';
 
 function makeReq(ip: string) {
   return {
@@ -38,13 +38,36 @@ describe('rateLimitFormSubmissions', () => {
     );
   });
 
-  it('throws when more than 3 submissions in last minute', async () => {
+  it('allows last submission below the limit (boundary: totalDocs = MAX_PER_WINDOW - 1)', async () => {
     const req = makeReq('1.2.3.4');
-    req.payload.find.mockResolvedValueOnce({ totalDocs: 3 });
+    req.payload.find.mockResolvedValueOnce({ totalDocs: MAX_PER_WINDOW - 1 });
+
+    await expect(
+      rateLimitFormSubmissions({ operation: 'create', req, args: { data: {} } } as any),
+    ).resolves.toBeUndefined();
+  });
+
+  it('throws when count reaches MAX_PER_WINDOW (boundary: totalDocs = MAX_PER_WINDOW)', async () => {
+    const req = makeReq('1.2.3.4');
+    req.payload.find.mockResolvedValueOnce({ totalDocs: MAX_PER_WINDOW });
 
     await expect(
       rateLimitFormSubmissions({ operation: 'create', req, args: { data: {} } } as any),
     ).rejects.toThrow(/rate limit/i);
+  });
+
+  it('does NOT mutate args.data when rate-limit throws', async () => {
+    const req = makeReq('1.2.3.4');
+    req.payload.find.mockResolvedValueOnce({ totalDocs: MAX_PER_WINDOW });
+
+    const args: any = { data: { form: 'form-id' } };
+    await expect(
+      rateLimitFormSubmissions({ operation: 'create', req, args } as any),
+    ).rejects.toThrow();
+
+    expect(args.data.ipHash).toBeUndefined();
+    expect(args.data.userAgent).toBeUndefined();
+    expect(args.data.form).toBe('form-id');
   });
 
   it('writes ipHash and userAgent into args.data', async () => {

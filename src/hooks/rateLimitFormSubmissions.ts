@@ -1,8 +1,8 @@
 import { createHash } from 'node:crypto';
 import { APIError, type CollectionBeforeOperationHook } from 'payload';
 
-const WINDOW_SECONDS = 60;
-const MAX_PER_WINDOW = 3;
+export const WINDOW_SECONDS = 60;
+export const MAX_PER_WINDOW = 3;
 
 function extractIp(headers: Headers): string {
   const fwd = headers.get('x-forwarded-for');
@@ -23,18 +23,10 @@ export const rateLimitFormSubmissions: CollectionBeforeOperationHook = async ({
 }) => {
   if (operation !== 'create') return;
 
-  const ip = extractIp(req.headers as Headers);
+  const headers = req.headers as Headers;
+  const ip = extractIp(headers);
   const ipHash = hashIp(ip);
-  const userAgent = (req.headers as Headers).get('user-agent') ?? '';
-
-  // Mutate args.data in place — buildBeforeOperation passes args by reference,
-  // so mutation propagates to the operation even when the hook returns void.
-  const createArgs = args as { data: Record<string, unknown> };
-  createArgs.data = {
-    ...(createArgs.data ?? {}),
-    ipHash,
-    userAgent,
-  };
+  const userAgent = headers.get('user-agent') ?? '';
 
   const cutoff = new Date(Date.now() - WINDOW_SECONDS * 1000).toISOString();
   const recent = await req.payload.find({
@@ -54,4 +46,14 @@ export const rateLimitFormSubmissions: CollectionBeforeOperationHook = async ({
       429,
     );
   }
+
+  // Inject system fields only after the rate-limit check passes — мутируем args.data
+  // (buildBeforeOperation passes args by reference). Если бы это шло до find(),
+  // отброшенная попытка всё равно успела бы оставить ipHash в args для последующих хуков.
+  const createArgs = args as { data: Record<string, unknown> };
+  createArgs.data = {
+    ...(createArgs.data ?? {}),
+    ipHash,
+    userAgent,
+  };
 };
