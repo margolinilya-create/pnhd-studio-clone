@@ -1649,12 +1649,32 @@ export interface PayloadMigrationsSelect<T extends boolean = true> {
 export interface SiteSetting {
   id: number;
   businessHours: string;
+  /**
+   * Формат для schema.org openingHours. businessHours выше — для display в шапке.
+   */
+  openingHours: string;
   phone: string;
   siteName: string;
   legalName: string;
   inn: string;
   kpp: string;
   copyrightStartYear: string;
+  contacts: {
+    email: string;
+    address: {
+      street: string;
+      locality: string;
+      postalCode: string;
+      country: string;
+    };
+  };
+  /**
+   * Координаты для schema.org GeoCoordinates. Использовать [yandex.maps.ru](https://yandex.ru/maps) → правый клик → "Что здесь?" для получения точки.
+   */
+  geo: {
+    latitude: number;
+    longitude: number;
+  };
   headerCTALabel: string;
   mobileCTALabel: string;
   defaultPopupTitle: string;
@@ -1752,12 +1772,32 @@ export interface CookieBar {
  */
 export interface SiteSettingsSelect<T extends boolean = true> {
   businessHours?: T;
+  openingHours?: T;
   phone?: T;
   siteName?: T;
   legalName?: T;
   inn?: T;
   kpp?: T;
   copyrightStartYear?: T;
+  contacts?:
+    | T
+    | {
+        email?: T;
+        address?:
+          | T
+          | {
+              street?: T;
+              locality?: T;
+              postalCode?: T;
+              country?: T;
+            };
+      };
+  geo?:
+    | T
+    | {
+        latitude?: T;
+        longitude?: T;
+      };
   headerCTALabel?: T;
   mobileCTALabel?: T;
   defaultPopupTitle?: T;

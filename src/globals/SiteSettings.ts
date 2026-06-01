@@ -32,12 +32,60 @@ export const SiteSettings: GlobalConfig = {
       label: 'Бизнес-информация',
       fields: [
         { name: 'businessHours', type: 'text', required: true, defaultValue: 'ежедневно, 11:00–20:00', label: 'Часы работы (показано в шапке)' },
+        {
+          name: 'openingHours',
+          type: 'text',
+          required: true,
+          defaultValue: 'Пн-Пт 11:00-20:00',
+          label: 'Часы работы (для JSON-LD, формат "Пн-Пт 11:00-20:00")',
+          admin: {
+            description: 'Формат для schema.org openingHours. businessHours выше — для display в шапке.',
+          },
+        },
         { name: 'phone', type: 'text', required: true, defaultValue: '+7 (812) 904 61 56', label: 'Телефон' },
         { name: 'siteName', type: 'text', required: true, defaultValue: 'PINHEAD STUDIO', label: 'Название сайта (OG / meta)' },
         { name: 'legalName', type: 'text', required: true, defaultValue: 'ООО ПИНХЭД СТУДИО', label: 'Юр. название (в подвале)' },
         { name: 'inn', type: 'text', required: true, defaultValue: '7810463916', label: 'ИНН' },
         { name: 'kpp', type: 'text', required: true, defaultValue: '781301001', label: 'КПП' },
         { name: 'copyrightStartYear', type: 'text', required: true, defaultValue: '2021', label: 'Год запуска (для copyright)' },
+      ],
+    },
+    // === Contacts / Geo ===
+    {
+      type: 'collapsible',
+      label: 'Контактные данные',
+      fields: [
+        {
+          type: 'group',
+          name: 'contacts',
+          label: 'Контакты (для JSON-LD и страницы /contacts)',
+          fields: [
+            { name: 'email', type: 'text', required: true, defaultValue: 'studio@pnhd.ru', label: 'Email' },
+            {
+              type: 'group',
+              name: 'address',
+              label: 'Адрес',
+              fields: [
+                { name: 'street', type: 'text', required: true, defaultValue: 'ул. Чапыгина, д. 1', label: 'Улица + дом' },
+                { name: 'locality', type: 'text', required: true, defaultValue: 'Санкт-Петербург', label: 'Город' },
+                { name: 'postalCode', type: 'text', required: true, defaultValue: '197022', label: 'Индекс' },
+                { name: 'country', type: 'text', required: true, defaultValue: 'RU', label: 'Страна (ISO-код)' },
+              ],
+            },
+          ],
+        },
+        {
+          type: 'group',
+          name: 'geo',
+          label: 'Гео-координаты (для LocalBusiness JSON-LD)',
+          admin: {
+            description: 'Координаты для schema.org GeoCoordinates. Использовать [yandex.maps.ru](https://yandex.ru/maps) → правый клик → "Что здесь?" для получения точки.',
+          },
+          fields: [
+            { name: 'latitude', type: 'number', required: true, defaultValue: 59.972, label: 'Широта (latitude)' },
+            { name: 'longitude', type: 'number', required: true, defaultValue: 30.318, label: 'Долгота (longitude)' },
+          ],
+        },
       ],
     },
     // === CTA / Popup ===
