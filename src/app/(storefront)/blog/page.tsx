@@ -10,18 +10,21 @@ import { getAllPosts } from '@/lib/queries/blog';
 import {Metadata} from 'next';
 import button_arrow_right from "../../../../public/button_arrow_right.svg";
 import ArticleTagButton from "@/components/pages-components/blog/article-tag/article-tag";
-import {SITE_INFO} from "@/app/constants";
 import { buildMetadata } from "@/app/_lib/build-metadata";
+import { getSiteSettings } from "@/lib/queries/site-settings";
 
 const cx = classnames.bind(styles);
 
 export async function generateMetadata(): Promise<Metadata> {
+    const settings = await getSiteSettings();
+    const siteName = settings?.siteName ?? 'PINHEAD STUDIO';
+    const base = await buildMetadata({
+        title: `Пошив и печать на одежде — статьи от ${siteName} для бизнеса и клиентов`,
+        description: `${siteName} — блог о создании мерча. Отвечаем на важные вопросы о пошиве одежды и нанесении принтов: как выбрать ткань, технологию печати, рассчитать бюджет. Помогаем заказчикам принимать взвешенные решения.`,
+        path: '/blog',
+    });
     return {
-        ...buildMetadata({
-            title: `Пошив и печать на одежде — статьи от ${SITE_INFO.name} для бизнеса и клиентов`,
-            description: `${SITE_INFO.name} — блог о создании мерча. Отвечаем на важные вопросы о пошиве одежды и нанесении принтов: как выбрать ткань, технологию печати, рассчитать бюджет. Помогаем заказчикам принимать взвешенные решения.`,
-            path: '/blog',
-        }),
+        ...base,
         keywords: ['Печать на текстиле', 'Мерч', 'Блог о печати на одежде'],
     };
 }

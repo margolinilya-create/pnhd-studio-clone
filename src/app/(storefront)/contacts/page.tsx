@@ -5,13 +5,19 @@ import MapScreen from "@/components/pages-components/main-page/map-screen/map-sc
 import MarkupScript from "@/components/shared-components/markup-script/markup-script";
 import { SITE_INFO, CONTACTS } from "@/app/constants";
 import { buildMetadata } from "@/app/_lib/build-metadata";
+import { getSiteSettings } from "@/lib/queries/site-settings";
 
-export const metadata: Metadata = buildMetadata({
-  title: `Контакты ${SITE_INFO.name} — печать на одежде в Санкт-Петербурге`,
-  description: `Контакты студии печати на одежде ${SITE_INFO.legal_name} в Санкт-Петербурге: печать принтов на футболках, создание мерча для брендов, широкоформатная печать.`,
-  path: '/contacts',
-  image: '/opengraph-image.jpg',
-});
+export async function generateMetadata(): Promise<Metadata> {
+  const settings = await getSiteSettings();
+  const siteName = settings?.siteName ?? 'PINHEAD STUDIO';
+  const legalName = settings?.legalName ?? 'ООО ПИНХЭД СТУДИО';
+  return await buildMetadata({
+    title: `Контакты ${siteName} — печать на одежде в Санкт-Петербурге`,
+    description: `Контакты студии печати на одежде ${legalName} в Санкт-Петербурге: печать принтов на футболках, создание мерча для брендов, широкоформатная печать.`,
+    path: '/contacts',
+    image: '/opengraph-image.jpg',
+  });
+}
 
 const Page: React.FC = () => {
 

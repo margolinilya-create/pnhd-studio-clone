@@ -15,14 +15,19 @@ import hf from "../../../../public/howto/hf.jpg";
 import hs from "../../../../public/howto/hs.jpg";
 import sf from "../../../../public/howto/sf.jpg";
 import { buildMetadata } from "@/app/_lib/build-metadata";
+import { getSiteSettings } from "@/lib/queries/site-settings";
 
 const imgArr = [tf, tb, ts, hf, hs, sf];
 
-export const generateMetadata = (): Metadata => buildMetadata({
-    title: 'Как заказать печать на одежде | PINHEAD STUDIO',
-    description: 'Пошаговая инструкция: выбираете одежду в каталоге, размер, расположение принта (грудь/спина/рукав), загружаете макет — менеджер связывается в течение 30 минут.',
-    path: '/howto',
-});
+export async function generateMetadata(): Promise<Metadata> {
+    const settings = await getSiteSettings();
+    const siteName = settings?.siteName ?? 'PINHEAD STUDIO';
+    return await buildMetadata({
+        title: `Как заказать печать на одежде | ${siteName}`,
+        description: 'Пошаговая инструкция: выбираете одежду в каталоге, размер, расположение принта (грудь/спина/рукав), загружаете макет — менеджер связывается в течение 30 минут.',
+        path: '/howto',
+    });
+}
 
 const Page: React.FC = () => {
     return (
