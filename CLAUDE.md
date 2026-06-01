@@ -405,6 +405,18 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=<берётся из Supabase Dashboard → Settin
 1. Добавь `supabase/migrations/00X_new_products.sql`
 2. Применить через MCP `apply_migration` или `supabase db push`
 
+### Bulk-edit / экспорт каталога
+
+Через плагин `@payloadcms/plugin-import-export` (зарегистрирован для `products`, `pages`, `leads`):
+
+1. Payload admin → Products → action **Export** → CSV.
+2. Правка в Excel (массовое изменение цен, переименование, etc.).
+3. Action **Import** → загрузить отредактированный CSV.
+
+Идентификация строк — по `id`. **Если удалить колонку `id` или строку из CSV — плагин может попытаться создать дубликаты или пропустить апдейт.** Перед массовым импортом всегда делай предварительный export как backup.
+
+Экспортированные CSV хранятся в служебной коллекции `Exports` (группа `System` в админке) и в S3 bucket — оттуда же скачиваются. Доступ управляется через access control коллекции `exports`, не через access на исходную коллекцию.
+
 ---
 
 ## 13. Deployment
