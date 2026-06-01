@@ -1,20 +1,14 @@
 import React from "react";
-import styles from './page.module.css';
-import PrintMethodsScreen from "@/components/pages-components/main-page/print-methods-screen/print-methods-screen";
+import { Metadata } from "next";
 
-
-
-
-
-
+// audit W-SEO-05 — index-страница /textile пустая (`<></>`). noindex + убрана
+// из sitemap до заполнения контентом.
+export const metadata: Metadata = {
+    robots: { index: false, follow: true },
+};
 
 const Page: React.FC = () => {
-
-    return (
-        <></>
-
-        
-    )
-}
+    return <></>;
+};
 
 export default Page;

@@ -13,6 +13,20 @@ function getField(data: SubmissionField[], name: string): string {
   return data.find((f) => f.field === name)?.value ?? '';
 }
 
+// audit Sec-warning — referenceUrl шёл в Bitrix COMMENTS без валидации.
+// Принимаем только http/https URLs; всё что не валидный URL (javascript:,
+// data:, mailto:, plain text) — отбрасываем. CRM не получит protocol-leak.
+function sanitizeReferenceUrl(raw: string): string {
+  if (!raw) return '';
+  try {
+    const u = new URL(raw);
+    if (u.protocol !== 'http:' && u.protocol !== 'https:') return '';
+    return u.toString();
+  } catch {
+    return '';
+  }
+}
+
 /**
  * Безопасный write-back в submission. Best-effort hook contract: даже если
  * запись в БД упадёт (например, БД недоступна), хук НЕ должен throw'ить —
@@ -50,7 +64,7 @@ export const notifyBitrix: CollectionAfterChangeHook = async ({ operation, doc, 
   const phone = getField(submissionData, 'phone');
   const email = getField(submissionData, 'email');
   const comment = getField(submissionData, 'comment');
-  const referenceUrl = getField(submissionData, 'referenceUrl');
+  const referenceUrl = sanitizeReferenceUrl(getField(submissionData, 'referenceUrl'));
 
   const fields = {
     NAME: name || 'Без имени',

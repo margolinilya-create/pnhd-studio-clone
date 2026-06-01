@@ -30,11 +30,32 @@ export interface ICategoryPageConfig {
   bodyContent: React.ReactNode;  // SEO copy: <h2>...</h2><p>...</p> etc.
 }
 
+// audit W-SEO-02 — раньше metadata содержал только title/description/metadataBase
+// и хардкодил studio.pnhd.ru. Эти 6 страниц по сути duplicate-content к
+// /shop?type=..., но они существуют как SEO-landings — поэтому canonical
+// указывает на саму страницу, OG + Twitter заполнены.
 export function buildMetadata(config: ICategoryPageConfig): Metadata {
+  const path = `/${config.slug}`;
+  const absoluteUrl = `${SITE_INFO.domain}${path}`;
   return {
     title: config.metaTitle,
     description: config.metaDescription,
-    metadataBase: new URL('https://studio.pnhd.ru'),
+    metadataBase: new URL(SITE_INFO.domain),
+    alternates: { canonical: path },
+    openGraph: {
+      type: 'website',
+      title: config.metaTitle,
+      description: config.metaDescription,
+      url: absoluteUrl,
+      siteName: SITE_INFO.name,
+      images: '/opengraph-image.jpg',
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: config.metaTitle,
+      description: config.metaDescription,
+      images: '/opengraph-image.jpg',
+    },
   };
 }
 

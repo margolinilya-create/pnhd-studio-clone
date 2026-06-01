@@ -9,16 +9,29 @@ import {CatalogPageBreadCrumbsJsonLD, CatalogPageNavigationJsonLD} from "@/app/u
 import FaqScreen from '@/components/pages-components/main-page/faq-screen/faq-screen';
 import NoModelBlock from '@/components/shared-components/noModelBlock/NoModelBlock';
 import { getFormIdBySlug } from '@/lib/forms/get-form-by-slug';
+import { SITE_INFO } from '@/app/constants';
 
 
 export const metadata: Metadata = {
   title: 'Печать на одежде в Санкт-Петербурге на заказ от 1 штуки цена в ПИНХЭД СТУДИЯ',
   description: 'Печать на одежде на заказ от 1 штуки в Санкт-Петербурге по выгодной цене в ПИНХЭД СТУДИЯ. Сколько стоит печать на одежде смотрите онлайн на нашем сайте.',
   keywords: 'печать на футболках, санкт-петербург, недорого, на заказ, цена, от 1 шт, срочный, заказать, хороший, сделать, стоимость, доставка, быстрый, качественный, черный, оверсайз, белый, онлайн, спортивный, свой дизайн, конструктор, создать макет, нанесение, собственный, толстовка, худи, студия, услуги, каталог, а3, а4, одежда, свитшот',
-  metadataBase: new URL('https://studio.pnhd.ru/shop'),
+  // audit W-SEO-08 — было `new URL('.../shop')` с trailing path. metadataBase
+  // должен указывать на корень origin'а, чтобы относительные пути в alternates/og
+  // резолвились правильно. Также W-SEO-01: env-driven через SITE_INFO.
+  metadataBase: new URL(SITE_INFO.domain),
+  alternates: { canonical: '/shop' },
   openGraph: {
     type: 'website',
-    title: 'PNHD STUDIO | Главная',
+    title: 'PNHD STUDIO | Каталог',
+    description: 'Печать на одежде на заказ от 1 штуки в Санкт-Петербурге.',
+    url: `${SITE_INFO.domain}/shop`,
+    siteName: SITE_INFO.name,
+    images: '/opengraph-image.jpg',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'PNHD STUDIO | Каталог',
     images: '/opengraph-image.jpg',
   },
 };

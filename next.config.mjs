@@ -42,6 +42,22 @@ const nextConfig = {
                     { key: 'Content-Security-Policy', value: CSP_ENFORCE },
                 ],
             },
+            {
+                // audit W-SEO-03 — Payload admin не должен попадать в индекс
+                // (robots.ts уже Disallow'ит, но не-кооперативные боты могут
+                // игнорировать robots.txt; X-Robots-Tag нужен defence-in-depth).
+                // Также покрывает /admin/* и любые API-роуты Payload.
+                source: '/admin/:path*',
+                headers: [
+                    { key: 'X-Robots-Tag', value: 'noindex, nofollow, noarchive' },
+                ],
+            },
+            {
+                source: '/admin',
+                headers: [
+                    { key: 'X-Robots-Tag', value: 'noindex, nofollow, noarchive' },
+                ],
+            },
         ];
     },
     async redirects() {
@@ -94,6 +110,12 @@ const nextConfig = {
     },
     images: {
         remotePatterns: [
+            // audit DB-warning — cdn.pnhd.ru исторически держал legacy product
+            // фото (15 из 25 импортированных). Host раздаёт 404 → next/image
+            // зря дёргает, ловит ошибку, пишет в Sentry. После заливки реальных
+            // фото в product-images bucket → host можно дропнуть. Пока оставляем
+            // ОДНУ запись для не сломанных 10 фото, но если потеряются — лучше
+            // явно перезалить в Supabase. TODO: убрать после image-refresh sprint'а.
             {
                 protocol: 'https',
                 hostname: 'cdn.pnhd.ru',
@@ -111,7 +133,6 @@ const nextConfig = {
                 hostname: 'placehold.co',
                 pathname: '/**',
             },
-            // (pnhdstudioapi.ru удалён из whitelist в PR #6 — host мёртв 502 + не используется)
         ],
     },
 };

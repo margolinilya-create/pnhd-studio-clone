@@ -24,8 +24,9 @@ const STATIC_ROUTES: Array<{
     { path: '/kepki', changeFrequency: 'weekly', priority: 0.8 },
     { path: '/shoppery', changeFrequency: 'weekly', priority: 0.8 },
     { path: '/methods', changeFrequency: 'monthly', priority: 0.6 },
-    { path: '/prints', changeFrequency: 'monthly', priority: 0.6 },
-    { path: '/textile', changeFrequency: 'monthly', priority: 0.6 },
+    // /prints + /textile удалены из sitemap (audit W-SEO-05): index-страницы
+    // пустые, dynamic-страницы /prints/[slug] + /textile/[slug] добавлены ниже
+    // через PRINT_SLUGS/TEXTILE_SLUGS.
 ];
 
 // Локальные TS-данные для /methods/[slug], /prints/[slug], /textile/[slug]

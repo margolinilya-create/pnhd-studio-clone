@@ -106,7 +106,15 @@ const UploadSlot: React.FC<Props> = ({ side, file, onUpload, onClear }) => {
         type="file"
         accept={ACCEPT}
         hidden
-        onChange={(e) => handleFile(e.target.files?.[0])}
+        onChange={(e) => {
+          // audit C7 — `<input type=file>` value не сбрасывается автоматически.
+          // Если юзер выбрал foo.png → удалил → опять выбрал тот же foo.png,
+          // change-event не сработает (value не изменился). Reset value к ''
+          // сразу после чтения file → re-upload того же файла снова работает.
+          const f = e.target.files?.[0];
+          e.target.value = '';
+          handleFile(f);
+        }}
       />
       {file ? (
         <>
