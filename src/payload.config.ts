@@ -65,13 +65,20 @@ export default buildConfig({
         { slug: 'pages' },
         { slug: 'leads' },
       ],
-      overrideExportCollection: ({ collection }) => {
-        collection.admin = {
+      overrideExportCollection: ({ collection }) => ({
+        ...collection,
+        admin: {
           ...collection.admin,
           group: 'System',
-        };
-        return collection;
-      },
+        },
+      }),
+      overrideImportCollection: ({ collection }) => ({
+        ...collection,
+        admin: {
+          ...collection.admin,
+          group: 'System',
+        },
+      }),
     }),
     s3Storage({
       collections: {
