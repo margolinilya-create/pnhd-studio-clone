@@ -1,4 +1,5 @@
 import { postgresAdapter } from '@payloadcms/db-postgres';
+import { importExportPlugin } from '@payloadcms/plugin-import-export';
 import { redirectsPlugin } from '@payloadcms/plugin-redirects';
 import { seoPlugin } from '@payloadcms/plugin-seo';
 import { lexicalEditor } from '@payloadcms/richtext-lexical';
@@ -56,6 +57,20 @@ export default buildConfig({
           description:
             'Перенаправления URL. From — старый путь (например /old-product). To — внутренний документ или внешний URL. Применяется через middleware на storefront.',
         },
+      },
+    }),
+    importExportPlugin({
+      collections: [
+        { slug: 'products' },
+        { slug: 'pages' },
+        { slug: 'leads' },
+      ],
+      overrideExportCollection: ({ collection }) => {
+        collection.admin = {
+          ...collection.admin,
+          group: 'System',
+        };
+        return collection;
       },
     }),
     s3Storage({

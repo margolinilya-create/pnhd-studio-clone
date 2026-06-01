@@ -3,6 +3,7 @@ import * as migration_20260530_062122_payload_seo_meta from './20260530_062122_p
 import * as migration_20260530_064450_payload_redirects from './20260530_064450_payload_redirects';
 import * as migration_20260530_071720_order_customer_note from './20260530_071720_order_customer_note';
 import * as migration_20260530_075057_pages_drafts_versions from './20260530_075057_pages_drafts_versions';
+import * as migration_20260601_101348_payload_plugin_import_export from './20260601_101348_payload_plugin_import_export';
 
 export const migrations = [
   {
@@ -28,6 +29,11 @@ export const migrations = [
   {
     up: migration_20260530_075057_pages_drafts_versions.up,
     down: migration_20260530_075057_pages_drafts_versions.down,
-    name: '20260530_075057_pages_drafts_versions'
+    name: '20260530_075057_pages_drafts_versions',
+  },
+  {
+    up: migration_20260601_101348_payload_plugin_import_export.up,
+    down: migration_20260601_101348_payload_plugin_import_export.down,
+    name: '20260601_101348_payload_plugin_import_export'
   },
 ];
