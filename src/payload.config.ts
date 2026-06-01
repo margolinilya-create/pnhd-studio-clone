@@ -9,6 +9,7 @@ import path from 'path';
 import { buildConfig } from 'payload';
 import { fileURLToPath } from 'url';
 
+import { rateLimitFormSubmissions } from '@/hooks/rateLimitFormSubmissions';
 import { Categories } from './collections/Categories.ts';
 import { Drops } from './collections/Drops.ts';
 import { Leads } from './collections/Leads.ts';
@@ -105,7 +106,33 @@ export default buildConfig({
           group: 'Forms',
           defaultColumns: ['form', 'createdAt'],
         },
-        // hooks (rate-limit, Bitrix, Telegram) добавляются в последующих задачах 3.4-3.6
+        fields: ({ defaultFields }) => [
+          ...defaultFields,
+          {
+            name: 'ipHash',
+            type: 'text',
+            admin: { readOnly: true, position: 'sidebar' },
+            index: true,
+          },
+          {
+            name: 'userAgent',
+            type: 'text',
+            admin: { readOnly: true, position: 'sidebar', hidden: true },
+          },
+          {
+            name: 'bitrixLeadId',
+            type: 'text',
+            admin: { readOnly: true, position: 'sidebar' },
+          },
+          {
+            name: 'bitrixError',
+            type: 'textarea',
+            admin: { readOnly: true, position: 'sidebar' },
+          },
+        ],
+        hooks: {
+          beforeOperation: [rateLimitFormSubmissions],
+        },
       },
     }),
     s3Storage({

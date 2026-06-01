@@ -811,6 +811,10 @@ export interface FormSubmission {
         id?: string | null;
       }[]
     | null;
+  ipHash?: string | null;
+  userAgent?: string | null;
+  bitrixLeadId?: string | null;
+  bitrixError?: string | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -1548,6 +1552,10 @@ export interface FormSubmissionsSelect<T extends boolean = true> {
         value?: T;
         id?: T;
       };
+  ipHash?: T;
+  userAgent?: T;
+  bitrixLeadId?: T;
+  bitrixError?: T;
   updatedAt?: T;
   createdAt?: T;
 }
