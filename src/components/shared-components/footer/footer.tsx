@@ -7,30 +7,49 @@ import LeadForm from '../lead-form/lead-form';
 import Link from 'next/link';
 import dayjs from 'dayjs';
 import RU_FLAG from '../../../../public/ru_flag.webp';
+import { getNavItemsFor, getSiteSettings } from '@/lib/queries/site-settings';
 
 
 
-const Footer: React.FC<{ formId: string }> = ({ formId }) => {
+const Footer = async ({ formId }: { formId: string }) => {
+    const [settings, navItems] = await Promise.all([
+        getSiteSettings(),
+        getNavItemsFor('footer'),
+    ]);
+
+    const legalName = settings?.legalName ?? 'ООО ПИНХЭД СТУДИО';
+    const inn = settings?.inn ?? '7810463916';
+    const kpp = settings?.kpp ?? '781301001';
+    const copyrightStartYear = settings?.copyrightStartYear ?? '2021';
+    const madeinRussiaEnabled = settings?.madeinRussiaEnabled !== false;
+    const madeinRussiaLabel = settings?.madeinRussiaLabel ?? 'Сделано в России';
 
     return (
         <footer className={styles.footer}>
             <div className={styles.footer_columnOne}>
-                <Link href={{ pathname: '/', hash: '#methods' }} className={styles.footer_link}>методы нанесения</Link>
-                <Link href={{ pathname: '/shop', }} className={styles.footer_link}>каталог</Link>
-                <Link href={{ pathname: '/', hash: '#stages' }} className={styles.footer_link}>этапы работы</Link>
-                <Link href={{ pathname: '/', hash: '#feedback' }} className={styles.footer_link}>отзывы</Link>
-                <Link href={{ pathname: '/', hash: '#faq' }} className={styles.footer_link}>FAQ</Link>
-                <Link href={{ pathname: '/contacts', }} className={styles.footer_link}>контакты</Link>
+                {navItems.map((item, i) => (
+                    <Link
+                        key={`${item.label}-${i}`}
+                        href={item.hash ? { pathname: item.href || '/', hash: `#${item.hash}` } : item.href || '/'}
+                        target={item.isExternal ? '_blank' : undefined}
+                        rel={item.isExternal ? 'noopener noreferrer' : undefined}
+                        className={styles.footer_link}
+                    >
+                        {item.label}
+                    </Link>
+                ))}
 
                 <Image src={shape1} alt='картинка штрихкода' />
 
 
-                <p className={styles.footer_text}>ООО ПИНХЭД СТУДИО<br />ИНН/КПП 7810463916/781301001</p>
-                <p className={styles.footer_text}>© 2021 — {dayjs().format('YYYY')}. Все права защищены</p>
-                <div className={styles.footer_textWrapper}>
-                    <Image src={RU_FLAG} alt='ГОООЙДА!' width={26} height={17} style={{ borderRadius: '4px' }} />
-                    <p className={styles.footer_text} style={{ margin: 0 }}>Сделано в России</p>
-                </div>
+                <p className={styles.footer_text}>{legalName}<br />ИНН/КПП {inn}/{kpp}</p>
+                <p className={styles.footer_text}>© {copyrightStartYear} — {dayjs().format('YYYY')}. Все права защищены</p>
+                {madeinRussiaEnabled && (
+                    <div className={styles.footer_textWrapper}>
+                        <Image src={RU_FLAG} alt='ГОООЙДА!' width={26} height={17} style={{ borderRadius: '4px' }} />
+                        <p className={styles.footer_text} style={{ margin: 0 }}>{madeinRussiaLabel}</p>
+                    </div>
+                )}
                 <Link href='/privacy' className={styles.footer_text}>Политика конфиденциальности</Link>
             </div>
 
@@ -64,7 +83,7 @@ const Footer: React.FC<{ formId: string }> = ({ formId }) => {
             </div>
 
         </footer>
-    )
-}
+    );
+};
 
 export default Footer;
