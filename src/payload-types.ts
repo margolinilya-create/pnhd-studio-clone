@@ -121,9 +121,11 @@ export interface Config {
   fallbackLocale: null;
   globals: {
     'site-settings': SiteSetting;
+    navigation: Navigation;
   };
   globalsSelect: {
     'site-settings': SiteSettingsSelect<false> | SiteSettingsSelect<true>;
+    navigation: NavigationSelect<false> | NavigationSelect<true>;
   };
   locale: null;
   widgets: {
@@ -1683,6 +1685,36 @@ export interface SiteSetting {
   createdAt?: string | null;
 }
 /**
+ * Единый список пунктов меню для шапки / подвала / мобильного меню. Visibility-флаги контролируют где элемент показывается. Порядок в массиве = порядок отображения.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "navigation".
+ */
+export interface Navigation {
+  id: number;
+  items?:
+    | {
+        label: string;
+        /**
+         * Внутренние: /shop, /contacts. Внешние: https://… (поставь isExternal).
+         */
+        href: string;
+        /**
+         * Опционально: например feedback → /?#feedback
+         */
+        hash?: string | null;
+        isExternal?: boolean | null;
+        showInHeader?: boolean | null;
+        showInFooter?: boolean | null;
+        showInMobile?: boolean | null;
+        id?: string | null;
+      }[]
+    | null;
+  _status?: ('draft' | 'published') | null;
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+/**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "site-settings_select".
  */
@@ -1723,6 +1755,28 @@ export interface SiteSettingsSelect<T extends boolean = true> {
     | {
         defaultOGImage?: T;
         siteLang?: T;
+      };
+  _status?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "navigation_select".
+ */
+export interface NavigationSelect<T extends boolean = true> {
+  items?:
+    | T
+    | {
+        label?: T;
+        href?: T;
+        hash?: T;
+        isExternal?: T;
+        showInHeader?: T;
+        showInFooter?: T;
+        showInMobile?: T;
+        id?: T;
       };
   _status?: T;
   updatedAt?: T;
@@ -1816,7 +1870,7 @@ export interface TaskSchedulePublish {
       relationTo: 'pages';
       value: number | Page;
     } | null;
-    global?: 'site-settings' | null;
+    global?: ('site-settings' | 'navigation') | null;
     user?: (number | null) | User;
   };
   output?: unknown;
