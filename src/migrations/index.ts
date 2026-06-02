@@ -16,6 +16,7 @@ import * as migration_20260601_233401_categories_marketing_fields from './202606
 import * as migration_20260601_235104_homepage_global from './20260601_235104_homepage_global';
 import * as migration_20260602_065255_print_content_collections from './20260602_065255_print_content_collections';
 import * as migration_20260602_075410_wave1_trust_badges from './20260602_075410_wave1_trust_badges';
+import * as migration_20260602_221453_empty_states_and_404_copy from './20260602_221453_empty_states_and_404_copy';
 
 export const migrations = [
   {
@@ -106,6 +107,11 @@ export const migrations = [
   {
     up: migration_20260602_075410_wave1_trust_badges.up,
     down: migration_20260602_075410_wave1_trust_badges.down,
-    name: '20260602_075410_wave1_trust_badges'
+    name: '20260602_075410_wave1_trust_badges',
+  },
+  {
+    up: migration_20260602_221453_empty_states_and_404_copy.up,
+    down: migration_20260602_221453_empty_states_and_404_copy.down,
+    name: '20260602_221453_empty_states_and_404_copy'
   },
 ];

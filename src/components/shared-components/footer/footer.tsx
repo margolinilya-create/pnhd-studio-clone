@@ -3,7 +3,7 @@ import styles from './footer.module.css';
 import Image from 'next/image';
 import shape1 from '../../../../public/footer_shape_1.svg';
 import shape2 from '../../../../public/footer_shape2.svg';
-import LeadForm from '../lead-form/lead-form';
+import FooterLeadFormSlot from './footer-lead-form-slot';
 import Link from 'next/link';
 import dayjs from 'dayjs';
 import RU_FLAG from '../../../../public/ru_flag.webp';
@@ -55,7 +55,7 @@ const Footer = async ({ formId }: { formId: string }) => {
 
             <div className={styles.footer_columnTwo}>
                 <div className={styles.columnTwo_formWrapper}>
-                    <LeadForm source="footer" formId={formId} />
+                    <FooterLeadFormSlot formId={formId} />
                 </div>
 
                 <div className={styles.columnTwo_logoWrapper}>

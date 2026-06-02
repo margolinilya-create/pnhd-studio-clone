@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect } from "react";
+import React from "react";
 import styles from "./page.module.css";
 import { useAppSelector } from "@/redux/redux-hooks";
 import ProductImage from "@/components/pages-components/cart-page/product-image/product-image";
@@ -7,29 +7,38 @@ import ProductDescription from "@/components/pages-components/cart-page/product-
 import PrintPreview from "@/components/pages-components/cart-page/print-preview/print-preview";
 import CartItemTotalPrice from "@/components/pages-components/cart-page/cart-item-total-price/cart-item-total-price";
 import CartSummary from "@/components/pages-components/cart-page/cart-summary/cart-summary";
-import { useRouter } from "next/navigation";
+import EmptyState from "@/components/pages-components/cart-page/empty-state/empty-state";
 import Link from "next/link";
 
 interface CartClientProps {
     disclaimer?: string | null;
+    emptyState: {
+        title: string;
+        subtitle?: string | null;
+        ctaLabel: string;
+        ctaHref: string;
+    };
 }
 
-const Cart: React.FC<CartClientProps> = ({ disclaimer }) => {
+const Cart: React.FC<CartClientProps> = ({ disclaimer, emptyState }) => {
     const { order, isHydrated } = useAppSelector((store) => store.cart);
-    const router = useRouter();
-
-    useEffect(() => {
-        if (!isHydrated) return;
-        if ((order ?? []).length === 0) {
-            router.replace('/shop');
-        }
-    }, [isHydrated, order, router]);
 
     if (!isHydrated) {
         return (
             <section className={styles.cart}>
                 <h1>Корзина</h1>
             </section>
+        );
+    }
+
+    if ((order ?? []).length === 0) {
+        return (
+            <EmptyState
+                title={emptyState.title}
+                subtitle={emptyState.subtitle}
+                ctaLabel={emptyState.ctaLabel}
+                ctaHref={emptyState.ctaHref}
+            />
         );
     }
 

@@ -1,21 +1,21 @@
-import React from 'react'
-import styles from './not-found.module.css'
-import Link from 'next/link'
+import EmptyState from '@/components/pages-components/cart-page/empty-state/empty-state';
+import { getCheckoutMessages } from '@/lib/queries/checkout-messages';
 
-
-const NotFound: React.FC = async () => {
-
+const NotFound = async () => {
+    const messages = await getCheckoutMessages();
     return (
-        <section className={styles.notFound}>
-            <div className={styles.notFound_box}>
-                <h1 className={styles.notFound_title}>404</h1>
-                <p className={styles.notFound_text}>Уууупс....похоже что такой страницы не существует OwO</p>
-                <Link href='/' className={styles.notFound_link}>
-                    <p className={styles.notFound_text}>Вернемся на главную?</p>
-                </Link>
-            </div>
-        </section>
-    )
-}
+        <EmptyState
+            title={messages?.notFoundTitle ?? 'Страница не найдена'}
+            subtitle={
+                messages?.notFoundSubtitle ??
+                'Возможно, ссылка устарела или товар больше не доступен. Загляните в каталог — там точно найдётся то, что вам нужно.'
+            }
+            ctaLabel={messages?.notFoundPrimaryCtaLabel ?? 'Перейти в каталог'}
+            ctaHref={messages?.notFoundPrimaryCtaHref ?? '/shop'}
+            secondaryCtaLabel={messages?.notFoundSecondaryCtaLabel ?? 'На главную'}
+            secondaryCtaHref={messages?.notFoundSecondaryCtaHref ?? '/'}
+        />
+    );
+};
 
 export default NotFound;

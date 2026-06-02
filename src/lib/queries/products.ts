@@ -148,7 +148,9 @@ const fetchVariantsAndPrices = async (
   return { variantsByProduct, pricesByVariant };
 };
 
-export const getAllProducts = async (filters?: { type?: string }): Promise<IProduct[]> => {
+export const getAllProducts = async (
+  filters?: { type?: string; category?: string; priceSort?: 'ASC' | 'DESC' },
+): Promise<IProduct[]> => {
   if (!isPayloadConfigured()) return [];
   const payload = await getPayloadClient();
   const where: Where = {
@@ -156,6 +158,8 @@ export const getAllProducts = async (filters?: { type?: string }): Promise<IProd
     channels: { contains: 'b2c' },
   };
   if (filters?.type) where.type = { equals: filters.type };
+  // Category — relation field; фильтруем через relationship.slug
+  if (filters?.category) where['category.slug'] = { equals: filters.category };
 
   const res = await payload.find({
     collection: 'products',
@@ -169,12 +173,20 @@ export const getAllProducts = async (filters?: { type?: string }): Promise<IProd
     products.map((p) => p.id),
   );
 
-  return products.map((p) => {
+  const mapped = products.map((p) => {
     const variants = variantsByProduct.get(p.id) ?? [];
     const variantIds = variants.map((v) => v.id);
     const prices = variantIds.flatMap((vid) => pricesByVariant.get(vid) ?? []);
     return mapProduct(p, variants, prices);
   });
+
+  // Сортировка по цене — на уровне query, чтобы и SSR HTML, и JSON-LD были
+  // в правильном порядке. Если priceSort не задан — order from Payload (по
+  // createdAt desc по умолчанию).
+  if (filters?.priceSort === 'ASC') mapped.sort((a, b) => a.price - b.price);
+  if (filters?.priceSort === 'DESC') mapped.sort((a, b) => b.price - a.price);
+
+  return mapped;
 };
 
 export const getProductBySlug = async (slug: string): Promise<IProduct | null> => {

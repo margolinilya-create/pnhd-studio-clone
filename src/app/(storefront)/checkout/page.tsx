@@ -19,6 +19,12 @@ export default async function Page() {
         <CheckoutClient
             submitLabel={messages?.checkoutSubmitLabel ?? 'Оформить заявку'}
             disclaimer={messages?.checkoutDisclaimer ?? null}
+            emptyState={{
+                title: messages?.emptyCheckoutTitle ?? 'Нечего оформлять',
+                subtitle: messages?.emptyCheckoutSubtitle ?? null,
+                ctaLabel: messages?.emptyCheckoutCtaLabel ?? 'Перейти в каталог',
+                ctaHref: messages?.emptyCheckoutCtaHref ?? '/shop',
+            }}
         />
     );
 }
