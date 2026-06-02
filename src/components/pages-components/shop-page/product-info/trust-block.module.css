@@ -1,0 +1,26 @@
+.trustBlock {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  padding: 12px 0;
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.trustItem {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.trustIcon {
+  display: flex;
+  align-items: center;
+  color: #595959;
+  flex-shrink: 0;
+}
+
+.trustText {
+  font-size: 11px;
+  color: #595959;
+  white-space: nowrap;
+}

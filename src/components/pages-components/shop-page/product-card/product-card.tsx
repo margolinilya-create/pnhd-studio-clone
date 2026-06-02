@@ -10,19 +10,29 @@ type TCardProps = {
   price: Number,
   img: string,
   sizes: Array<{ qty: number, name: String }>,
-  slug: string
+  slug: string,
+  badge?: string | null,
+  salePercent?: string | null,
 }
 
 
 const LOCAL_PLACEHOLDER = '/product-placeholder.svg';
 
-const ProductCard: React.FC<TCardProps> = ({ title, price, img, sizes }) => {
+const ProductCard: React.FC<TCardProps> = ({ title, price, img, sizes, badge, salePercent }) => {
   const [imageSrc, setImageSrc] = useState(img || LOCAL_PLACEHOLDER);
 
   return (
     <div className={styles.card}>
       {sizes.length === 0 && (
         <div className={styles.no_stock_icon}>Нет в наличии</div>
+      )}
+      {badge && badge !== 'none' && (
+        <div className={`${styles.badge} ${styles[`badge_${badge}` as keyof typeof styles]}`}>
+          {badge === 'hot'   && 'Хит'}
+          {badge === 'new'   && 'Новинка'}
+          {badge === 'sale'  && (salePercent ? `-${salePercent}%` : 'Скидка')}
+          {badge === 'order' && 'Под заказ'}
+        </div>
       )}
       <Image
         src={imageSrc}

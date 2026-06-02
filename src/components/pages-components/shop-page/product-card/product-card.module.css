@@ -14,6 +14,25 @@
     position: relative;
 }
 
+.badge {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    padding: 4px 10px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    border-radius: 2px;
+    z-index: 2;
+    pointer-events: none;
+}
+
+.badge_hot   { background: #e03030; color: #fff; }
+.badge_new   { background: #2a7a2a; color: #fff; }
+.badge_sale  { background: #d47000; color: #fff; }
+.badge_order { background: #666;    color: #fff; }
+
 .no_stock_icon {
     width: 130px;
     height: 30px;

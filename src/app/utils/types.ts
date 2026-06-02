@@ -29,6 +29,8 @@ export interface IProduct {
   editor_rsleeve_view: string;
   sizes: Array<{ name: string; qty: number; userQty?: number }>;
   friends: string;
+  badge?: string | null;
+  salePercent?: string | null;
 }
 export type TPrintLocation = 'none' | 'front' | 'back' | 'sleeve' | 'both';
 export type TPrintSide = 'front' | 'back' | 'sleeve';
