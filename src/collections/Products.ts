@@ -137,6 +137,37 @@ export const Products: CollectionConfig = {
       ],
     },
     {
+      name: 'badge',
+      type: 'select',
+      label: 'Бейдж на карточке',
+      options: [
+        { label: 'Нет', value: 'none' },
+        { label: 'Хит', value: 'hot' },
+        { label: 'Новинка', value: 'new' },
+        { label: 'Скидка', value: 'sale' },
+        { label: 'Под заказ', value: 'order' },
+      ],
+      defaultValue: 'none',
+      admin: { position: 'sidebar' },
+    },
+    {
+      name: 'salePercent',
+      type: 'select',
+      label: 'Размер скидки',
+      options: [
+        { label: '-5%', value: '5' },
+        { label: '-10%', value: '10' },
+        { label: '-20%', value: '20' },
+        { label: '-30%', value: '30' },
+        { label: '-50%', value: '50' },
+      ],
+      admin: {
+        position: 'sidebar',
+        condition: (data: Record<string, unknown>) => data?.badge === 'sale',
+        description: 'Только при бейдже «Скидка»',
+      },
+    },
+    {
       name: 'isSale',
       type: 'checkbox',
       defaultValue: false,

@@ -49,6 +49,8 @@ export const ProductCardsBlock: React.FC<{ shopData: Array<IProduct> }> = ({ sho
                             img={item?.image_url ?? ''}
                             sizes={item.sizes}
                             slug={item.slug}
+                            badge={item.badge}
+                            salePercent={item.salePercent}
                         />
                     </Link>
                 ))}

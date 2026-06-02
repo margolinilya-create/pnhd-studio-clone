@@ -98,6 +98,8 @@ const mapProduct = (
       .sort((a, b) => a.sortOrder - b.sortOrder)
       .map(({ name, qty }) => ({ name, qty })),
     friends: friendsCsv(product),
+    badge: product.badge ?? null,
+    salePercent: product.salePercent ?? null,
   };
 };
 

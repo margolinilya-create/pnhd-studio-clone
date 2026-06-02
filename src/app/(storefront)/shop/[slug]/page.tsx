@@ -134,7 +134,7 @@ const ProductPage = async (props: {
                     ) : null}
                 </div>
                 <Suspense>
-                    <ProductInfo item={item} />
+                    <ProductInfo item={item} trustItems={settings?.trustItems ?? null} />
                 </Suspense>
             </section>
         </>

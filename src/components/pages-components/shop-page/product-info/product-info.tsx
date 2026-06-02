@@ -22,10 +22,11 @@ import { actions as cartActions } from '@/redux/cart-slice/cart.slice';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { uploadPrintFile, deletePrintFile } from '@/lib/storage/upload-print';
 import { SIDES_FOR_LOCATION, PRINT_PRICE_TABLE } from './print-config';
+import TrustBlock, { TrustItem } from './trust-block';
 
 const formatRub = (n: number) => new Intl.NumberFormat('ru-RU').format(n) + ' ₽';
 
-const ProductInfo: React.FC<{ item: IProduct }> = ({ item }) => {
+const ProductInfo: React.FC<{ item: IProduct; trustItems?: TrustItem[] | null }> = ({ item, trustItems }) => {
   const searchParams = useSearchParams();
   const editItemCartId = searchParams.get('edit') ?? undefined;
   const isHydrated = useAppSelector((store) => store.cart.isHydrated);
@@ -39,13 +40,14 @@ const ProductInfo: React.FC<{ item: IProduct }> = ({ item }) => {
       </div>
     );
   }
-  return <ProductInfoInner item={item} editItemCartId={editItemCartId} />;
+  return <ProductInfoInner item={item} editItemCartId={editItemCartId} trustItems={trustItems} />;
 };
 
 const ProductInfoInner: React.FC<{
   item: IProduct;
   editItemCartId: string | undefined;
-}> = ({ item, editItemCartId }) => {
+  trustItems?: TrustItem[] | null;
+}> = ({ item, editItemCartId, trustItems }) => {
   const dispatch = useAppDispatch();
   const router = useRouter();
   const editEntry = useAppSelector((store) =>
@@ -260,6 +262,7 @@ const ProductInfoInner: React.FC<{
         >
           {isEditMode ? 'Сохранить изменения' : 'В корзину'}
         </button>
+        <TrustBlock items={trustItems} />
       </div>
     </div>
   );

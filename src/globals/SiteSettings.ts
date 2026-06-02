@@ -107,6 +107,36 @@ export const SiteSettings: GlobalConfig = {
         { name: 'madeinRussiaEnabled', type: 'checkbox', defaultValue: true, label: 'Показывать блок «Сделано в России»' },
       ],
     },
+    // === PDP Trust block ===
+    {
+      type: 'collapsible',
+      label: 'PDP: Trust блок под CTA',
+      admin: { description: 'Иконки + текст под кнопкой «В корзину» на карточке товара. До 4 пунктов.' },
+      fields: [
+        {
+          name: 'trustItems',
+          type: 'array',
+          label: 'Пункты доверия',
+          maxRows: 4,
+          admin: { initCollapsed: true },
+          fields: [
+            {
+              name: 'icon',
+              type: 'select',
+              label: 'Иконка',
+              required: true,
+              options: [
+                { label: 'Производство', value: 'factory' },
+                { label: 'Возврат', value: 'return' },
+                { label: 'Гарантия качества', value: 'quality' },
+                { label: 'Доставка', value: 'shipping' },
+              ],
+            },
+            { name: 'text', type: 'text', required: true, label: 'Текст пункта' },
+          ],
+        },
+      ],
+    },
     // === External URL ===
     {
       type: 'collapsible',

@@ -351,6 +351,11 @@ export interface Product {
         id?: string | null;
       }[]
     | null;
+  badge?: ('none' | 'hot' | 'new' | 'sale' | 'order') | null;
+  /**
+   * Только при бейдже «Скидка»
+   */
+  salePercent?: ('5' | '10' | '20' | '30' | '50') | null;
   isSale?: boolean | null;
   isForPrinting?: boolean | null;
   color?: string | null;
@@ -1437,6 +1442,8 @@ export interface ProductsSelect<T extends boolean = true> {
         product?: T;
         id?: T;
       };
+  badge?: T;
+  salePercent?: T;
   isSale?: T;
   isForPrinting?: T;
   color?: T;
@@ -2322,6 +2329,13 @@ export interface SiteSetting {
   defaultPopupTitle: string;
   madeinRussiaLabel?: string | null;
   madeinRussiaEnabled?: boolean | null;
+  trustItems?:
+    | {
+        icon: 'factory' | 'return' | 'quality' | 'shipping';
+        text: string;
+        id?: string | null;
+      }[]
+    | null;
   wholesaleUrl: string;
   social?: {
     telegramUrl?: string | null;
@@ -2624,6 +2638,13 @@ export interface SiteSettingsSelect<T extends boolean = true> {
   defaultPopupTitle?: T;
   madeinRussiaLabel?: T;
   madeinRussiaEnabled?: T;
+  trustItems?:
+    | T
+    | {
+        icon?: T;
+        text?: T;
+        id?: T;
+      };
   wholesaleUrl?: T;
   social?:
     | T
