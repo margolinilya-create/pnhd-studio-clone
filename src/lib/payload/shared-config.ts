@@ -5,7 +5,7 @@ const DEFAULT_PREVIEW_HOST = 'https://pnhd-studio-clone.vercel.app';
 /** Build live-preview URL for Payload admin iframe. */
 export const buildPreviewUrl = (path: string = '/'): string => {
   const base = process.env.NEXT_PUBLIC_SITE_URL ?? DEFAULT_PREVIEW_HOST;
-  const secret = process.env.PREVIEW_SECRET ?? '';
+  const secret = process.env.NEXT_PUBLIC_PREVIEW_SECRET ?? '';
   const cleanPath = path.startsWith('/') ? path : `/${path}`;
   return `${base}/api/preview?secret=${secret}&path=${encodeURIComponent(cleanPath)}`;
 };
