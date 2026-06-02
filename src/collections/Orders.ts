@@ -1,6 +1,7 @@
 import type { CollectionBeforeChangeHook, CollectionConfig } from 'payload';
 
 import { hasRole } from '../access/hasRole.ts';
+import { isAuthenticated } from '../access/isAuthenticated.ts';
 
 const assignOrderNumber: CollectionBeforeChangeHook = async ({ data, operation, req }) => {
   if (operation !== 'create') return data;
@@ -39,7 +40,7 @@ export const Orders: CollectionConfig = {
   },
   access: {
     create: hasRole('admin'),
-    read: hasRole('admin', 'operations'),
+    read: isAuthenticated,
     update: hasRole('admin', 'operations'),
     delete: hasRole('admin'),
   },

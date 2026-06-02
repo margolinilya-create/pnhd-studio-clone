@@ -1,6 +1,7 @@
 import type { CollectionConfig } from 'payload';
 
 import { hasRole } from '../access/hasRole.ts';
+import { isAuthenticated } from '../access/isAuthenticated.ts';
 
 export const OrderItems: CollectionConfig = {
   slug: 'order-items',
@@ -10,7 +11,7 @@ export const OrderItems: CollectionConfig = {
   },
   access: {
     create: hasRole('admin'),
-    read: hasRole('admin', 'operations'),
+    read: isAuthenticated,
     update: hasRole('admin', 'operations'),
     delete: hasRole('admin'),
   },
