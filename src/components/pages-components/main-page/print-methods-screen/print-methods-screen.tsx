@@ -11,13 +11,18 @@ import button_arrow_right from "../../../../../public/button_arrow_right.svg";
 import Link from "next/link";
 
 interface PrintMethodsScreenProps {
-    excludedMethods ?: string[];
-}
-interface PrintMethodsScreenProps {
-    excludedMethods ?: string[];
+    excludedMethods?: string[];
+    sectionTitle?: string | null;
+    sectionSubtitle?: string | null;
 }
 
-const PrintMethodsScreen: React.FC<PrintMethodsScreenProps> = ({excludedMethods=[]}) => {
+const PrintMethodsScreen: React.FC<PrintMethodsScreenProps> = ({
+    excludedMethods = [],
+    sectionTitle,
+    sectionSubtitle,
+}) => {
+    const resolvedTitle = sectionTitle ?? 'воплощай смелые идеи';
+    const resolvedSubtitle = sectionSubtitle ?? 'с любым методом нанесения';
     const printMethodsList = {
         shelkografiya: {
             'name': 'шелкография',
@@ -77,8 +82,8 @@ const PrintMethodsScreen: React.FC<PrintMethodsScreenProps> = ({excludedMethods=
                 }
 
                 <h2 className={styles.screen_titleWrapper}>
-                    <span className={styles.screen_title}>воплощай смелые идеи</span>
-                    <span className={styles.screen_subtitle}>с любым методом нанесения</span>
+                    <span className={styles.screen_title}>{resolvedTitle}</span>
+                    <span className={styles.screen_subtitle}>{resolvedSubtitle}</span>
                 </h2>
             </div>
             <div className={styles.screen_secondRow}>

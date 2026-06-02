@@ -1,3 +1,4 @@
+import { lexicalEditor } from '@payloadcms/richtext-lexical';
 import type { CollectionConfig } from 'payload';
 
 import { hasRole } from '../access/hasRole.ts';
@@ -108,6 +109,108 @@ export const Pages: CollectionConfig = {
     {
       name: 'publishedAt',
       type: 'date',
+    },
+    // Structured array fields for specific static pages.
+    // admin.condition hides irrelevant fields on pages where slug doesn't match.
+    {
+      name: 'loyaltyLevels',
+      type: 'array',
+      label: 'Уровни лояльности (только для slug=loyalty)',
+      admin: {
+        condition: (data) =>
+          (data as { slug?: string } | undefined)?.slug === 'loyalty',
+        description: 'Cashback-уровни. Используется только на странице /loyalty.',
+      },
+      fields: [
+        {
+          name: 'level',
+          type: 'text',
+          required: true,
+          label: 'Название уровня (например "Уровень 1")',
+        },
+        {
+          name: 'sum',
+          type: 'text',
+          required: true,
+          label: 'Порог трат (текст, например "от 3 000 ₽")',
+        },
+        {
+          name: 'cashback',
+          type: 'text',
+          required: false,
+          label: 'Cashback (текст, например "5%"). Пусто = без кешбэка.',
+        },
+        {
+          name: 'label',
+          type: 'text',
+          required: false,
+          label: 'Бейдж/подпись (например "базовый")',
+        },
+      ],
+    },
+    {
+      name: 'howtoSteps',
+      type: 'array',
+      label: 'Шаги (только для slug=howto)',
+      admin: {
+        condition: (data) =>
+          (data as { slug?: string } | undefined)?.slug === 'howto',
+        description: 'Sequential steps. Используется только на странице /howto.',
+      },
+      fields: [
+        {
+          name: 'title',
+          type: 'text',
+          required: true,
+          label: 'Заголовок шага',
+        },
+        {
+          name: 'body',
+          type: 'richText',
+          required: true,
+          editor: lexicalEditor({}),
+          label: 'Описание шага',
+        },
+        {
+          name: 'image',
+          type: 'upload',
+          relationTo: 'media',
+          required: false,
+          label: 'Картинка к шагу (опционально)',
+        },
+      ],
+    },
+    {
+      name: 'sizeChartItems',
+      type: 'array',
+      label: 'Размеры (только для slug=size_chart)',
+      admin: {
+        condition: (data) =>
+          (data as { slug?: string } | undefined)?.slug === 'size_chart',
+        description:
+          'Размерные таблицы для типов одежды. Используется только на странице /size_chart.',
+      },
+      fields: [
+        {
+          name: 'type',
+          type: 'text',
+          required: true,
+          label: 'Тип одежды (например "Футболки CLASSIC")',
+        },
+        {
+          name: 'label',
+          type: 'text',
+          required: false,
+          label: 'Подпись (например "мужские размеры")',
+        },
+        {
+          name: 'image',
+          type: 'upload',
+          relationTo: 'media',
+          required: false,
+          label: 'Картинка размерной таблицы',
+        },
+      ],
     },
   ],
 };

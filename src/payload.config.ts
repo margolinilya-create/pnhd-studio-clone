@@ -22,17 +22,22 @@ import { OrderItems } from './collections/OrderItems.ts';
 import { Orders } from './collections/Orders.ts';
 import { Pages } from './collections/Pages.ts';
 import { Prices } from './collections/Prices.ts';
+import { PrintsPages } from './collections/PrintsPages.ts';
+import { PrintTypeItems } from './collections/PrintTypeItems.ts';
 import { Products } from './collections/Products.ts';
 import { Promos } from './collections/Promos.ts';
+import { TextilePages } from './collections/TextilePages.ts';
 import { Users } from './collections/Users.ts';
 import { Variants } from './collections/Variants.ts';
+import { CheckoutMessages } from './globals/CheckoutMessages.ts';
 import { CookieBar } from './globals/CookieBar.ts';
+import { HomePage } from './globals/HomePage.ts';
 import { Navigation } from './globals/Navigation.ts';
 import { SiteSettings } from './globals/SiteSettings.ts';
 
-const collections = [Users, Media, Categories, Products, Variants, Prices, Pages, Drops, Promos, Leads, Orders, OrderItems];
+const collections = [Users, Media, Categories, Products, Variants, Prices, Pages, PrintTypeItems, PrintsPages, TextilePages, Drops, Promos, Leads, Orders, OrderItems];
 
-const globals = [SiteSettings, Navigation, CookieBar];
+const globals = [CheckoutMessages, CookieBar, HomePage, Navigation, SiteSettings];
 
 const filename = fileURLToPath(import.meta.url);
 const dirname = path.dirname(filename);

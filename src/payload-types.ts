@@ -74,6 +74,9 @@ export interface Config {
     variants: Variant;
     prices: Price;
     pages: Page;
+    'print-type-items': PrintTypeItem;
+    'prints-pages': PrintsPage;
+    'textile-pages': TextilePage;
     drops: Drop;
     promos: Promo;
     leads: Lead;
@@ -99,6 +102,9 @@ export interface Config {
     variants: VariantsSelect<false> | VariantsSelect<true>;
     prices: PricesSelect<false> | PricesSelect<true>;
     pages: PagesSelect<false> | PagesSelect<true>;
+    'print-type-items': PrintTypeItemsSelect<false> | PrintTypeItemsSelect<true>;
+    'prints-pages': PrintsPagesSelect<false> | PrintsPagesSelect<true>;
+    'textile-pages': TextilePagesSelect<false> | TextilePagesSelect<true>;
     drops: DropsSelect<false> | DropsSelect<true>;
     promos: PromosSelect<false> | PromosSelect<true>;
     leads: LeadsSelect<false> | LeadsSelect<true>;
@@ -120,14 +126,18 @@ export interface Config {
   };
   fallbackLocale: null;
   globals: {
-    'site-settings': SiteSetting;
-    navigation: Navigation;
+    'checkout-messages': CheckoutMessage;
     'cookie-bar': CookieBar;
+    'home-page': HomePage;
+    navigation: Navigation;
+    'site-settings': SiteSetting;
   };
   globalsSelect: {
-    'site-settings': SiteSettingsSelect<false> | SiteSettingsSelect<true>;
-    navigation: NavigationSelect<false> | NavigationSelect<true>;
+    'checkout-messages': CheckoutMessagesSelect<false> | CheckoutMessagesSelect<true>;
     'cookie-bar': CookieBarSelect<false> | CookieBarSelect<true>;
+    'home-page': HomePageSelect<false> | HomePageSelect<true>;
+    navigation: NavigationSelect<false> | NavigationSelect<true>;
+    'site-settings': SiteSettingsSelect<false> | SiteSettingsSelect<true>;
   };
   locale: null;
   widgets: {
@@ -246,9 +256,47 @@ export interface Category {
   id: number;
   name: string;
   slug: string;
+  /**
+   * Используется на /<slug> landing page. Пусто = страница не используется как landing.
+   */
+  h1?: string | null;
+  metaTitle?: string | null;
+  metaDescription?: string | null;
+  /**
+   * Используется для фильтрации в ProductCardsBlock
+   */
+  productType?: string | null;
+  faqSet?:
+    | {
+        title: string;
+        text: string;
+        id?: string | null;
+      }[]
+    | null;
+  bodyContent?: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  } | null;
+  heroImage?: (number | null) | Media;
+  /**
+   * Если включено — рендерится на /<slug>. Иначе категория только для tagging.
+   */
+  isLanding?: boolean | null;
   parent?: (number | null) | Category;
   updatedAt: string;
   createdAt: string;
+  _status?: ('draft' | 'published') | null;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -390,6 +438,54 @@ export interface Page {
    */
   legacyPostId?: number | null;
   publishedAt?: string | null;
+  /**
+   * Cashback-уровни. Используется только на странице /loyalty.
+   */
+  loyaltyLevels?:
+    | {
+        level: string;
+        sum: string;
+        cashback?: string | null;
+        label?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * Sequential steps. Используется только на странице /howto.
+   */
+  howtoSteps?:
+    | {
+        title: string;
+        body: {
+          root: {
+            type: string;
+            children: {
+              type: any;
+              version: number;
+              [k: string]: unknown;
+            }[];
+            direction: ('ltr' | 'rtl') | null;
+            format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+            indent: number;
+            version: number;
+          };
+          [k: string]: unknown;
+        };
+        image?: (number | null) | Media;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * Размерные таблицы для типов одежды. Используется только на странице /size_chart.
+   */
+  sizeChartItems?:
+    | {
+        type: string;
+        label?: string | null;
+        image?: (number | null) | Media;
+        id?: string | null;
+      }[]
+    | null;
   meta?: {
     title?: string | null;
     description?: string | null;
@@ -401,6 +497,144 @@ export interface Page {
   updatedAt: string;
   createdAt: string;
   _status?: ('draft' | 'published') | null;
+}
+/**
+ * Подстраницы методов печати (/methods/[slug]/[type]). Например: "Шелкография — Печать логотипа".
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "print-type-items".
+ */
+export interface PrintTypeItem {
+  id: number;
+  /**
+   * Уникальный ключ. Для одной записи — комбинация parentSlug+typeSlug. Используйте формат "parentSlug__typeSlug", например: "shelkografiya__pechat-logotipa-shelkografiej".
+   */
+  slug: string;
+  /**
+   * Например: screenprinting, heat_transfer, DTF, DTG. Используется для группировки.
+   */
+  parentSlug: string;
+  /**
+   * Второй сегмент URL /methods/[slug]/[type]. Например: pechat-logotipa-shelkografiej.
+   */
+  typeSlug: string;
+  title?: string | null;
+  subtitle?: string | null;
+  mainText?: string | null;
+  /**
+   * Каждый пункт через запятую. Например: "> Долговечно,> Низкая стоимость".
+   */
+  pros?: string | null;
+  /**
+   * Каждый пункт через запятую.
+   */
+  cons?: string | null;
+  /**
+   * Рендерится через dangerouslySetInnerHTML. Используется для SEO-контента внизу страницы.
+   */
+  bodyHtml?: string | null;
+  /**
+   * Пример: /printingMethods/silk/main.webp
+   */
+  coverPath?: string | null;
+  gallery?:
+    | {
+        /**
+         * Пример: /printingMethods/silk/1.webp
+         */
+        path?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  metaTitle?: string | null;
+  metaDescription?: string | null;
+  metaKeywords?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Страницы типов принтов (/prints/[slug]). Например: "Печать логотипов".
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "prints-pages".
+ */
+export interface PrintsPage {
+  id: number;
+  /**
+   * Например: pechat-logotipov, pechat-printov.
+   */
+  slug: string;
+  title?: string | null;
+  subtitle?: string | null;
+  mainText?: string | null;
+  /**
+   * Рендерится через dangerouslySetInnerHTML. Используется для SEO-контента внизу страницы.
+   */
+  bodyHtml?: string | null;
+  /**
+   * Пример: /printingMethods/silk/main.webp
+   */
+  coverPath?: string | null;
+  gallery?:
+    | {
+        /**
+         * Пример: /printingMethods/silk/1.webp
+         */
+        path?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  metaTitle?: string | null;
+  metaDescription?: string | null;
+  metaKeywords?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Страницы категорий текстиля (/textile/[slug]). Например: "Печать на футболках".
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "textile-pages".
+ */
+export interface TextilePage {
+  id: number;
+  /**
+   * Например: pechat-na-futbolkah, pechat-na-hudi.
+   */
+  slug: string;
+  title?: string | null;
+  subtitle?: string | null;
+  mainText?: string | null;
+  /**
+   * Каждый пункт через запятую. Например: "> Быстро,> Низкая стоимость".
+   */
+  pros?: string | null;
+  /**
+   * Каждый пункт через запятую.
+   */
+  cons?: string | null;
+  /**
+   * Рендерится через dangerouslySetInnerHTML. Используется для SEO-контента внизу страницы.
+   */
+  bodyHtml?: string | null;
+  /**
+   * Пример: /printingMethods/silk/main.webp
+   */
+  coverPath?: string | null;
+  gallery?:
+    | {
+        /**
+         * Пример: /printingMethods/silk/1.webp
+         */
+        path?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  metaTitle?: string | null;
+  metaDescription?: string | null;
+  metaKeywords?: string | null;
+  updatedAt: string;
+  createdAt: string;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -973,6 +1207,18 @@ export interface PayloadLockedDocument {
         value: number | Page;
       } | null)
     | ({
+        relationTo: 'print-type-items';
+        value: number | PrintTypeItem;
+      } | null)
+    | ({
+        relationTo: 'prints-pages';
+        value: number | PrintsPage;
+      } | null)
+    | ({
+        relationTo: 'textile-pages';
+        value: number | TextilePage;
+      } | null)
+    | ({
         relationTo: 'drops';
         value: number | Drop;
       } | null)
@@ -1130,9 +1376,24 @@ export interface MediaSelect<T extends boolean = true> {
 export interface CategoriesSelect<T extends boolean = true> {
   name?: T;
   slug?: T;
+  h1?: T;
+  metaTitle?: T;
+  metaDescription?: T;
+  productType?: T;
+  faqSet?:
+    | T
+    | {
+        title?: T;
+        text?: T;
+        id?: T;
+      };
+  bodyContent?: T;
+  heroImage?: T;
+  isLanding?: T;
   parent?: T;
   updatedAt?: T;
   createdAt?: T;
+  _status?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -1239,6 +1500,31 @@ export interface PagesSelect<T extends boolean = true> {
   likes?: T;
   legacyPostId?: T;
   publishedAt?: T;
+  loyaltyLevels?:
+    | T
+    | {
+        level?: T;
+        sum?: T;
+        cashback?: T;
+        label?: T;
+        id?: T;
+      };
+  howtoSteps?:
+    | T
+    | {
+        title?: T;
+        body?: T;
+        image?: T;
+        id?: T;
+      };
+  sizeChartItems?:
+    | T
+    | {
+        type?: T;
+        label?: T;
+        image?: T;
+        id?: T;
+      };
   meta?:
     | T
     | {
@@ -1249,6 +1535,81 @@ export interface PagesSelect<T extends boolean = true> {
   updatedAt?: T;
   createdAt?: T;
   _status?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "print-type-items_select".
+ */
+export interface PrintTypeItemsSelect<T extends boolean = true> {
+  slug?: T;
+  parentSlug?: T;
+  typeSlug?: T;
+  title?: T;
+  subtitle?: T;
+  mainText?: T;
+  pros?: T;
+  cons?: T;
+  bodyHtml?: T;
+  coverPath?: T;
+  gallery?:
+    | T
+    | {
+        path?: T;
+        id?: T;
+      };
+  metaTitle?: T;
+  metaDescription?: T;
+  metaKeywords?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "prints-pages_select".
+ */
+export interface PrintsPagesSelect<T extends boolean = true> {
+  slug?: T;
+  title?: T;
+  subtitle?: T;
+  mainText?: T;
+  bodyHtml?: T;
+  coverPath?: T;
+  gallery?:
+    | T
+    | {
+        path?: T;
+        id?: T;
+      };
+  metaTitle?: T;
+  metaDescription?: T;
+  metaKeywords?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "textile-pages_select".
+ */
+export interface TextilePagesSelect<T extends boolean = true> {
+  slug?: T;
+  title?: T;
+  subtitle?: T;
+  mainText?: T;
+  pros?: T;
+  cons?: T;
+  bodyHtml?: T;
+  coverPath?: T;
+  gallery?:
+    | T
+    | {
+        path?: T;
+        id?: T;
+      };
+  metaTitle?: T;
+  metaDescription?: T;
+  metaKeywords?: T;
+  updatedAt?: T;
+  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -1641,6 +2002,287 @@ export interface PayloadMigrationsSelect<T extends boolean = true> {
   createdAt?: T;
 }
 /**
+ * Тексты для корзины, чекаута и страницы благодарности. Меняем wording без редеплоя.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "checkout-messages".
+ */
+export interface CheckoutMessage {
+  id: number;
+  cartPageTitle: string;
+  cartManagerDisclaimer?: string | null;
+  checkoutSubmitLabel: string;
+  checkoutDisclaimer?: string | null;
+  thanksHeading: string;
+  thanksBody: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  };
+  thanksCallbackPromiseMinutes?: number | null;
+  thanksCTAs?:
+    | {
+        label: string;
+        href: string;
+        id?: string | null;
+      }[]
+    | null;
+  _status?: ('draft' | 'published') | null;
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+/**
+ * Текст и кнопка cookie-уведомления. excludedRoutes (на каких страницах не показывать) — захардкожены в коде.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "cookie-bar".
+ */
+export interface CookieBar {
+  id: number;
+  enabled?: boolean | null;
+  title: string;
+  description: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  };
+  buttonLabel: string;
+  _status?: ('draft' | 'published') | null;
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+/**
+ * Главная страница сайта. Блоки можно перетаскивать для изменения порядка. Каждый блок — своя секция с настраиваемым содержимым.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "home-page".
+ */
+export interface HomePage {
+  id: number;
+  sections?:
+    | (
+        | {
+            rotatingTitles?:
+              | {
+                  text: string;
+                  id?: string | null;
+                }[]
+              | null;
+            methodsList?:
+              | {
+                  text: string;
+                  id?: string | null;
+                }[]
+              | null;
+            featureBullets?:
+              | {
+                  text: string;
+                  id?: string | null;
+                }[]
+              | null;
+            ctaLabel?: string | null;
+            ctaHref?: string | null;
+            showLoyaltyBanner?: boolean | null;
+            loyaltyEyebrow?: string | null;
+            loyaltyTitle?: string | null;
+            loyaltyHref?: string | null;
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'hero';
+          }
+        | {
+            sectionTitle?: string | null;
+            subtitle?: string | null;
+            items?:
+              | {
+                  title: string;
+                  href: string;
+                  bgColor: string;
+                  color: 'black' | 'white';
+                  image?: (number | null) | Media;
+                  imageSlug?: ('tshirt' | 'sweatshirt' | 'hoodie' | 'pullover' | 'totebag' | 'cap') | null;
+                  id?: string | null;
+                }[]
+              | null;
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'category-grid';
+          }
+        | {
+            sectionTitle?: string | null;
+            sectionSubtitle?: string | null;
+            /**
+             * Если оставлено пустым — рендерятся все 5 методов. Например "shelkografiya" чтобы скрыть шелкографию.
+             */
+            excludedSlugs?: string | null;
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'methods-list';
+          }
+        | {
+            sectionTitle?: string | null;
+            ctaHref?: string | null;
+            items?:
+              | {
+                  title: string;
+                  text: string;
+                  image?: (number | null) | Media;
+                  imageSlug?: ('stage1' | 'stage2' | 'stage3' | 'stage4') | null;
+                  id?: string | null;
+                }[]
+              | null;
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'stages';
+          }
+        | {
+            sectionTitle?: string | null;
+            sectionSubtitle?: string | null;
+            mainBlockText?: string | null;
+            mainBlockCtaLabel?: string | null;
+            mainBlockPopupTitle?: string | null;
+            sideInfoText?: string | null;
+            rows?:
+              | {
+                  method: string;
+                  /**
+                   * Если пусто — рендерим "Стоимость". Для DTG обычно "На белом / цветном", для ВЫШИВКА — "Стоимость (от 10 штук)".
+                   */
+                  caption?: string | null;
+                  cells?:
+                    | {
+                        format: string;
+                        price: string;
+                        id?: string | null;
+                      }[]
+                    | null;
+                  id?: string | null;
+                }[]
+              | null;
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'pricing-table';
+          }
+        | {
+            title: string;
+            /**
+             * Если заголовок содержит этот фрагмент — он будет визуально выделен. Если пусто — заголовок целиком.
+             */
+            highlight?: string | null;
+            subtitle?: string | null;
+            items?:
+              | {
+                  title: string;
+                  text: string;
+                  id?: string | null;
+                }[]
+              | null;
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'about';
+          }
+        | {
+            sectionTitle?: string | null;
+            ratingValue?: string | null;
+            ratingText?: string | null;
+            yandexUrl?: string | null;
+            googleUrl?: string | null;
+            items?:
+              | {
+                  author: string;
+                  text: string;
+                  rating?: number | null;
+                  photo?: (number | null) | Media;
+                  id?: string | null;
+                }[]
+              | null;
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'testimonials';
+          }
+        | {
+            sectionTitle?: string | null;
+            items?:
+              | {
+                  question: string;
+                  answer: string;
+                  id?: string | null;
+                }[]
+              | null;
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'faq';
+          }
+        | {
+            eyebrow?: string | null;
+            title: string;
+            subtitle?: string | null;
+            description?: string | null;
+            ctaLabel: string;
+            ctaHref: string;
+            isExternal?: boolean | null;
+            variant?: ('shop' | 'form' | 'generic') | null;
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'cta';
+          }
+      )[]
+    | null;
+  _status?: ('draft' | 'published') | null;
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+/**
+ * Единый список пунктов меню для шапки / подвала / мобильного меню. Visibility-флаги контролируют где элемент показывается. Порядок в массиве = порядок отображения.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "navigation".
+ */
+export interface Navigation {
+  id: number;
+  items?:
+    | {
+        label: string;
+        /**
+         * Внутренние: /shop, /contacts. Внешние: https://… (поставь isExternal).
+         */
+        href: string;
+        /**
+         * Опционально: например feedback → /?#feedback
+         */
+        hash?: string | null;
+        isExternal?: boolean | null;
+        showInHeader?: boolean | null;
+        showInFooter?: boolean | null;
+        showInMobile?: boolean | null;
+        id?: string | null;
+      }[]
+    | null;
+  _status?: ('draft' | 'published') | null;
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+/**
  * Контактные данные, лейблы CTA, аналитика и social-ссылки. Видно на каждой странице сайта.
  *
  * This interface was referenced by `Config`'s JSON-Schema
@@ -1707,64 +2349,243 @@ export interface SiteSetting {
   createdAt?: string | null;
 }
 /**
- * Единый список пунктов меню для шапки / подвала / мобильного меню. Visibility-флаги контролируют где элемент показывается. Порядок в массиве = порядок отображения.
- *
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "navigation".
+ * via the `definition` "checkout-messages_select".
  */
-export interface Navigation {
-  id: number;
-  items?:
+export interface CheckoutMessagesSelect<T extends boolean = true> {
+  cartPageTitle?: T;
+  cartManagerDisclaimer?: T;
+  checkoutSubmitLabel?: T;
+  checkoutDisclaimer?: T;
+  thanksHeading?: T;
+  thanksBody?: T;
+  thanksCallbackPromiseMinutes?: T;
+  thanksCTAs?:
+    | T
     | {
-        label: string;
-        /**
-         * Внутренние: /shop, /contacts. Внешние: https://… (поставь isExternal).
-         */
-        href: string;
-        /**
-         * Опционально: например feedback → /?#feedback
-         */
-        hash?: string | null;
-        isExternal?: boolean | null;
-        showInHeader?: boolean | null;
-        showInFooter?: boolean | null;
-        showInMobile?: boolean | null;
-        id?: string | null;
-      }[]
-    | null;
-  _status?: ('draft' | 'published') | null;
-  updatedAt?: string | null;
-  createdAt?: string | null;
+        label?: T;
+        href?: T;
+        id?: T;
+      };
+  _status?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
 }
 /**
- * Текст и кнопка cookie-уведомления. excludedRoutes (на каких страницах не показывать) — захардкожены в коде.
- *
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "cookie-bar".
+ * via the `definition` "cookie-bar_select".
  */
-export interface CookieBar {
-  id: number;
-  enabled?: boolean | null;
-  title: string;
-  description: {
-    root: {
-      type: string;
-      children: {
-        type: any;
-        version: number;
-        [k: string]: unknown;
-      }[];
-      direction: ('ltr' | 'rtl') | null;
-      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
-      indent: number;
-      version: number;
-    };
-    [k: string]: unknown;
-  };
-  buttonLabel: string;
-  _status?: ('draft' | 'published') | null;
-  updatedAt?: string | null;
-  createdAt?: string | null;
+export interface CookieBarSelect<T extends boolean = true> {
+  enabled?: T;
+  title?: T;
+  description?: T;
+  buttonLabel?: T;
+  _status?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "home-page_select".
+ */
+export interface HomePageSelect<T extends boolean = true> {
+  sections?:
+    | T
+    | {
+        hero?:
+          | T
+          | {
+              rotatingTitles?:
+                | T
+                | {
+                    text?: T;
+                    id?: T;
+                  };
+              methodsList?:
+                | T
+                | {
+                    text?: T;
+                    id?: T;
+                  };
+              featureBullets?:
+                | T
+                | {
+                    text?: T;
+                    id?: T;
+                  };
+              ctaLabel?: T;
+              ctaHref?: T;
+              showLoyaltyBanner?: T;
+              loyaltyEyebrow?: T;
+              loyaltyTitle?: T;
+              loyaltyHref?: T;
+              id?: T;
+              blockName?: T;
+            };
+        'category-grid'?:
+          | T
+          | {
+              sectionTitle?: T;
+              subtitle?: T;
+              items?:
+                | T
+                | {
+                    title?: T;
+                    href?: T;
+                    bgColor?: T;
+                    color?: T;
+                    image?: T;
+                    imageSlug?: T;
+                    id?: T;
+                  };
+              id?: T;
+              blockName?: T;
+            };
+        'methods-list'?:
+          | T
+          | {
+              sectionTitle?: T;
+              sectionSubtitle?: T;
+              excludedSlugs?: T;
+              id?: T;
+              blockName?: T;
+            };
+        stages?:
+          | T
+          | {
+              sectionTitle?: T;
+              ctaHref?: T;
+              items?:
+                | T
+                | {
+                    title?: T;
+                    text?: T;
+                    image?: T;
+                    imageSlug?: T;
+                    id?: T;
+                  };
+              id?: T;
+              blockName?: T;
+            };
+        'pricing-table'?:
+          | T
+          | {
+              sectionTitle?: T;
+              sectionSubtitle?: T;
+              mainBlockText?: T;
+              mainBlockCtaLabel?: T;
+              mainBlockPopupTitle?: T;
+              sideInfoText?: T;
+              rows?:
+                | T
+                | {
+                    method?: T;
+                    caption?: T;
+                    cells?:
+                      | T
+                      | {
+                          format?: T;
+                          price?: T;
+                          id?: T;
+                        };
+                    id?: T;
+                  };
+              id?: T;
+              blockName?: T;
+            };
+        about?:
+          | T
+          | {
+              title?: T;
+              highlight?: T;
+              subtitle?: T;
+              items?:
+                | T
+                | {
+                    title?: T;
+                    text?: T;
+                    id?: T;
+                  };
+              id?: T;
+              blockName?: T;
+            };
+        testimonials?:
+          | T
+          | {
+              sectionTitle?: T;
+              ratingValue?: T;
+              ratingText?: T;
+              yandexUrl?: T;
+              googleUrl?: T;
+              items?:
+                | T
+                | {
+                    author?: T;
+                    text?: T;
+                    rating?: T;
+                    photo?: T;
+                    id?: T;
+                  };
+              id?: T;
+              blockName?: T;
+            };
+        faq?:
+          | T
+          | {
+              sectionTitle?: T;
+              items?:
+                | T
+                | {
+                    question?: T;
+                    answer?: T;
+                    id?: T;
+                  };
+              id?: T;
+              blockName?: T;
+            };
+        cta?:
+          | T
+          | {
+              eyebrow?: T;
+              title?: T;
+              subtitle?: T;
+              description?: T;
+              ctaLabel?: T;
+              ctaHref?: T;
+              isExternal?: T;
+              variant?: T;
+              id?: T;
+              blockName?: T;
+            };
+      };
+  _status?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "navigation_select".
+ */
+export interface NavigationSelect<T extends boolean = true> {
+  items?:
+    | T
+    | {
+        label?: T;
+        href?: T;
+        hash?: T;
+        isExternal?: T;
+        showInHeader?: T;
+        showInFooter?: T;
+        showInMobile?: T;
+        id?: T;
+      };
+  _status?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -1835,42 +2656,6 @@ export interface SiteSettingsSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "navigation_select".
- */
-export interface NavigationSelect<T extends boolean = true> {
-  items?:
-    | T
-    | {
-        label?: T;
-        href?: T;
-        hash?: T;
-        isExternal?: T;
-        showInHeader?: T;
-        showInFooter?: T;
-        showInMobile?: T;
-        id?: T;
-      };
-  _status?: T;
-  updatedAt?: T;
-  createdAt?: T;
-  globalType?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "cookie-bar_select".
- */
-export interface CookieBarSelect<T extends boolean = true> {
-  enabled?: T;
-  title?: T;
-  description?: T;
-  buttonLabel?: T;
-  _status?: T;
-  updatedAt?: T;
-  createdAt?: T;
-  globalType?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "collections_widget".
  */
 export interface CollectionsWidget {
@@ -1896,6 +2681,9 @@ export interface TaskCreateCollectionExport {
       | 'variants'
       | 'prices'
       | 'pages'
+      | 'print-type-items'
+      | 'prints-pages'
+      | 'textile-pages'
       | 'drops'
       | 'promos'
       | 'leads'
@@ -1952,11 +2740,16 @@ export interface TaskSchedulePublish {
   input: {
     type?: ('publish' | 'unpublish') | null;
     locale?: string | null;
-    doc?: {
-      relationTo: 'pages';
-      value: number | Page;
-    } | null;
-    global?: ('site-settings' | 'navigation' | 'cookie-bar') | null;
+    doc?:
+      | ({
+          relationTo: 'categories';
+          value: number | Category;
+        } | null)
+      | ({
+          relationTo: 'pages';
+          value: number | Page;
+        } | null);
+    global?: ('checkout-messages' | 'cookie-bar' | 'home-page' | 'navigation' | 'site-settings') | null;
     user?: (number | null) | User;
   };
   output?: unknown;

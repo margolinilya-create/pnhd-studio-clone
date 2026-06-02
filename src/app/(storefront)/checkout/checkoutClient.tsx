@@ -25,7 +25,12 @@ const textFieldSx = {
     },
 };
 
-const CheckoutPage: React.FC = () => {
+interface CheckoutPageProps {
+    submitLabel?: string;
+    disclaimer?: string | null;
+}
+
+const CheckoutPage: React.FC<CheckoutPageProps> = ({ submitLabel, disclaimer }) => {
     const router = useRouter();
     const dispatch = useAppDispatch();
     const { order, isHydrated } = useAppSelector((store) => store.cart);
@@ -151,10 +156,7 @@ const CheckoutPage: React.FC = () => {
                     })}
                 </ul>
                 <p className={styles.summaryTotal}>Итого: {totalOrderPrice} ₽</p>
-                <p className={styles.summaryHint}>
-                    Стоимость печати рассчитается менеджером по вашему макету. Финальная цена будет согласована
-                    перед оплатой.
-                </p>
+                {disclaimer && <p className={styles.summaryHint}>{disclaimer}</p>}
             </section>
 
             <form className={styles.leadForm} onSubmit={handleSubmit} noValidate>
@@ -229,7 +231,7 @@ const CheckoutPage: React.FC = () => {
                     disabled={!isValid || isLoading}
                     className={styles.submitBtn}
                 >
-                    {isLoading ? "Отправляем…" : "Оформить заявку"}
+                    {isLoading ? "Отправляем…" : (submitLabel ?? "Оформить заявку")}
                 </Button>
 
                 <p className={styles.submitHint}>
