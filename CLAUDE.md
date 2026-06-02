@@ -2,10 +2,8 @@
 
 Этот файл — единый источник правды для будущих ИИ-сессий. Если ты — Claude или другой агент, начни отсюда.
 
-> **Last full update:** 2026-06-01 после launch-readiness audit + 4 PR'а fix'ов (#33-#38 + hotfix).
+> **Last full update:** 2026-06-02 после Wave 0 complete (PR #42) + Wave 1 P1.1+P1.2 (PR #43).
 > Если правишь — синхронизируй разделы 4, 5, 6, 7, 9, 10 одновременно с кодом.
-
-> **🟡 Текущий launch-blocker (не код, а Vercel):** Hobby plan auto DDoS Mitigation challenge'ит ~50% запросов на prod. Single-IP audit-traffic разогнал heuristic. Решения: (1) Upgrade Vercel Pro $20/mo + добавить IP bypass rule, (2) подождать 1-2 часа no-traffic, (3) cutover на custom domain. См. [docs/superpowers/reports/launch-audit-2026-06-01-rerun/README.md](docs/superpowers/reports/launch-audit-2026-06-01-rerun/README.md).
 
 ---
 
@@ -361,6 +359,19 @@ API оригинала `pnhdstudioapi.ru/api/products` отдаёт 502. Скр�
 | [tests/e2e/mobile-screenshots.spec.ts](tests/e2e/mobile-screenshots.spec.ts) | Pixel 7 + iPhone 14 device emulation screenshots |
 | [docs/superpowers/reports/launch-audit-2026-06-01/](docs/superpowers/reports/launch-audit-2026-06-01/) | Initial launch audit report (10 per-domain findings + README) |
 | [docs/superpowers/reports/launch-audit-2026-06-01-rerun/](docs/superpowers/reports/launch-audit-2026-06-01-rerun/) | Re-audit after fix-deploy + before/after Lighthouse delta |
+| [src/blocks/](src/blocks/) | **Wave 0.5** — 9 block types для HomePage Global: `HeroBlock`, `CategoryGridBlock`, `MethodsListBlock`, `StagesBlock`, `PricingTableBlock`, `AboutBlock`, `TestimonialsBlock`, `FAQBlock`, `CTABlock` |
+| [src/globals/HomePage.ts](src/globals/HomePage.ts) | HomePage Global — `sections: blocks[]` (9 типов, 10 seeded). livePreview + VERSIONS_WITH_DRAFTS. Читается `getHomePage()` в `src/app/(storefront)/page.tsx` |
+| [src/globals/CheckoutMessages.ts](src/globals/CheckoutMessages.ts) | CheckoutMessages Global — тексты на /checkout: demo-alert, ETA, кнопка «Оформить» |
+| [src/collections/PrintTypeItems.ts](src/collections/PrintTypeItems.ts) | **Wave 0.4** — 19 items методов печати (slug=`parentSlug__typeSlug`, typeSlug для lookup). Замена TS-файла `method-options-data.ts` |
+| [src/collections/PrintsPages.ts](src/collections/PrintsPages.ts) | 5 items для /prints страниц. Замена `prints-options-data.ts` |
+| [src/collections/TextilePages.ts](src/collections/TextilePages.ts) | 4 items для /textile страниц. Замена `textile-options-data.ts` |
+| [src/lib/queries/home-page.ts](src/lib/queries/home-page.ts) | `getHomePage()` — cache()-wrapped + draftMode-aware |
+| [src/lib/queries/print-type-items.ts](src/lib/queries/print-type-items.ts) | `getPrintTypeItem(slug, typeSlug)`, `getPrintTypeItemsByParent(parentSlug)` |
+| [src/lib/queries/prints-pages.ts](src/lib/queries/prints-pages.ts) | `getPrintsPage(slug)`, `getAllPrintsSlugs()` |
+| [src/lib/queries/textile-pages.ts](src/lib/queries/textile-pages.ts) | `getTextilePage(slug)`, `getAllTextileSlugs()` |
+| [src/components/pages-components/shop-page/product-info/trust-block.tsx](src/components/pages-components/shop-page/product-info/trust-block.tsx) | **Wave 1 P1.1** — Trust strip под CTA (4 MUI-иконки: factory/return/quality/shipping). CMS через `SiteSettings.trustItems` (max 4). Default: Производство СПб / Возврат 14 дней / Гарантия 40 стирок / Доставка по России |
+| [scripts/seed-homepage.ts](scripts/seed-homepage.ts) | Idempotent seed 10 секций HomePage Global. `npx tsx --env-file=.env.local scripts/seed-homepage.ts` |
+| [scripts/seed-trust-items.ts](scripts/seed-trust-items.ts) | Seed 4 trust items в SiteSettings.trustItems. Idempotent. |
 
 ### Удалено (после launch-audit'а 2026-06-01)
 
@@ -450,11 +461,27 @@ API оригинала `pnhdstudioapi.ru/api/products` отдаёт 502. Скр�
 - ✅ **Sentry**: 400/403/404/429 убраны из captureErrors (DoS quota burn fix)
 - ✅ **Validate-stored-cart** теперь требует `item.sizes[]` shape — defensive against malformed sessionStorage
 
+### 🟢 Сделано (Wave 0, PR #39-#42, 2026-06-02)
+
+- [x] **0.1** SiteSettings + Navigation + CookieBar globals (livePreview, drafts/autosave, PREVIEW_SECRET, shared-config.ts)
+- [x] **0.1.5** SEO/JSON-LD migration — 44 refs → cache()-wrapped async factories; `build-metadata.ts`; `resolveDomain()`
+- [x] **0.2** Static pages /loyalty /howto /size_chart — CMS-editable copy arrays через Pages collection
+- [x] **0.3** Categories collection — h1, intro, seoText, bannerImage, faqItems marketing fields
+- [x] **0.4** PrintTypeItems (19 items) + PrintsPages (5) + TextilePages (4) collections + seeds (замена TS-data файлов)
+- [x] **0.5** HomePage Global — 9 block types, 10 sections seeded; весь контент главной в Payload admin
+- [x] **0.6** CheckoutMessages Global — тексты checkout CMS-editable
+
+### 🟢 Сделано (Wave 1, PR #43, 2026-06-02)
+
+- [x] **P1.1 Trust-block на PDP** — горизонтальная полоса с 4 MUI-иконками под CTA (factory/return/quality/shipping). CMS через `SiteSettings.trustItems` (max 4). Default: Производство СПб / Возврат 14 дней / Гарантия 40 стирок / Доставка по России
+- [x] **P1.2 Badges на product-card** — поле `badge` (none/hot/new/sale/order) + `salePercent` (5/10/20/30/50, виден только при badge=sale) на Payload Products sidebar. Chip overlay absolute top-left, 4 цвета.
+- ~~P1.3 Stock-urgency~~ — **dropped** (не нужно)
+
 ### 🟡 Известные косяки (open после audit'а)
 
 | Severity | Issue | Где |
 |---|---|---|
-| 🟡 LAUNCH | **Vercel Hobby DDoS Mitigation challenge** ~50% запросов после audit-traffic. Single-click disable только на Pro plan. См. шапку файла. | Vercel project settings |
+| Low | **Vercel Hobby DDoS Mitigation** — audit-traffic мог разогнать heuristic. Если начнут появляться challenge-страницы: (1) Upgrade Vercel Pro $20/mo, (2) cutover на custom domain. | Vercel project settings |
 | Low | `futbolka-oversize-chernaya-man` имеет только 1 фото в галерее (на оригинале studio.pnhd.ru тоже одно). Остальные 24 товара — 2-5 фото. | `product_gallery_photos` |
 | Low | RTK Query baseUrl всё ещё `''` (relative). `createOrder` идёт через `queryFn` на Payload `/api/orders/create`. CDEK + promocodes endpoints мёртвые (referenced в RTK Query но pnhdstudioapi.ru = 502). Очистить когда CDEK заменим. | [src/api/api.ts](src/api/api.ts) |
 | Low | Distributed rate-limit (form-submissions + orders) пока in-memory per Vercel-instance. На Pro/Enterprise — миграция на Upstash/Redis. | C5/C6 в audit |
