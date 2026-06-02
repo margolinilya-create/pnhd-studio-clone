@@ -7,7 +7,8 @@ export async function GET(req: NextRequest) {
   const secret = url.searchParams.get('secret');
   const path = url.searchParams.get('path') ?? '/';
 
-  if (!process.env.PREVIEW_SECRET || secret !== process.env.PREVIEW_SECRET) {
+  const expectedSecret = process.env.NEXT_PUBLIC_PREVIEW_SECRET || process.env.PREVIEW_SECRET;
+  if (!expectedSecret || secret !== expectedSecret) {
     return new Response('Invalid preview secret', { status: 401 });
   }
 
