@@ -74,6 +74,9 @@ export interface Config {
     variants: Variant;
     prices: Price;
     pages: Page;
+    'print-type-items': PrintTypeItem;
+    'prints-pages': PrintsPage;
+    'textile-pages': TextilePage;
     drops: Drop;
     promos: Promo;
     leads: Lead;
@@ -99,6 +102,9 @@ export interface Config {
     variants: VariantsSelect<false> | VariantsSelect<true>;
     prices: PricesSelect<false> | PricesSelect<true>;
     pages: PagesSelect<false> | PagesSelect<true>;
+    'print-type-items': PrintTypeItemsSelect<false> | PrintTypeItemsSelect<true>;
+    'prints-pages': PrintsPagesSelect<false> | PrintsPagesSelect<true>;
+    'textile-pages': TextilePagesSelect<false> | TextilePagesSelect<true>;
     drops: DropsSelect<false> | DropsSelect<true>;
     promos: PromosSelect<false> | PromosSelect<true>;
     leads: LeadsSelect<false> | LeadsSelect<true>;
@@ -491,6 +497,144 @@ export interface Page {
   updatedAt: string;
   createdAt: string;
   _status?: ('draft' | 'published') | null;
+}
+/**
+ * Подстраницы методов печати (/methods/[slug]/[type]). Например: "Шелкография — Печать логотипа".
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "print-type-items".
+ */
+export interface PrintTypeItem {
+  id: number;
+  /**
+   * Уникальный ключ. Для одной записи — комбинация parentSlug+typeSlug. Используйте формат "parentSlug__typeSlug", например: "shelkografiya__pechat-logotipa-shelkografiej".
+   */
+  slug: string;
+  /**
+   * Например: screenprinting, heat_transfer, DTF, DTG. Используется для группировки.
+   */
+  parentSlug: string;
+  /**
+   * Второй сегмент URL /methods/[slug]/[type]. Например: pechat-logotipa-shelkografiej.
+   */
+  typeSlug: string;
+  title?: string | null;
+  subtitle?: string | null;
+  mainText?: string | null;
+  /**
+   * Каждый пункт через запятую. Например: "> Долговечно,> Низкая стоимость".
+   */
+  pros?: string | null;
+  /**
+   * Каждый пункт через запятую.
+   */
+  cons?: string | null;
+  /**
+   * Рендерится через dangerouslySetInnerHTML. Используется для SEO-контента внизу страницы.
+   */
+  bodyHtml?: string | null;
+  /**
+   * Пример: /printingMethods/silk/main.webp
+   */
+  coverPath?: string | null;
+  gallery?:
+    | {
+        /**
+         * Пример: /printingMethods/silk/1.webp
+         */
+        path?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  metaTitle?: string | null;
+  metaDescription?: string | null;
+  metaKeywords?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Страницы типов принтов (/prints/[slug]). Например: "Печать логотипов".
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "prints-pages".
+ */
+export interface PrintsPage {
+  id: number;
+  /**
+   * Например: pechat-logotipov, pechat-printov.
+   */
+  slug: string;
+  title?: string | null;
+  subtitle?: string | null;
+  mainText?: string | null;
+  /**
+   * Рендерится через dangerouslySetInnerHTML. Используется для SEO-контента внизу страницы.
+   */
+  bodyHtml?: string | null;
+  /**
+   * Пример: /printingMethods/silk/main.webp
+   */
+  coverPath?: string | null;
+  gallery?:
+    | {
+        /**
+         * Пример: /printingMethods/silk/1.webp
+         */
+        path?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  metaTitle?: string | null;
+  metaDescription?: string | null;
+  metaKeywords?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Страницы категорий текстиля (/textile/[slug]). Например: "Печать на футболках".
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "textile-pages".
+ */
+export interface TextilePage {
+  id: number;
+  /**
+   * Например: pechat-na-futbolkah, pechat-na-hudi.
+   */
+  slug: string;
+  title?: string | null;
+  subtitle?: string | null;
+  mainText?: string | null;
+  /**
+   * Каждый пункт через запятую. Например: "> Быстро,> Низкая стоимость".
+   */
+  pros?: string | null;
+  /**
+   * Каждый пункт через запятую.
+   */
+  cons?: string | null;
+  /**
+   * Рендерится через dangerouslySetInnerHTML. Используется для SEO-контента внизу страницы.
+   */
+  bodyHtml?: string | null;
+  /**
+   * Пример: /printingMethods/silk/main.webp
+   */
+  coverPath?: string | null;
+  gallery?:
+    | {
+        /**
+         * Пример: /printingMethods/silk/1.webp
+         */
+        path?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  metaTitle?: string | null;
+  metaDescription?: string | null;
+  metaKeywords?: string | null;
+  updatedAt: string;
+  createdAt: string;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -1063,6 +1207,18 @@ export interface PayloadLockedDocument {
         value: number | Page;
       } | null)
     | ({
+        relationTo: 'print-type-items';
+        value: number | PrintTypeItem;
+      } | null)
+    | ({
+        relationTo: 'prints-pages';
+        value: number | PrintsPage;
+      } | null)
+    | ({
+        relationTo: 'textile-pages';
+        value: number | TextilePage;
+      } | null)
+    | ({
         relationTo: 'drops';
         value: number | Drop;
       } | null)
@@ -1379,6 +1535,81 @@ export interface PagesSelect<T extends boolean = true> {
   updatedAt?: T;
   createdAt?: T;
   _status?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "print-type-items_select".
+ */
+export interface PrintTypeItemsSelect<T extends boolean = true> {
+  slug?: T;
+  parentSlug?: T;
+  typeSlug?: T;
+  title?: T;
+  subtitle?: T;
+  mainText?: T;
+  pros?: T;
+  cons?: T;
+  bodyHtml?: T;
+  coverPath?: T;
+  gallery?:
+    | T
+    | {
+        path?: T;
+        id?: T;
+      };
+  metaTitle?: T;
+  metaDescription?: T;
+  metaKeywords?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "prints-pages_select".
+ */
+export interface PrintsPagesSelect<T extends boolean = true> {
+  slug?: T;
+  title?: T;
+  subtitle?: T;
+  mainText?: T;
+  bodyHtml?: T;
+  coverPath?: T;
+  gallery?:
+    | T
+    | {
+        path?: T;
+        id?: T;
+      };
+  metaTitle?: T;
+  metaDescription?: T;
+  metaKeywords?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "textile-pages_select".
+ */
+export interface TextilePagesSelect<T extends boolean = true> {
+  slug?: T;
+  title?: T;
+  subtitle?: T;
+  mainText?: T;
+  pros?: T;
+  cons?: T;
+  bodyHtml?: T;
+  coverPath?: T;
+  gallery?:
+    | T
+    | {
+        path?: T;
+        id?: T;
+      };
+  metaTitle?: T;
+  metaDescription?: T;
+  metaKeywords?: T;
+  updatedAt?: T;
+  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -2450,6 +2681,9 @@ export interface TaskCreateCollectionExport {
       | 'variants'
       | 'prices'
       | 'pages'
+      | 'print-type-items'
+      | 'prints-pages'
+      | 'textile-pages'
       | 'drops'
       | 'promos'
       | 'leads'

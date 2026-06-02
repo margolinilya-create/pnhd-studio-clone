@@ -6,6 +6,8 @@ import MapScreen from "@/components/pages-components/main-page/map-screen/map-sc
 import { Metadata } from "next";
 import Link from "next/link";
 import { printsOptions } from "@/app/utils/prints-options-data";
+import { getPrintsPage } from "@/lib/queries/prints-pages";
+import type { StaticImageData } from "next/image";
 
 export const generateMetadata = async (
     props: {
@@ -13,8 +15,25 @@ export const generateMetadata = async (
     }
 ): Promise<Metadata> => {
     const params = await props.params;
-    const option = printsOptions.find((item) => item.slug === params.slug);
 
+    // Try Payload first, fall back to static data
+    const payloadPage = await getPrintsPage(params.slug);
+    if (payloadPage) {
+        return {
+            title: payloadPage.metaTitle ?? undefined,
+            description: payloadPage.metaDescription ?? undefined,
+            keywords: payloadPage.metaKeywords ?? undefined,
+            openGraph: {
+                type: "website",
+                url: `https://studio.pnhd.ru/prints/${params.slug}`,
+                title: payloadPage.metaTitle ?? undefined,
+                description: payloadPage.metaDescription ?? undefined,
+                siteName: "ПИНХЭД СТУДИЯ",
+            },
+        };
+    }
+
+    const option = printsOptions.find((item) => item.slug === params.slug);
     return {
         title: option?.meta.metaTitle,
         description: option?.meta.metaDescription,
@@ -28,8 +47,10 @@ export const generateMetadata = async (
         },
     };
 };
+
 export const dynamicParams = false;
 export const generateStaticParams = async () => {
+    // Static params always use the static data list to ensure zero-downtime build
     return printsOptions.map((item) => ({slug: item.slug}))
 }
 
@@ -37,8 +58,84 @@ const MethodPage: React.FC<{
     params: Promise<{ slug: string }>;
 }> = async props => {
     const params = await props.params;
+
+    // Try Payload first, fall back to static data
+    const payloadPage = await getPrintsPage(params.slug);
+
+    if (payloadPage) {
+        const coverPath = payloadPage.coverPath ?? null;
+        const galleryPaths = (payloadPage.gallery ?? [])
+            .map((g) => g.path)
+            .filter(Boolean) as string[];
+
+        return (
+            <>
+                <section className={styles.method_mainScreen}>
+                    <div className={styles.method_titleWrapper}>
+                        <h1 className={styles.method_title}>
+                            {`${payloadPage.title ?? ''} ${payloadPage.subtitle ?? ''}`}
+                        </h1>
+                    </div>
+                    {coverPath && (
+                        <Image
+                            src={coverPath}
+                            alt="обложка"
+                            className={styles.method_cover}
+                            width={800}
+                            height={600}
+                        />
+                    )}
+                </section>
+                <section className={styles.method_brief}>
+                    <div className={styles.main_text_wrapper}>
+                        <h2 className={styles.brief_title}>КРАТКО</h2>
+                        <p className={styles.brief_text}>{payloadPage.mainText}</p>
+                    </div>
+                </section>
+
+                <section className={styles.method_gallery}>
+                    {galleryPaths.map((path, index) => (
+                        <Image
+                            className={styles.gallery_img}
+                            alt="print sample"
+                            src={path}
+                            width={400}
+                            height={300}
+                            loading="lazy"
+                            decoding="async"
+                            key={index}
+                        />
+                    ))}
+                </section>
+
+                <PriceScreen />
+                <MapScreen />
+                <section className={styles.more_block}>
+                    <div className={styles.main_text_wrapper}>
+                        <h2 className={styles.brief_title}>ЧТО ДАЛЬШЕ?</h2>
+                        <div className={styles.link_wrapper}>
+                            <Link href="/methods">К методам печати</Link>
+                            <Link href="/">На главную</Link>
+                            <Link href="/shop">В каталог</Link>
+                        </div>
+                    </div>
+                </section>
+
+                {payloadPage.bodyHtml && (
+                    <section className={styles.method_description}>
+                        <h2 className={styles.brief_title}>AI/RBTS CONTENT</h2>
+                        <div
+                            className={styles.robots_block}
+                            dangerouslySetInnerHTML={{ __html: payloadPage.bodyHtml }}
+                        />
+                    </section>
+                )}
+            </>
+        );
+    }
+
+    // Static fallback
     const print = printsOptions.find((item) => item.slug === params.slug);
-    //const options = ssOptions.filter((item) => item.parent === method?.name);
 
     return (
         <>
@@ -51,7 +148,7 @@ const MethodPage: React.FC<{
                             >{`${print.title} ${print.subtitle}`}</h1>
                         </div>
                         <Image
-                            src={print.cover}
+                            src={print.cover as StaticImageData}
                             alt="обложка"
                             className={styles.method_cover}
                         />
@@ -68,7 +165,7 @@ const MethodPage: React.FC<{
                             <Image
                                 className={styles.gallery_img}
                                 alt="print sample"
-                                src={item}
+                                src={item as StaticImageData}
                                 loading="lazy"
                                 decoding="async"
                                 key={index}
@@ -87,14 +184,6 @@ const MethodPage: React.FC<{
                                 <Link href="/shop">В каталог</Link>
                             </div>
                         </div>
-                        {/* <div className={styles.main_text_wrapper}>
-                            <h2 className={styles.brief_title}>ЧТО ЕЩЕ ПОЧИТАТЬ?</h2>
-                            <div className={styles.link_wrapper}>
-                            {options && options.map((item, index) => (
-                                <Link href={`/methods/${item.slug}/${item.type}`} key={index}>{item.title} {item.subtitle}</Link>
-                            ))}
-                            </div>
-                        </div> */}
                     </section>
 
                     <section className={styles.method_description}>
