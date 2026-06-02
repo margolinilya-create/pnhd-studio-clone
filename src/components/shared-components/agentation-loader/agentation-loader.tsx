@@ -2,12 +2,9 @@
 
 import dynamic from 'next/dynamic';
 
-const Agentation =
-  process.env.NODE_ENV !== 'production'
-    ? dynamic(() => import('agentation').then((m) => m.Agentation), {
-        ssr: false,
-      })
-    : () => null;
+const Agentation = dynamic(() => import('agentation').then((m) => m.Agentation), {
+  ssr: false,
+});
 
 export default function AgentationLoader() {
   return <Agentation />;

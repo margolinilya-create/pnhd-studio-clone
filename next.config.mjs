@@ -17,7 +17,7 @@ const CSP_ENFORCE = [
     "img-src 'self' data: blob: https://*.supabase.co https://mc.yandex.ru https://placehold.co https://yastatic.net https://*.maps.yandex.net https://*.yandex.ru https://*.yandex.net",
     "font-src 'self' data: https://yastatic.net",
     // *.maps.yandex.net — geocoder/router API calls
-    "connect-src 'self' https://*.supabase.co https://mc.yandex.ru https://cloud.roistat.com https://*.uiscom.ru https://*.sentry.io https://*.ingest.sentry.io https://api-maps.yandex.ru https://*.maps.yandex.net https://yastatic.net https://*.yandex.ru https://*.yandex.net",
+    "connect-src 'self' https://*.supabase.co https://mc.yandex.ru https://cloud.roistat.com https://*.uiscom.ru https://*.sentry.io https://*.ingest.sentry.io https://api-maps.yandex.ru https://*.maps.yandex.net https://yastatic.net https://*.yandex.ru https://*.yandex.net https://agentation.com https://agentation.dev",
     "frame-src 'self' https://www.youtube.com https://yandex.ru https://*.yandex.ru",
     "frame-ancestors 'self'",
     "base-uri 'self'",
