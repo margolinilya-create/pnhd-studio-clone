@@ -122,12 +122,14 @@ export interface Config {
   globals: {
     'checkout-messages': CheckoutMessage;
     'cookie-bar': CookieBar;
+    'home-page': HomePage;
     navigation: Navigation;
     'site-settings': SiteSetting;
   };
   globalsSelect: {
     'checkout-messages': CheckoutMessagesSelect<false> | CheckoutMessagesSelect<true>;
     'cookie-bar': CookieBarSelect<false> | CookieBarSelect<true>;
+    'home-page': HomePageSelect<false> | HomePageSelect<true>;
     navigation: NavigationSelect<false> | NavigationSelect<true>;
     'site-settings': SiteSettingsSelect<false> | SiteSettingsSelect<true>;
   };
@@ -1839,6 +1841,187 @@ export interface CookieBar {
   createdAt?: string | null;
 }
 /**
+ * Главная страница сайта. Блоки можно перетаскивать для изменения порядка. Каждый блок — своя секция с настраиваемым содержимым.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "home-page".
+ */
+export interface HomePage {
+  id: number;
+  sections?:
+    | (
+        | {
+            rotatingTitles?:
+              | {
+                  text: string;
+                  id?: string | null;
+                }[]
+              | null;
+            methodsList?:
+              | {
+                  text: string;
+                  id?: string | null;
+                }[]
+              | null;
+            featureBullets?:
+              | {
+                  text: string;
+                  id?: string | null;
+                }[]
+              | null;
+            ctaLabel?: string | null;
+            ctaHref?: string | null;
+            showLoyaltyBanner?: boolean | null;
+            loyaltyEyebrow?: string | null;
+            loyaltyTitle?: string | null;
+            loyaltyHref?: string | null;
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'hero';
+          }
+        | {
+            sectionTitle?: string | null;
+            subtitle?: string | null;
+            items?:
+              | {
+                  title: string;
+                  href: string;
+                  bgColor: string;
+                  color: 'black' | 'white';
+                  image?: (number | null) | Media;
+                  imageSlug?: ('tshirt' | 'sweatshirt' | 'hoodie' | 'pullover' | 'totebag' | 'cap') | null;
+                  id?: string | null;
+                }[]
+              | null;
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'category-grid';
+          }
+        | {
+            sectionTitle?: string | null;
+            sectionSubtitle?: string | null;
+            /**
+             * Если оставлено пустым — рендерятся все 5 методов. Например "shelkografiya" чтобы скрыть шелкографию.
+             */
+            excludedSlugs?: string | null;
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'methods-list';
+          }
+        | {
+            sectionTitle?: string | null;
+            ctaHref?: string | null;
+            items?:
+              | {
+                  title: string;
+                  text: string;
+                  image?: (number | null) | Media;
+                  imageSlug?: ('stage1' | 'stage2' | 'stage3' | 'stage4') | null;
+                  id?: string | null;
+                }[]
+              | null;
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'stages';
+          }
+        | {
+            sectionTitle?: string | null;
+            sectionSubtitle?: string | null;
+            mainBlockText?: string | null;
+            mainBlockCtaLabel?: string | null;
+            mainBlockPopupTitle?: string | null;
+            sideInfoText?: string | null;
+            rows?:
+              | {
+                  method: string;
+                  /**
+                   * Если пусто — рендерим "Стоимость". Для DTG обычно "На белом / цветном", для ВЫШИВКА — "Стоимость (от 10 штук)".
+                   */
+                  caption?: string | null;
+                  cells?:
+                    | {
+                        format: string;
+                        price: string;
+                        id?: string | null;
+                      }[]
+                    | null;
+                  id?: string | null;
+                }[]
+              | null;
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'pricing-table';
+          }
+        | {
+            title: string;
+            /**
+             * Если заголовок содержит этот фрагмент — он будет визуально выделен. Если пусто — заголовок целиком.
+             */
+            highlight?: string | null;
+            subtitle?: string | null;
+            items?:
+              | {
+                  title: string;
+                  text: string;
+                  id?: string | null;
+                }[]
+              | null;
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'about';
+          }
+        | {
+            sectionTitle?: string | null;
+            ratingValue?: string | null;
+            ratingText?: string | null;
+            yandexUrl?: string | null;
+            googleUrl?: string | null;
+            items?:
+              | {
+                  author: string;
+                  text: string;
+                  rating?: number | null;
+                  photo?: (number | null) | Media;
+                  id?: string | null;
+                }[]
+              | null;
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'testimonials';
+          }
+        | {
+            sectionTitle?: string | null;
+            items?:
+              | {
+                  question: string;
+                  answer: string;
+                  id?: string | null;
+                }[]
+              | null;
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'faq';
+          }
+        | {
+            eyebrow?: string | null;
+            title: string;
+            subtitle?: string | null;
+            description?: string | null;
+            ctaLabel: string;
+            ctaHref: string;
+            isExternal?: boolean | null;
+            variant?: ('shop' | 'form' | 'generic') | null;
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'cta';
+          }
+      )[]
+    | null;
+  _status?: ('draft' | 'published') | null;
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+/**
  * Единый список пунктов меню для шапки / подвала / мобильного меню. Visibility-флаги контролируют где элемент показывается. Порядок в массиве = порядок отображения.
  *
  * This interface was referenced by `Config`'s JSON-Schema
@@ -1967,6 +2150,185 @@ export interface CookieBarSelect<T extends boolean = true> {
   title?: T;
   description?: T;
   buttonLabel?: T;
+  _status?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "home-page_select".
+ */
+export interface HomePageSelect<T extends boolean = true> {
+  sections?:
+    | T
+    | {
+        hero?:
+          | T
+          | {
+              rotatingTitles?:
+                | T
+                | {
+                    text?: T;
+                    id?: T;
+                  };
+              methodsList?:
+                | T
+                | {
+                    text?: T;
+                    id?: T;
+                  };
+              featureBullets?:
+                | T
+                | {
+                    text?: T;
+                    id?: T;
+                  };
+              ctaLabel?: T;
+              ctaHref?: T;
+              showLoyaltyBanner?: T;
+              loyaltyEyebrow?: T;
+              loyaltyTitle?: T;
+              loyaltyHref?: T;
+              id?: T;
+              blockName?: T;
+            };
+        'category-grid'?:
+          | T
+          | {
+              sectionTitle?: T;
+              subtitle?: T;
+              items?:
+                | T
+                | {
+                    title?: T;
+                    href?: T;
+                    bgColor?: T;
+                    color?: T;
+                    image?: T;
+                    imageSlug?: T;
+                    id?: T;
+                  };
+              id?: T;
+              blockName?: T;
+            };
+        'methods-list'?:
+          | T
+          | {
+              sectionTitle?: T;
+              sectionSubtitle?: T;
+              excludedSlugs?: T;
+              id?: T;
+              blockName?: T;
+            };
+        stages?:
+          | T
+          | {
+              sectionTitle?: T;
+              ctaHref?: T;
+              items?:
+                | T
+                | {
+                    title?: T;
+                    text?: T;
+                    image?: T;
+                    imageSlug?: T;
+                    id?: T;
+                  };
+              id?: T;
+              blockName?: T;
+            };
+        'pricing-table'?:
+          | T
+          | {
+              sectionTitle?: T;
+              sectionSubtitle?: T;
+              mainBlockText?: T;
+              mainBlockCtaLabel?: T;
+              mainBlockPopupTitle?: T;
+              sideInfoText?: T;
+              rows?:
+                | T
+                | {
+                    method?: T;
+                    caption?: T;
+                    cells?:
+                      | T
+                      | {
+                          format?: T;
+                          price?: T;
+                          id?: T;
+                        };
+                    id?: T;
+                  };
+              id?: T;
+              blockName?: T;
+            };
+        about?:
+          | T
+          | {
+              title?: T;
+              highlight?: T;
+              subtitle?: T;
+              items?:
+                | T
+                | {
+                    title?: T;
+                    text?: T;
+                    id?: T;
+                  };
+              id?: T;
+              blockName?: T;
+            };
+        testimonials?:
+          | T
+          | {
+              sectionTitle?: T;
+              ratingValue?: T;
+              ratingText?: T;
+              yandexUrl?: T;
+              googleUrl?: T;
+              items?:
+                | T
+                | {
+                    author?: T;
+                    text?: T;
+                    rating?: T;
+                    photo?: T;
+                    id?: T;
+                  };
+              id?: T;
+              blockName?: T;
+            };
+        faq?:
+          | T
+          | {
+              sectionTitle?: T;
+              items?:
+                | T
+                | {
+                    question?: T;
+                    answer?: T;
+                    id?: T;
+                  };
+              id?: T;
+              blockName?: T;
+            };
+        cta?:
+          | T
+          | {
+              eyebrow?: T;
+              title?: T;
+              subtitle?: T;
+              description?: T;
+              ctaLabel?: T;
+              ctaHref?: T;
+              isExternal?: T;
+              variant?: T;
+              id?: T;
+              blockName?: T;
+            };
+      };
   _status?: T;
   updatedAt?: T;
   createdAt?: T;
@@ -2153,7 +2515,7 @@ export interface TaskSchedulePublish {
           relationTo: 'pages';
           value: number | Page;
         } | null);
-    global?: ('checkout-messages' | 'cookie-bar' | 'navigation' | 'site-settings') | null;
+    global?: ('checkout-messages' | 'cookie-bar' | 'home-page' | 'navigation' | 'site-settings') | null;
     user?: (number | null) | User;
   };
   output?: unknown;

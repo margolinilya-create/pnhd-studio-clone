@@ -28,12 +28,13 @@ import { Users } from './collections/Users.ts';
 import { Variants } from './collections/Variants.ts';
 import { CheckoutMessages } from './globals/CheckoutMessages.ts';
 import { CookieBar } from './globals/CookieBar.ts';
+import { HomePage } from './globals/HomePage.ts';
 import { Navigation } from './globals/Navigation.ts';
 import { SiteSettings } from './globals/SiteSettings.ts';
 
 const collections = [Users, Media, Categories, Products, Variants, Prices, Pages, Drops, Promos, Leads, Orders, OrderItems];
 
-const globals = [CheckoutMessages, CookieBar, Navigation, SiteSettings];
+const globals = [CheckoutMessages, CookieBar, HomePage, Navigation, SiteSettings];
 
 const filename = fileURLToPath(import.meta.url);
 const dirname = path.dirname(filename);

@@ -13,6 +13,7 @@ import * as migration_20260601_221521_site_settings_contacts_geo from './2026060
 import * as migration_20260601_231406_checkout_messages_global from './20260601_231406_checkout_messages_global';
 import * as migration_20260601_232405_pages_static_extensions from './20260601_232405_pages_static_extensions';
 import * as migration_20260601_233401_categories_marketing_fields from './20260601_233401_categories_marketing_fields';
+import * as migration_20260601_235104_homepage_global from './20260601_235104_homepage_global';
 
 export const migrations = [
   {
@@ -88,6 +89,11 @@ export const migrations = [
   {
     up: migration_20260601_233401_categories_marketing_fields.up,
     down: migration_20260601_233401_categories_marketing_fields.down,
-    name: '20260601_233401_categories_marketing_fields'
+    name: '20260601_233401_categories_marketing_fields',
+  },
+  {
+    up: migration_20260601_235104_homepage_global.up,
+    down: migration_20260601_235104_homepage_global.down,
+    name: '20260601_235104_homepage_global'
   },
 ];

@@ -1,106 +1,115 @@
 import React from "react";
 import styles from "./stages-screen.module.css";
-import UtmLink from "@/components/shared-components/utm-link/utm-link";
 import Link from "next/link";
-import Image from "next/image";
+import Image, { type StaticImageData } from "next/image";
 import button_arrow_right from "../../../../../public/button_arrow_right.svg";
 import stages_photo_one from "../../../../../public/stages_photo_one.png";
 import stage_photo_two from "../../../../../public/stage_photo_two.png";
 import stage_photo_three from "../../../../../public/stage_photo_three.png";
 import stage_photo_four from "../../../../../public/stage_photo_four.png";
 
-const StagesScreen: React.FC = () => {
+const IMAGE_BY_SLUG: Record<string, StaticImageData> = {
+    stage1: stages_photo_one,
+    stage2: stage_photo_two,
+    stage3: stage_photo_three,
+    stage4: stage_photo_four,
+};
+
+type StageItem = {
+    title: string;
+    text: string;
+    imageSlug?: string | null;
+    image?: { url?: string | null; alt?: string | null } | null;
+};
+
+export type StagesScreenProps = {
+    sectionTitle?: string | null;
+    ctaHref?: string | null;
+    items?: StageItem[] | null;
+};
+
+const DEFAULT_TITLE =
+    'почувствуй себя дизайнером и собери мерч в онлайн-конструкторе';
+const DEFAULT_CTA_HREF = '/shop';
+const DEFAULT_ITEMS: StageItem[] = [
+    {
+        title: 'Выбери одежду из каталога',
+        text: 'Добавь в конструктор текстиль нужного фасона и размера',
+        imageSlug: 'stage1',
+    },
+    {
+        title: 'Расположи принт на вещи и узнай стоимость',
+        text: 'Загрузи изображение и расположи его на одежде',
+        imageSlug: 'stage2',
+    },
+    {
+        title: 'Оформи заказ',
+        text: 'Отправь контактные данные, мы позвоним и расскажем, как забрать мерч',
+        imageSlug: 'stage3',
+    },
+    {
+        title: 'Дождись, когда сработает магия, и забери мерч',
+        text: 'Приди в пункт выдачи после прибытия посылки и порази всех новой вещью',
+        imageSlug: 'stage4',
+    },
+];
+
+const StagesScreen: React.FC<StagesScreenProps> = ({ sectionTitle, ctaHref, items }) => {
+    const resolvedTitle = sectionTitle ?? DEFAULT_TITLE;
+    const resolvedHref = ctaHref ?? DEFAULT_CTA_HREF;
+    const resolvedItems = items && items.length > 0 ? items : DEFAULT_ITEMS;
+
     return (
         <section className={styles.screen} id="stages">
-            <h2 className={styles.screen_title}>
-                почувствуй себя дизайнером и собери мерч в онлайн-конструкторе
-            </h2>
-            <Link href="/shop">
+            <h2 className={styles.screen_title}>{resolvedTitle}</h2>
+            <Link href={resolvedHref}>
                 <button type="button" className={styles.screen_button}>
                     <Image src={button_arrow_right} alt="стрелка вправо" />
                 </button>
             </Link>
             <div className={styles.screen_cards}>
-                <div className={styles.cards_blockWrapper}>
-                    <div className={styles.cards_textCard}>
-                        <h3 className={styles.textCard_title}>Выбери одежду из каталога</h3>
-                        <p className={styles.textCard_paragraph}>
-                            Добавь в конструктор текстиль нужного фасона и размера
-                        </p>
-                    </div>
-
-                    <div className={styles.cards_photoCard}>
-                        <div className={styles.photoCard_wrapper}>
-                            <Image
-                                src={stages_photo_one}
-                                alt="Фото модели"
-                                className={styles.card_image}
-                            />
+                {resolvedItems.map((item, idx) => {
+                    const uploadedUrl = item.image?.url ?? null;
+                    const fallbackImg = item.imageSlug ? IMAGE_BY_SLUG[item.imageSlug] : undefined;
+                    const altText = item.image?.alt ?? 'Фото модели';
+                    return (
+                        <div className={styles.cards_blockWrapper} key={idx}>
+                            {idx >= 2 ? (
+                                <>
+                                    <div className={styles.cards_photoCard}>
+                                        <div className={styles.photoCard_wrapper}>
+                                            {uploadedUrl ? (
+                                                <Image src={uploadedUrl} alt={altText} width={800} height={800} className={styles.card_image} />
+                                            ) : fallbackImg ? (
+                                                <Image src={fallbackImg} alt={altText} className={styles.card_image} />
+                                            ) : null}
+                                        </div>
+                                    </div>
+                                    <div className={styles.cards_textCard}>
+                                        <h3 className={styles.textCard_title}>{item.title}</h3>
+                                        <p className={styles.textCard_paragraph}>{item.text}</p>
+                                    </div>
+                                </>
+                            ) : (
+                                <>
+                                    <div className={styles.cards_textCard}>
+                                        <h3 className={styles.textCard_title}>{item.title}</h3>
+                                        <p className={styles.textCard_paragraph}>{item.text}</p>
+                                    </div>
+                                    <div className={styles.cards_photoCard}>
+                                        <div className={styles.photoCard_wrapper}>
+                                            {uploadedUrl ? (
+                                                <Image src={uploadedUrl} alt={altText} width={800} height={800} className={styles.card_image} />
+                                            ) : fallbackImg ? (
+                                                <Image src={fallbackImg} alt={altText} className={styles.card_image} />
+                                            ) : null}
+                                        </div>
+                                    </div>
+                                </>
+                            )}
                         </div>
-                    </div>
-                </div>
-                <div className={styles.cards_blockWrapper}>
-                    <div className={styles.cards_textCard}>
-                        <h3 className={styles.textCard_title}>
-                            Расположи принт на вещи и узнай стоимость
-                        </h3>
-                        <p className={styles.textCard_paragraph}>
-                            Загрузи изображение и расположи его на одежде
-                        </p>
-                    </div>
-
-                    <div className={styles.cards_photoCard}>
-                        <div className={styles.photoCard_wrapper}>
-                            <Image
-                                src={stage_photo_two}
-                                alt="Фото модели"
-                                className={styles.card_image}
-                            />
-                        </div>
-                    </div>
-                </div>
-
-                <div className={styles.cards_blockWrapper}>
-                    <div className={styles.cards_photoCard}>
-                        <div className={styles.photoCard_wrapper}>
-                            <Image
-                                src={stage_photo_three}
-                                alt="Фото модели"
-                                className={styles.card_image}
-                            />
-                        </div>
-                    </div>
-
-                    <div className={styles.cards_textCard}>
-                        <h3 className={styles.textCard_title}>Оформи заказ</h3>
-                        <p className={styles.textCard_paragraph}>
-                            Отправь контактные данные, мы позвоним и расскажем, как забрать
-                            мерч
-                        </p>
-                    </div>
-                </div>
-
-                <div className={styles.cards_blockWrapper}>
-                    <div className={styles.cards_photoCard}>
-                        <div className={styles.photoCard_wrapper}>
-                            <Image
-                                src={stage_photo_four}
-                                alt="Фото модели"
-                                className={styles.card_image}
-                            />
-                        </div>
-                    </div>
-
-                    <div className={styles.cards_textCard}>
-                        <h3 className={styles.textCard_title}>
-                            Дождись, когда сработает магия, и забери мерч
-                        </h3>
-                        <p className={styles.textCard_paragraph}>
-                            Приди в пункт выдачи после прибытия посылки и порази всех новой
-                            вещью
-                        </p>
-                    </div>
-                </div>
+                    );
+                })}
             </div>
         </section>
     );
