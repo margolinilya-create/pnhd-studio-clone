@@ -10,13 +10,16 @@ import { withPayload } from '@payloadcms/next/withPayload';
 // если найдётся новое нарушение, но лучше fail-fast чем silent leak.
 const CSP_ENFORCE = [
     "default-src 'self'",
-    "script-src 'self' 'unsafe-inline' https://cloud.roistat.com https://mc.yandex.ru https://app.uiscom.ru https://*.uiscom.ru https://browser.sentry-cdn.com https://*.sentry.io",
-    "style-src 'self' 'unsafe-inline'",
-    "img-src 'self' data: blob: https://*.supabase.co https://mc.yandex.ru https://placehold.co https://yastatic.net",
-    "font-src 'self' data:",
-    "connect-src 'self' https://*.supabase.co https://mc.yandex.ru https://cloud.roistat.com https://*.uiscom.ru https://*.sentry.io https://*.ingest.sentry.io",
+    // api-maps.yandex.ru — Yandex Maps SDK loader; yastatic.net — static bundles
+    "script-src 'self' 'unsafe-inline' https://cloud.roistat.com https://mc.yandex.ru https://app.uiscom.ru https://*.uiscom.ru https://browser.sentry-cdn.com https://*.sentry.io https://api-maps.yandex.ru https://yastatic.net",
+    "style-src 'self' 'unsafe-inline' https://yastatic.net",
+    // *.maps.yandex.net — map tiles; yastatic.net — sprites/icons
+    "img-src 'self' data: blob: https://*.supabase.co https://mc.yandex.ru https://placehold.co https://yastatic.net https://*.maps.yandex.net https://*.yandex.ru https://*.yandex.net",
+    "font-src 'self' data: https://yastatic.net",
+    // *.maps.yandex.net — geocoder/router API calls
+    "connect-src 'self' https://*.supabase.co https://mc.yandex.ru https://cloud.roistat.com https://*.uiscom.ru https://*.sentry.io https://*.ingest.sentry.io https://api-maps.yandex.ru https://*.maps.yandex.net https://yastatic.net https://*.yandex.ru https://*.yandex.net",
     "frame-src 'self' https://www.youtube.com https://yandex.ru https://*.yandex.ru",
-    "frame-ancestors 'none'",
+    "frame-ancestors 'self'",
     "base-uri 'self'",
     "form-action 'self'",
     "object-src 'none'",
@@ -31,7 +34,7 @@ const nextConfig = {
             {
                 source: '/:path*',
                 headers: [
-                    { key: 'X-Frame-Options', value: 'DENY' },
+                    { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
                     { key: 'X-Content-Type-Options', value: 'nosniff' },
                     { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
                     { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=(), interest-cohort=()' },
