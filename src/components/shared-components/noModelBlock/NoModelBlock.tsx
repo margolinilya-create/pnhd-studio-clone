@@ -12,7 +12,7 @@ const NoModelBlock = ({ formId }: { formId: string }) => {
                     и мы разработаем для вас идеальную модель.
                 </span>
                 <div className={styles.noModelBlock_content_img}>
-                    <Image src="/noModelBlockCover.png" alt='no model' width="629" height="279" />
+                    <Image src="/NoModelBlockCover.png" alt='no model' width="629" height="279" />
                 </div>
             </div>
             <div className={styles.noModelBlock_form}>
