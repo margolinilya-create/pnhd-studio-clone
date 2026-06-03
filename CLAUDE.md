@@ -2,7 +2,7 @@
 
 Этот файл — единый источник правды для будущих ИИ-сессий. Если ты — Claude или другой агент, начни отсюда.
 
-> **Last full update:** 2026-06-02 после Wave 0 complete (PR #42) + Wave 1 P1.1+P1.2 (PR #43).
+> **Last full update:** 2026-06-03 после Visual Audit (PR #45 — 8 bug fixes).
 > Если правишь — синхронизируй разделы 4, 5, 6, 7, 9, 10 одновременно с кодом.
 
 ---
@@ -223,6 +223,7 @@ resetCart() / setDelivery / setCdek... / setUserData / setPaymentURL / setUserPr
 6. `20260601_101348_payload_plugin_import_export` — Import/Export plugin (applied 2026-06-01 audit fix)
 7. `20260601_102621_payload_plugin_form_builder` — Form Builder plugin (applied 2026-06-01 audit fix)
 8. `20260601_110001_payload_form_submissions_extra_fields` — `ipHash`/`userAgent`/`bitrixLeadId`/`bitrixError` columns (applied 2026-06-01)
+9. `20260602_221453_empty_states_and_404_copy` — CheckoutMessages Global расширен 14 полями для empty cart / empty checkout / not-found копи (applied 2026-06-03 visual-audit PR #45)
 
 ### Direct prod-SQL applied via Supabase MCP (2026-06-01 audit)
 
@@ -328,7 +329,7 @@ API оригинала `pnhdstudioapi.ru/api/products` отдаёт 502. Скр�
 | [src/lib/supabase/client.ts](src/lib/supabase/client.ts) | Supabase client для browser |
 | [src/lib/storage/upload-print.ts](src/lib/storage/upload-print.ts) | Аплоадер в `user-uploads/prints/...` |
 | [src/lib/analytics/roistat.ts](src/lib/analytics/roistat.ts) | `getRoistatVisit()` cookie helper |
-| [src/lib/queries/products.ts](src/lib/queries/products.ts) | `getAllProducts`, `getProductBySlug`, `getAllProductSlugs` |
+| [src/lib/queries/products.ts](src/lib/queries/products.ts) | `getAllProducts({category?, type?, priceSort?})` (SSR-фильтр added 2026-06-03 BUG-007), `getProductBySlug`, `getAllProductSlugs` |
 | [src/lib/queries/blog.ts](src/lib/queries/blog.ts) | `getAllPosts`, `getPostBySlug` |
 | [src/components/pages-components/shop-page/product-info/](src/components/pages-components/shop-page/product-info/) | **Новая правая панель на product page**: `product-info.tsx` (root) + `size-grid.tsx` (VariantB сетка с индикатором остатка) + `print-selector.tsx` (5 чипов + drop-zones) + `upload-slot.tsx` (drag-and-drop + a11y) + `print-config.ts` (общий `SIDES_FOR_LOCATION` + `PRINT_OPTIONS`) + `product-info.module.css` |
 | [src/components/pages-components/category-page/category-page.tsx](src/components/pages-components/category-page/category-page.tsx) | Shared SEO-страница категории (futbolki/hudi/kepki/longslivy/svitshoty/shoppery). Принимает `ICategoryPageConfig` |
@@ -361,7 +362,7 @@ API оригинала `pnhdstudioapi.ru/api/products` отдаёт 502. Скр�
 | [docs/superpowers/reports/launch-audit-2026-06-01-rerun/](docs/superpowers/reports/launch-audit-2026-06-01-rerun/) | Re-audit after fix-deploy + before/after Lighthouse delta |
 | [src/blocks/](src/blocks/) | **Wave 0.5** — 9 block types для HomePage Global: `HeroBlock`, `CategoryGridBlock`, `MethodsListBlock`, `StagesBlock`, `PricingTableBlock`, `AboutBlock`, `TestimonialsBlock`, `FAQBlock`, `CTABlock` |
 | [src/globals/HomePage.ts](src/globals/HomePage.ts) | HomePage Global — `sections: blocks[]` (9 типов, 10 seeded). livePreview + VERSIONS_WITH_DRAFTS. Читается `getHomePage()` в `src/app/(storefront)/page.tsx` |
-| [src/globals/CheckoutMessages.ts](src/globals/CheckoutMessages.ts) | CheckoutMessages Global — тексты на /checkout: demo-alert, ETA, кнопка «Оформить» |
+| [src/globals/CheckoutMessages.ts](src/globals/CheckoutMessages.ts) | CheckoutMessages Global — тексты cart/checkout/thanks/empty-states/404. Группы: Корзина (cartPageTitle, cartManagerDisclaimer), Чекаут (checkoutSubmitLabel, checkoutDisclaimer), Thanks (thanksHeading, thanksBody, thanksCallbackPromiseMinutes, thanksCTAs[]), **Пустая корзина** (emptyCartTitle/Subtitle/CtaLabel/CtaHref — added 2026-06-03), **Пустой чекаут** (emptyCheckout\*), **404** (notFoundTitle/Subtitle + primary/secondaryCtaLabel/Href) |
 | [src/collections/PrintTypeItems.ts](src/collections/PrintTypeItems.ts) | **Wave 0.4** — 19 items методов печати (slug=`parentSlug__typeSlug`, typeSlug для lookup). Замена TS-файла `method-options-data.ts` |
 | [src/collections/PrintsPages.ts](src/collections/PrintsPages.ts) | 5 items для /prints страниц. Замена `prints-options-data.ts` |
 | [src/collections/TextilePages.ts](src/collections/TextilePages.ts) | 4 items для /textile страниц. Замена `textile-options-data.ts` |
@@ -372,6 +373,11 @@ API оригинала `pnhdstudioapi.ru/api/products` отдаёт 502. Скр�
 | [src/components/pages-components/shop-page/product-info/trust-block.tsx](src/components/pages-components/shop-page/product-info/trust-block.tsx) | **Wave 1 P1.1** — Trust strip под CTA (4 MUI-иконки: factory/return/quality/shipping). CMS через `SiteSettings.trustItems` (max 4). Default: Производство СПб / Возврат 14 дней / Гарантия 40 стирок / Доставка по России |
 | [scripts/seed-homepage.ts](scripts/seed-homepage.ts) | Idempotent seed 10 секций HomePage Global. `npx tsx --env-file=.env.local scripts/seed-homepage.ts` |
 | [scripts/seed-trust-items.ts](scripts/seed-trust-items.ts) | Seed 4 trust items в SiteSettings.trustItems. Idempotent. |
+| [src/components/pages-components/cart-page/empty-state/](src/components/pages-components/cart-page/empty-state/) | **NEW (visual-audit 2026-06-03 BUG-001/002/006)** — переиспользуемый `<EmptyState title subtitle ctaLabel ctaHref secondaryCtaLabel? secondaryCtaHref?/>` для cart / checkout / 404. CMS-driven copy через `CheckoutMessages` Global (поля emptyCart\* / emptyCheckout\* / notFound\*) |
+| [src/components/shared-components/footer/footer-lead-form-slot.tsx](src/components/shared-components/footer/footer-lead-form-slot.tsx) | **NEW (visual-audit BUG-005/008)** — client component с `usePathname()`. Скрывает footer-LeadForm на `/thanks /cart /checkout /shop` (где есть дубль). Заменил прямой `<LeadForm>` в `footer.tsx` |
+| [src/app/(storefront)/not-found.tsx](src/app/(storefront)/not-found.tsx) | **REWRITTEN (visual-audit BUG-002)** — раньше hardcoded `<h1>404</h1>` без layout-окружения. Теперь async server-component, читает `CheckoutMessages.notFound*` + рендерит `<EmptyState>` (наследует storefront layout с хедером/футером) |
+| [tests/visual-audit-2026-06-03/](tests/visual-audit-2026-06-03/) | **NEW** Visual-audit Playwright infra: 6 specs (catalog/product/cart/common/home-other/tour/filter-probe) + 2 конфига (3-viewport interactive + 7-viewport tour). `screenshots/` и `results/` через `.gitignore`. Запуск: `AUDIT_BASE_URL=http://localhost:3000 npx playwright test --config tests/visual-audit-2026-06-03/playwright.config.ts` |
+| [docs/superpowers/reports/visual-audit-2026-06-03/](docs/superpowers/reports/visual-audit-2026-06-03/) | Visual-audit отчёт (9 bug-файлов + README с coverage matrix + severity counts) |
 
 ### Удалено (после launch-audit'а 2026-06-01)
 
@@ -477,6 +483,23 @@ API оригинала `pnhdstudioapi.ru/api/products` отдаёт 502. Скр�
 - [x] **P1.2 Badges на product-card** — поле `badge` (none/hot/new/sale/order) + `salePercent` (5/10/20/30/50, виден только при badge=sale) на Payload Products sidebar. Chip overlay absolute top-left, 4 цвета.
 - ~~P1.3 Stock-urgency~~ — **dropped** (не нужно)
 
+### 🟢 Сделано (Visual Audit 2026-06-03, PR #45)
+
+8 фиксов из [docs/superpowers/reports/visual-audit-2026-06-03/](docs/superpowers/reports/visual-audit-2026-06-03/) — 4 critical + 1 major + 3 minor:
+
+- [x] **BUG-001/006** Empty cart/checkout → переиспользуемый `<EmptyState>` с CMS-driven copy (CheckoutMessages Global расширен полями emptyCart\*/emptyCheckout\*).
+- [x] **BUG-002** 404 product page была белой → переписан `(storefront)/not-found.tsx` через `<EmptyState>` (наследует storefront layout). Текст через `CheckoutMessages.notFound*`.
+- [x] **BUG-003** dead-кнопка «ПЕРЕЙТИ В КОНСТРУКТОР» в `map-screen.tsx` → «перейти в каталог». Step «Добавь в конструктор» в `stages-screen.tsx` + seed-homepage + seed-category-landings переписан.
+- [x] **BUG-004** Mobile lazy-load: `priority` на idx=0, `loading="eager"` на первых 4 карточках; observer `rootMargin` 50px → 600px. На prod в `<head>` появились 4 preload-image.
+- [x] **BUG-005/008** Дубль footer-LeadForm на /thanks /cart /checkout /shop → `FooterLeadFormSlot` client-component с `usePathname()` скрывает.
+- [x] **BUG-007** Фильтры каталога не работали ни на SSR, ни на клиенте. SSR: `getAllProducts({category, type, priceSort})` + `shop/page.tsx` читает `searchParams`. Client: useState/useEffect race → URL→render path (`useSearchParams().get` напрямую в render + useMemo).
+
+Migration `20260602_221453_empty_states_and_404_copy` applied to prod. Prod-smoke зелёный (verified через Vercel MCP):
+- `/shop?type=hoodie` → 3 hoodies в HTML ✓
+- `/cart` → «Корзина пуста» + CTA ✓
+- `/shop/<nonexistent>` → 404 + «Страница не найдена» ✓
+- `/thanks` → footer-форма скрыта ✓
+
 ### 🟡 Известные косяки (open после audit'а)
 
 | Severity | Issue | Где |
@@ -493,9 +516,12 @@ API оригинала `pnhdstudioapi.ru/api/products` отдаёт 502. Скр�
 
 - **CDEK + платёжный шлюз**: `/api/orders/create` уже принимает orders (auth + transaction wrapped, audit B4/B5), но `paymentUrl: null` возвращается — нужны Edge Functions `cdek-cities`, `cdek-points`, `cdek-calculate` + интеграция с YooKassa/Robokassa.
 - **Bitrix24 access**: Payload hook `notifyBitrix` готов, ждёт URL webhook'а от заказчика. Когда появится — выставить `BITRIX_WEBHOOK_URL` в Vercel env. На текущем prod env var пустой → no-op (verified).
-- **Vercel plan upgrade**: Hobby → Pro для (1) отключить DDoS challenge, (2) IP bypass rules, (3) custom domain SSL.
+- **Vercel plan upgrade**: Hobby → Pro для (1) отключить DDoS challenge на headless (блокирует автоматический audit прогон против prod), (2) IP bypass rules, (3) custom domain SSL. **$20/mo**.
 - **Custom domain**: cutover на свой production domain (studio.pnhd.ru или новый). После этого выставить `NEXT_PUBLIC_SITE_URL` env var → SITE_INFO.domain auto-pick'ит → все canonical URLs become correct.
 - **CDN refresh для product images**: 15 битых slug'ов на cdn.pnhd.ru — нужны исходники → upload в Supabase `product-images` bucket.
+- **Полный 7-viewport audit-rerun**: visual-audit 2026-06-03 закрыл 8 багов, но tour-прогон на 7 viewports не доехал (dev-mode timeout на /home /methods/dtg /blog /оferta /privacy /howto /size_chart + category landings). Нужен либо `next build && next start` локально, либо прогон после Vercel Pro upgrade. Спецы готовы в [tests/visual-audit-2026-06-03/](tests/visual-audit-2026-06-03/) — пересжать AUDIT_BASE_URL и запустить.
+- **Cart-seed для аудит-тестов** (BUG-009): `seedCart()` через `sessionStorage` отвергается валидатором. Перепрогон `cart-populated` / `checkout-base` тестов требует UI-flow (open product → add to cart). Сейчас эти скриншоты — empty.
+- **Distributed rate-limit** (form-submissions + orders): пока in-memory per Vercel-instance — на multi-instance scale (Pro/Enterprise) → миграция на Upstash/Redis.
 
 ---
 
