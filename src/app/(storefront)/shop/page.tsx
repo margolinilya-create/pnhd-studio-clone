@@ -45,9 +45,20 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-const ShopPage: React.FC = async () => {
+type ShopSearchParams = {
+  category?: string;
+  type?: string;
+  priceSort?: string;
+};
 
-  const shopData: Array<IProduct> = await getAllProducts();
+const ShopPage = async ({ searchParams }: { searchParams?: Promise<ShopSearchParams> }) => {
+  const sp = (await searchParams) ?? {};
+  const priceSort = sp.priceSort === 'ASC' || sp.priceSort === 'DESC' ? sp.priceSort : undefined;
+  const shopData: Array<IProduct> = await getAllProducts({
+    category: sp.category || undefined,
+    type: sp.type || undefined,
+    priceSort,
+  });
 
   // Soft-fail: если Forms-коллекция недоступна, страница всё равно отрендерится.
   // Форма получит пустой formId и зафейлится на уровне API у конкретного юзера.

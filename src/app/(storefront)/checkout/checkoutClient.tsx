@@ -1,5 +1,5 @@
 "use client";
-import React, { FormEvent, useEffect, useMemo, useState } from "react";
+import React, { FormEvent, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import TextField from "@mui/material/TextField";
@@ -16,6 +16,7 @@ import { cartSummaryFunc } from "@/app/utils/cart-utils";
 import { useCreateOrderMutation } from "@/api/api";
 import type { ICreateOrderPayload } from "@/app/utils/types";
 import { getRoistatVisit } from "@/lib/analytics/roistat";
+import EmptyState from "@/components/pages-components/cart-page/empty-state/empty-state";
 
 const textFieldSx = {
     "& .MuiInputLabel-root": { fontFamily: "Neue_machina" },
@@ -28,9 +29,15 @@ const textFieldSx = {
 interface CheckoutPageProps {
     submitLabel?: string;
     disclaimer?: string | null;
+    emptyState: {
+        title: string;
+        subtitle?: string | null;
+        ctaLabel: string;
+        ctaHref: string;
+    };
 }
 
-const CheckoutPage: React.FC<CheckoutPageProps> = ({ submitLabel, disclaimer }) => {
+const CheckoutPage: React.FC<CheckoutPageProps> = ({ submitLabel, disclaimer, emptyState }) => {
     const router = useRouter();
     const dispatch = useAppDispatch();
     const { order, isHydrated } = useAppSelector((store) => store.cart);
@@ -45,14 +52,6 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({ submitLabel, disclaimer }) 
     const [submitError, setSubmitError] = useState<string | null>(null);
 
     const [createOrder, { isLoading }] = useCreateOrderMutation();
-
-    // Редиректим в /shop, если корзина пуста (после гидрации).
-    useEffect(() => {
-        if (!isHydrated) return;
-        if ((order ?? []).length === 0) {
-            router.replace("/shop");
-        }
-    }, [isHydrated, order, router]);
 
     // items для POST /api/orders/create: каждый размер с userQty>0 →
     // отдельный элемент.
@@ -121,8 +120,19 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({ submitLabel, disclaimer }) 
         }
     };
 
-    if (!isHydrated || (order ?? []).length === 0) {
+    if (!isHydrated) {
         return null;
+    }
+
+    if ((order ?? []).length === 0) {
+        return (
+            <EmptyState
+                title={emptyState.title}
+                subtitle={emptyState.subtitle}
+                ctaLabel={emptyState.ctaLabel}
+                ctaHref={emptyState.ctaHref}
+            />
+        );
     }
 
     return (

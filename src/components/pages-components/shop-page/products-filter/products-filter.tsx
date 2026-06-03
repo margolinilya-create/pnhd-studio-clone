@@ -1,5 +1,5 @@
 'use client'
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useCallback, useMemo } from "react";
 import styles from './products-filter.module.css';
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -54,29 +54,23 @@ const ProductFilterComp: React.FC<{ children?: React.ReactNode; shopData: Array<
     const router = useRouter();
     const searchParams = useSearchParams();
 
-    const [filterState, setFilterState] = useState<FilterState>({
-        category: '',
-        type: '',
-        priceSort: '',
-    });
-    const [isFiltered, setIsFiltered] = useState(false);
-    const [filteredData, setFilteredData] = useState<Array<IProduct> | null>(null);
-
-    useEffect(() => {
-        const category = searchParams.get('category') || '';
-        const type = searchParams.get('type') || '';
-        const priceSort = searchParams.get('priceSort') || '';
-
-        setFilterState({ category, type, priceSort });
-
-        if (category || type || priceSort) {
-            setFilteredData(applyFilters(shopData, { category, type, priceSort }));
-            setIsFiltered(true);
-        } else {
-            setIsFiltered(false);
-            setFilteredData(null);
-        }
-    }, [searchParams, shopData]);
+    // Читаем URL напрямую в render — устраняет race condition
+    // useState/useEffect, при котором pills не подсвечивались сразу после
+    // hydration (см. BUG-007). SSR-фильтрация в /shop/page.tsx уже отдаёт
+    // правильно отфильтрованный shopData, applyFilters здесь идемпотентно
+    // прогоняет тот же subset для безопасности.
+    const filterState: FilterState = {
+        category: searchParams?.get('category') || '',
+        type: searchParams?.get('type') || '',
+        priceSort: searchParams?.get('priceSort') || '',
+    };
+    const isFiltered = Boolean(
+        filterState.category || filterState.type || filterState.priceSort,
+    );
+    const filteredData = useMemo<IProduct[] | null>(() => {
+        if (!isFiltered) return null;
+        return applyFilters(shopData, filterState);
+    }, [shopData, filterState.category, filterState.type, filterState.priceSort, isFiltered]);
 
     const navigateWithState = useCallback(
         (next: FilterState) => {

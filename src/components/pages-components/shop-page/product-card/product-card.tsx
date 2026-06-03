@@ -13,12 +13,17 @@ type TCardProps = {
   slug: string,
   badge?: string | null,
   salePercent?: string | null,
+  // audit BUG-004: первые N карточек грузятся eager — иначе на mobile
+  // (1 колонка, 4-5 экранов на 8 карточек) пользователь видит большую
+  // часть карточек как "только title + price", без изображения.
+  loading?: 'eager' | 'lazy',
+  priority?: boolean,
 }
 
 
 const LOCAL_PLACEHOLDER = '/product-placeholder.svg';
 
-const ProductCard: React.FC<TCardProps> = ({ title, price, img, sizes, badge, salePercent }) => {
+const ProductCard: React.FC<TCardProps> = ({ title, price, img, sizes, badge, salePercent, loading = 'lazy', priority = false }) => {
   const [imageSrc, setImageSrc] = useState(img || LOCAL_PLACEHOLDER);
 
   return (
@@ -40,7 +45,8 @@ const ProductCard: React.FC<TCardProps> = ({ title, price, img, sizes, badge, sa
         className={styles.card_image}
         width={371}
         height={556}
-        loading="lazy"
+        loading={priority ? 'eager' : loading}
+        priority={priority}
         onError={() => setImageSrc(LOCAL_PLACEHOLDER)}
       />
       <div className={styles.card_caption}>

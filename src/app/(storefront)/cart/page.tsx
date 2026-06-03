@@ -17,6 +17,15 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function Page() {
     const messages = await getCheckoutMessages();
-    const disclaimer = messages?.cartManagerDisclaimer ?? null;
-    return <CartClient disclaimer={disclaimer} />;
+    return (
+        <CartClient
+            disclaimer={messages?.cartManagerDisclaimer ?? null}
+            emptyState={{
+                title: messages?.emptyCartTitle ?? 'Корзина пуста',
+                subtitle: messages?.emptyCartSubtitle ?? null,
+                ctaLabel: messages?.emptyCartCtaLabel ?? 'Перейти в каталог',
+                ctaHref: messages?.emptyCartCtaHref ?? '/shop',
+            }}
+        />
+    );
 }

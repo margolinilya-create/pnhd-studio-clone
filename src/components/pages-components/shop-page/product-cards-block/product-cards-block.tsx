@@ -5,10 +5,14 @@ import Link from 'next/link';
 import { IProduct } from '@/app/utils/types';
 import ProductCard from '../product-card/product-card';
 
-// Module-level constant: не пересоздаём при каждом ре-рендере (PR #5)
+// Module-level constant: не пересоздаём при каждом ре-рендере (PR #5).
+// rootMargin расширен с 50px до 600px (audit BUG-004) — на мобильном с 1
+// колонкой первые 8 карточек простираются за 4-5 экранов, observer должен
+// сработать раньше, иначе lazy-loaded картинки нижних карточек не успевают
+// подгрузиться при first paint.
 const OBSERVER_OPTIONS: IntersectionObserverInit = {
     root: null,
-    rootMargin: '0px 0px 50px 0px',
+    rootMargin: '0px 0px 600px 0px',
     threshold: 0.1,
 };
 
@@ -37,7 +41,7 @@ export const ProductCardsBlock: React.FC<{ shopData: Array<IProduct> }> = ({ sho
     return (
         <>
             <div className={styles.screen}>
-                {shopData && shopData.slice(0, endIndex).map((item) => (
+                {shopData && shopData.slice(0, endIndex).map((item, idx) => (
                     <Link
                         href={`/shop/${item.slug}`}
                         className={styles.link}
@@ -51,6 +55,11 @@ export const ProductCardsBlock: React.FC<{ shopData: Array<IProduct> }> = ({ sho
                             slug={item.slug}
                             badge={item.badge}
                             salePercent={item.salePercent}
+                            // первые 4 карточки — eager. На desktop это покрывает
+                            // верхний viewport (4 кол. × 1 ряд); на mobile —
+                            // первые 4 карточки в первой 5 viewport heights.
+                            priority={idx === 0}
+                            loading={idx < 4 ? 'eager' : 'lazy'}
                         />
                     </Link>
                 ))}
