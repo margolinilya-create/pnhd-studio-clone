@@ -14,7 +14,7 @@ import Link from "next/link";
 import Image from "next/image";
 import RU_FLAG from '../../../../public/ru_flag.webp';
 
-type SubmitStatus = 'idle' | 'submitting' | 'success' | 'error' | 'rate-limit';
+type SubmitStatus = 'idle' | 'submitting' | 'success' | 'error' | 'rate-limit' | 'invalid';
 
 const LeadForm: React.FC<{ source?: LeadSource; formId: string }> = ({ source = 'popup', formId }) => {
 
@@ -35,6 +35,13 @@ const LeadForm: React.FC<{ source?: LeadSource; formId: string }> = ({ source = 
         e.preventDefault();
         if (status === 'submitting') return;
         if (!isAgreedWithPrivacyPolicy) return;
+
+        // Валидация: иначе уходит мусорный лид (пустое имя + дефолтный «+7»),
+        // менеджеру некому перезвонить. RU-номер = 11 цифр (7 + 10).
+        if (name.trim().length < 2 || phone.replace(/\D/g, '').length < 11) {
+            setStatus('invalid');
+            return;
+        }
 
         setStatus('submitting');
         try {
@@ -66,6 +73,7 @@ const LeadForm: React.FC<{ source?: LeadSource; formId: string }> = ({ source = 
     const isSuccess = status === 'success';
     const isError = status === 'error';
     const isRateLimit = status === 'rate-limit';
+    const isInvalid = status === 'invalid';
 
     return (
                     <form className={styles.footer_form} onSubmit={submitHandler}>
@@ -145,6 +153,7 @@ const LeadForm: React.FC<{ source?: LeadSource; formId: string }> = ({ source = 
                          {isSuccess && <p className={styles.form_statusText}>Заявка отправлена!</p>}
                          {isError && <p className={styles.form_statusText} role='alert'>Что-то пошло не так. Попробуйте ещё раз.</p>}
                          {isRateLimit && <p className={styles.form_statusText} role='alert'>Слишком много заявок, подождите минуту и попробуйте снова.</p>}
+                         {isInvalid && <p className={styles.form_statusText} role='alert'>Укажите имя и телефон полностью.</p>}
                     </form>
     )
 }

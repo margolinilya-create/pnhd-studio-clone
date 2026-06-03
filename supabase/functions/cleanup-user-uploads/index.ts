@@ -51,49 +51,76 @@ Deno.serve(async (req) => {
 
   const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
 
-  const { data: objects, error: listErr } = await supabase
-    .storage.from(BUCKET)
-    .list(PREFIX, { limit: LIST_LIMIT, sortBy: { column: 'created_at', order: 'asc' } });
+  const cutoff = new Date(Date.now() - MAX_AGE_DAYS * 24 * 60 * 60 * 1000);
+  const toDelete: string[] = [];
+  let totalScanned = 0;
+  let skippedNoTimestamp = 0;
 
-  if (listErr) {
-    return new Response(JSON.stringify({ error: `list failed: ${listErr.message}` }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' },
-    });
+  // Полная пагинация: раньше брали только первую страницу (1000 объектов) — всё
+  // сверху молча игнорировалось → файлы старше 14 дней за 1000-м объектом никогда
+  // не удалялись (бесконечный рост + PII сверх retention).
+  let offset = 0;
+  for (;;) {
+    const { data: page, error: listErr } = await supabase
+      .storage.from(BUCKET)
+      .list(PREFIX, { limit: LIST_LIMIT, offset, sortBy: { column: 'created_at', order: 'asc' } });
+
+    if (listErr) {
+      return new Response(JSON.stringify({ error: `list failed: ${listErr.message}` }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+    if (!page || page.length === 0) break;
+
+    totalScanned += page.length;
+    for (const o of page) {
+      // created_at может быть null (объекты, созданные через S3-протокол). Раньше
+      // такие молча пропускались навсегда. Fallback на updated_at; если нет и его —
+      // считаем возраст неопределённым и НЕ удаляем (чтобы не снести свежий файл),
+      // но логируем, чтобы leak был виден.
+      const ts = o.created_at ?? o.updated_at ?? null;
+      if (!ts) {
+        skippedNoTimestamp++;
+        continue;
+      }
+      if (new Date(ts) < cutoff) {
+        toDelete.push(`${PREFIX}/${o.name}`);
+      }
+    }
+
+    if (page.length < LIST_LIMIT) break;
+    offset += LIST_LIMIT;
   }
-  if (!objects) {
-    return new Response(JSON.stringify({ deleted: 0, note: 'empty bucket' }), {
+
+  if (skippedNoTimestamp > 0) {
+    console.warn(`[cleanup-user-uploads] ${skippedNoTimestamp} objects had no timestamp, skipped`);
+  }
+  console.log(`[cleanup-user-uploads] scanned ${totalScanned} objects, ${toDelete.length} older than ${MAX_AGE_DAYS}d`);
+
+  if (toDelete.length === 0) {
+    return new Response(JSON.stringify({ deleted: 0, scanned: totalScanned }), {
       status: 200,
       headers: { 'Content-Type': 'application/json' },
     });
   }
 
-  // TODO: paginate если objects.length === LIST_LIMIT. За 14 дней реалистично не наберём.
-  if (objects.length === LIST_LIMIT) {
-    console.warn(`[cleanup-user-uploads] list hit limit ${LIST_LIMIT}, pagination not implemented`);
+  // Удаляем батчами — единичный remove() с очень большим массивом ненадёжен.
+  let deleted = 0;
+  for (let i = 0; i < toDelete.length; i += LIST_LIMIT) {
+    const batch = toDelete.slice(i, i + LIST_LIMIT);
+    const { error: rmErr } = await supabase.storage.from(BUCKET).remove(batch);
+    if (rmErr) {
+      return new Response(
+        JSON.stringify({ error: `remove failed: ${rmErr.message}`, deleted, attempted_count: toDelete.length }),
+        { status: 500, headers: { 'Content-Type': 'application/json' } },
+      );
+    }
+    deleted += batch.length;
   }
 
-  const cutoff = new Date(Date.now() - MAX_AGE_DAYS * 24 * 60 * 60 * 1000);
-  const toDelete = objects
-    .filter((o) => o.created_at && new Date(o.created_at) < cutoff)
-    .map((o) => `${PREFIX}/${o.name}`);
-
-  console.log(`[cleanup-user-uploads] found ${objects.length} objects, ${toDelete.length} older than ${MAX_AGE_DAYS}d`);
-
-  if (toDelete.length === 0) {
-    return new Response(JSON.stringify({ deleted: 0 }), { status: 200 });
-  }
-
-  const { error: rmErr } = await supabase.storage.from(BUCKET).remove(toDelete);
-  if (rmErr) {
-    return new Response(JSON.stringify({ error: `remove failed: ${rmErr.message}`, attempted_count: toDelete.length }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' },
-    });
-  }
-
-  console.log(`[cleanup-user-uploads] deleted ${toDelete.length} objects`);
-  return new Response(JSON.stringify({ deleted: toDelete.length }), {
+  console.log(`[cleanup-user-uploads] deleted ${deleted} objects`);
+  return new Response(JSON.stringify({ deleted, scanned: totalScanned }), {
     status: 200,
     headers: { 'Content-Type': 'application/json' },
   });

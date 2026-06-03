@@ -52,7 +52,9 @@ export async function middleware(req: NextRequest) {
     const apiUrl = `${req.nextUrl.origin}/api/redirects?where[from][equals]=${encodeURIComponent(
       pathname,
     )}&depth=1&limit=1`;
-    const res = await fetch(apiUrl, { cache: 'no-store' });
+    // Таймаут: иначе просадка Payload/БД заставит middleware ждать до платформенного
+    // лимита на КАЖДОМ запросе витрины → сайт-вайд сталл. Лучше тихо пропустить редирект.
+    const res = await fetch(apiUrl, { cache: 'no-store', signal: AbortSignal.timeout(2000) });
     if (!res.ok) return NextResponse.next();
     const data = (await res.json()) as { docs?: RedirectDoc[] };
     const doc = data.docs?.[0];

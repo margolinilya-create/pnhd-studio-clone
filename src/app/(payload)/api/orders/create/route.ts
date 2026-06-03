@@ -155,6 +155,7 @@ export const POST = async (req: Request) => {
 
   let discount = 0;
   let promoId: number | undefined;
+  let promoUsageCount = 0;
   if (promoCode) {
     const promoRes = await payload.find({
       collection: 'promos',
@@ -168,24 +169,36 @@ export const POST = async (req: Request) => {
           discountValue: number;
           validFrom?: string | null;
           validUntil?: string | null;
+          usageLimit?: number | null;
+          usageCount?: number | null;
         }
       | undefined;
     if (promo) {
       const now = new Date();
       const validFrom = promo.validFrom ? new Date(promo.validFrom) : null;
       const validUntil = promo.validUntil ? new Date(promo.validUntil) : null;
-      if ((!validFrom || validFrom <= now) && (!validUntil || validUntil >= now)) {
+      const withinWindow = (!validFrom || validFrom <= now) && (!validUntil || validUntil >= now);
+      const usageCount = promo.usageCount ?? 0;
+      const underLimit = promo.usageLimit == null || usageCount < promo.usageLimit;
+      if (withinWindow && underLimit) {
         if (promo.discountType === 'percent') {
-          discount = Math.floor((subtotal * promo.discountValue) / 100);
+          const pct = Math.min(100, Math.max(0, promo.discountValue));
+          discount = Math.floor((subtotal * pct) / 100);
         } else {
-          discount = promo.discountValue;
+          discount = Math.max(0, promo.discountValue);
         }
+        // Скидка не может превышать сумму товаров — иначе total схлопывается в 0.
+        discount = Math.min(discount, subtotal);
         promoId = promo.id;
+        promoUsageCount = usageCount;
       }
     }
   }
 
-  const shippingCost = delivery?.cost ?? 0;
+  // delivery.cost приходит от клиента — доверять нельзя. Серверного CDEK-пересчёта
+  // пока нет, поэтому минимум защищаемся от отрицательных значений (которые иначе
+  // занижают total). TODO(cdek): пересчитывать стоимость доставки server-side.
+  const shippingCost = Math.max(0, Math.round(delivery?.cost ?? 0));
   const total = Math.max(0, subtotal - discount + shippingCost);
 
   // Audit B5 — раньше Order + order-items создавались без транзакции.
@@ -216,7 +229,7 @@ export const POST = async (req: Request) => {
                 cityName: delivery.cityName,
                 address: delivery.address,
                 pvzCode: delivery.pvzCode,
-                cost: delivery.cost ?? 0,
+                cost: shippingCost,
               },
             }
           : {}),
@@ -235,6 +248,15 @@ export const POST = async (req: Request) => {
         collection: 'order-items',
         req: reqContext as never,
         data: { ...it, order: order.id } as never,
+      });
+    }
+
+    if (promoId) {
+      await payload.update({
+        collection: 'promos',
+        id: promoId,
+        req: reqContext as never,
+        data: { usageCount: promoUsageCount + 1 } as never,
       });
     }
 

@@ -12,7 +12,9 @@ import RU_FLAG from '../../../../public/ru_flag.webp';
 import { submitForm } from '@/lib/forms/submit-form';
 import { getRoistatVisit } from '@/lib/analytics/roistat';
 
-type SubmitStatus = 'idle' | 'submitting' | 'success' | 'error' | 'rate-limit';
+type SubmitStatus = 'idle' | 'submitting' | 'success' | 'error' | 'rate-limit' | 'invalid';
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 const muiFieldSx = {
   '& .MuiInputLabel-root': { fontFamily: 'Neue_machina' },
@@ -46,6 +48,19 @@ const NoModelBlockForm = ({ formId }: { formId: string }) => {
   const submitHandler = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (status === 'submitting' || !isAgreed) return;
+
+    // Валидация: пустое имя / дефолтный «+7» / битый email = мусорный лид.
+    // RU-номер = 11 цифр. Email опционален, но если введён — должен быть валидным.
+    const emailTrimmed = email.trim();
+    if (
+      name.trim().length < 2 ||
+      phone.replace(/\D/g, '').length < 11 ||
+      (emailTrimmed.length > 0 && !EMAIL_RE.test(emailTrimmed))
+    ) {
+      setStatus('invalid');
+      return;
+    }
+
     setStatus('submitting');
     try {
       const roistat = getRoistatVisit();
@@ -164,6 +179,11 @@ const NoModelBlockForm = ({ formId }: { formId: string }) => {
         }
       />
       {isSuccess && <p className={styles.formStatus}>Заявка отправлена!</p>}
+      {status === 'invalid' && (
+        <p className={styles.formStatus} role="alert">
+          Укажите имя и телефон полностью, проверьте email.
+        </p>
+      )}
       {isError && (
         <p className={styles.formStatus} role="alert">
           {status === 'rate-limit'

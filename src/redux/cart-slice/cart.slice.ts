@@ -193,7 +193,12 @@ const cartSlice = createSlice({
       return { ...initialState, isHydrated: true };
     },
     restoreCart: (state, action: PayloadAction<Array<ICartOrderElement>>) => {
-      state.order = action.payload;
+      // Гонка гидрации: если до dispatch(restoreCart) пользователь успел нажать
+      // «В корзину», state.order уже содержит свежий элемент. Не затираем его
+      // старым снимком — мержим по itemCartId, текущие записи в приоритете.
+      const existingIds = new Set(state.order.map((e) => e.itemCartId));
+      const restored = action.payload.filter((e) => !existingIds.has(e.itemCartId));
+      state.order = [...state.order, ...restored];
       state.isHydrated = true;
     },
     markHydrated: (state) => {

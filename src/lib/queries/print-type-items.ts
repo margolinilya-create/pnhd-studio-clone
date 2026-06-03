@@ -44,17 +44,18 @@ export const getPrintTypeItemsByParent = cache(
 export const getPrintTypeItem = cache(
   async (slug: string, typeSlug: string): Promise<PrintTypeItem | null> => {
     if (!isPayloadConfigured()) return null;
-    // The unique slug in the collection is "parentSlug__typeSlug" — but the page
-    // route uses the original slug (e.g. "shelkografiya") + typeSlug. We search by
-    // typeSlug because that is unique within a parent and matches the route.
+    // The unique slug in the collection is "parentSlug__typeSlug". The page route
+    // passes both segments (slug == parentSlug, typeSlug == [type]). We must match
+    // BOTH — иначе любой родительский сегмент отрендерит страницу метода
+    // (дубли-контент / неверный canonical), а при неуникальном typeSlug вернётся
+    // произвольная первая строка.
     try {
       const payload = await getPayloadClient();
       const result = await payload.find({
         collection: 'print-type-items',
         where: {
           and: [
-            // The original data's slug field maps to what we stored as parentSlug's
-            // related URL segment. We match by typeSlug since it is the [type] param.
+            { parentSlug: { equals: slug } },
             { typeSlug: { equals: typeSlug } },
           ],
         },
