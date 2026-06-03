@@ -2,6 +2,7 @@
 import React, { FormEvent, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import TextField from "@mui/material/TextField";
 import Button from "@mui/material/Button";
 import FormControlLabel from "@mui/material/FormControlLabel";
@@ -10,6 +11,7 @@ import Alert from "@mui/material/Alert";
 import { MuiTelInput } from "mui-tel-input";
 
 import styles from "./page.module.css";
+import RU_FLAG from "../../../../public/ru_flag.webp";
 import { useAppDispatch, useAppSelector } from "@/redux/redux-hooks";
 import { actions as cartActions } from "@/redux/cart-slice/cart.slice";
 import { cartSummaryFunc } from "@/app/utils/cart-utils";
@@ -183,10 +185,15 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({ submitLabel, disclaimer, em
                     required
                     fullWidth
                     label="Телефон"
+                    onlyCountries={['RU']}
                     defaultCountry="RU"
+                    disableDropdown
                     value={phone}
                     onChange={setPhone}
                     sx={textFieldSx}
+                    getFlagElement={() => (
+                        <Image width={26} height={17} alt="Россия" src={RU_FLAG} aria-label="Россия" />
+                    )}
                 />
                 <TextField
                     required
